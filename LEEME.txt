@@ -1,0 +1,158 @@
+==========================================================
+   JOAN TE PRESTA · CRM — En tu computador y en tu celular
+==========================================================
+
+----------------------------------------------------------
+📱 USAR EN EL CELULAR COMO APP (con cámara y GPS)
+----------------------------------------------------------
+Ahora el CRM se puede instalar en el teléfono como una app
+(ícono en la pantalla de inicio, pantalla completa, funciona
+sin internet una vez abierto), y permite TOMAR FOTOS con la
+cámara y GUARDAR LA UBICACIÓN (GPS) de cada cliente.
+
+⚠️ LO ÚNICO IMPORTANTE: para que funcionen la cámara, el GPS
+y la instalación, la app tiene que abrirse desde un ENLACE
+(https://...), NO con doble clic al archivo. Es una regla de
+seguridad de los navegadores. O sea: hay que subir la carpeta
+de la app UNA VEZ a un sitio gratuito y quedará con su enlace
+fijo. (Joan: pídeme y te dejo el enlace listo; es gratis.)
+
+Una vez tengas el enlace, en el teléfono:
+- ANDROID (Chrome): abre el enlace → menú ⋮ → "Instalar app"
+  o "Agregar a la pantalla de inicio".
+- iPHONE (Safari): abre el enlace → botón Compartir → "Añadir
+  a pantalla de inicio".
+Listo: te queda el ícono rojo con la J.
+
+FOTOS 📷: en la ficha del cliente y al registrar un cobro,
+toca el recuadro de foto → el teléfono te deja "Tomar foto"
+con la cámara o elegir de la galería. La "selfie con cédula"
+abre directamente la cámara frontal.
+
+UBICACIÓN 📍: en la ficha del cliente, sección "Ubicación GPS",
+toca "Guardar ubicación actual (GPS)" ESTANDO donde el cliente.
+Queda un enlace "Ver en Google Maps" en la ficha y en la lista.
+La primera vez el teléfono te pedirá permiso de ubicación: dale
+"Permitir".
+
+TUS DATOS SON POR DISPOSITIVO: lo que cargas en el computador
+NO aparece solo en el celular (cada uno guarda lo suyo). Para
+pasar tu información: en el PC haz Ajustes ⚙️ → "Respaldo (JSON)"
+y en el celular Ajustes ⚙️ → "Importar respaldo". Y cambia el
+PIN (Ajustes ⚙️) para que nadie más entre.
+
+----------------------------------------------------------
+✨ QUÉ CAMBIÓ EN ESTA VERSIÓN (mensajes + pulido)
+----------------------------------------------------------
+- MENSAJES DE WHATSAPP más cálidos, cercanos y personales.
+  Ahora saludan a la persona, no solo cobran; son respetuosos
+  (Ley 2300) incluso en mora, y neutros (sirven para hombre o
+  mujer). Se agregó un mensaje NUEVO de "Bienvenida" para
+  cuando entregas un crédito.
+- En la pantalla "Plantillas 💬" ahora ves, bajo cada mensaje,
+  UNA VISTA PREVIA de cómo le llega al cliente, botones para
+  insertar variables ({nombre}, {saldo}...) con un toque, y un
+  botón "↺ Restaurar recomendados" para volver a los mensajes
+  sugeridos cuando quieras.
+- ARREGLO IMPORTANTE PARA EL CELULAR: antes, desde el teléfono
+  se escondían los botones de WhatsApp/Pago y no se podía
+  cobrar. Ahora las tablas se deslizan de lado y todo queda a
+  la mano.
+- Otros pulidos: el enlace "WA" de la lista de clientes ya
+  funciona aunque el número tenga espacios; importar un
+  respaldo ahora PIDE CONFIRMACIÓN antes de reemplazar datos;
+  cerrar ventanas con la tecla Esc; y varios detalles finos.
+
+  >> Si ya habías tocado y GUARDADO tus mensajes antes, los
+     nuevos textos NO se ponen solos. Entra a "Plantillas 💬" y
+     pulsa "↺ Restaurar recomendados" (no afecta clientes ni
+     créditos, solo los textos). Si nunca los editaste, ya
+     aparecen los nuevos.
+
+----------------------------------------------------------
+⚠️ ACTUALIZACIÓN DE ESTE ARCHIVO — LEE ESTO PRIMERO
+----------------------------------------------------------
+Tus datos NO viven en este archivo; viven en el navegador
+(localStorage). Para actualizar sin perder nada:
+
+1. ANTES de reemplazar el archivo viejo: abre tu crm.html
+   ACTUAL, entra con tu PIN, ve a Ajustes ⚙️ → "Respaldo (JSON)"
+   y guarda ese archivo (ej: respaldo-antes-actualizar.json).
+2. Reemplaza el crm.html viejo por este nuevo, en la MISMA
+   carpeta y con el MISMO nombre "crm.html".
+3. Ábrelo en el mismo navegador. Si todo tu historial de
+   clientes y créditos aparece igual que antes, ¡listo! (Chrome
+   guarda los datos por archivo/carpeta, así que normalmente
+   se conservan solos).
+4. Si por algo NO aparecen tus datos: Ajustes ⚙️ → "Importar
+   respaldo" y sube el .json que guardaste en el paso 1.
+5. Los clientes y créditos que ya tenías quedan con su número
+   (CL-000x / CR-000x) asignado automáticamente según el orden
+   en que los creaste — no se pierde ni se duplica ninguno.
+
+QUÉ NECESITAS (nada más):
+- Este archivo "crm.html" dentro de tu carpeta.
+- Google Chrome (o Edge) instalado. Eso es todo.
+- NO necesitas internet, ni instalar programas, ni cuentas.
+
+----------------------------------------------------------
+PASO A PASO PARA EMPEZAR HOY
+----------------------------------------------------------
+1. Guarda "crm.html" en tu carpeta (ej: Documentos\Joan te presta\).
+2. Doble clic en "crm.html" → abre en Chrome.
+3. PIN inicial: 1234  → cámbialo en Ajustes ⚙️.
+4. En Ajustes pon: tu nombre/negocio, el costo base (20%)
+   y, si quieres, la tasa de usura de referencia.
+5. Empieza a cargar tus clientes activos con "＋ Nuevo crédito".
+   - Para clientes que ya venían de antes, usa el campo opcional
+     "Próxima quincena de pago" para poner la fecha real.
+6. Sugerencia: ancla Chrome a la barra de tareas y deja el CRM
+   como página fijada para abrirlo rápido cada día.
+
+----------------------------------------------------------
+LO MÁS IMPORTANTE: RESPALDOS  (no te saltes esto)
+----------------------------------------------------------
+Tus datos y fotos se guardan DENTRO del navegador, no en el
+archivo. Si limpias el historial/datos de navegación o cambias
+de computador, se pierden. Por eso:
+
+- Cada vez que termines de trabajar (o 1 vez por semana):
+  Ajustes ⚙️ → "Respaldo (JSON)" → guarda el archivo en tu carpeta.
+  Recomendado nombrarlo con la fecha, ej:
+  respaldo-2026-06-29.json
+- Para restaurar o pasar a otro PC:
+  Ajustes ⚙️ → "Importar respaldo" → eliges el .json.
+
+----------------------------------------------------------
+REGLAS PARA QUE NO SE PIERDAN LOS DATOS
+----------------------------------------------------------
+- Abre SIEMPRE el mismo archivo, en el MISMO navegador.
+- NO uses ventana de incógnito.
+- NO borres "cookies y datos de sitios" de Chrome.
+- Si mueves la carpeta a otra ruta, primero haz un respaldo
+  (JSON) y luego impórtalo desde la nueva ubicación.
+- Las fotos (cédulas y comprobantes) ocupan espacio; el navegador
+  tiene un límite. Si te avisa que no hay espacio, haz un respaldo
+  y avísame: ahí conviene pasar a la nube (Supabase).
+
+----------------------------------------------------------
+OPCIONAL · MODO MÁS ESTABLE (localhost)
+----------------------------------------------------------
+Abrir el archivo con doble clic funciona bien. Si quieres la
+forma más robusta (dirección fija tipo http://localhost), y
+tienes Python instalado, dentro de la carpeta ejecuta:
+
+   python -m http.server 8000
+
+y abre en Chrome:  http://localhost:8000/crm.html
+
+(Si prefieres, te puedo dejar un acceso de "doble clic" que haga
+esto solo; dime si tu PC es Windows o Mac.)
+
+----------------------------------------------------------
+RESUMEN
+----------------------------------------------------------
+Carpeta = crm.html + tus respaldos .json
+Diario  = abrir, operar, y al final exportar respaldo.
+Futuro  = migrar a la nube para usarlo desde varios dispositivos.
+==========================================================

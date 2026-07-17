@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="es-CO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Joan te presta · CRM</title>
+<meta name="theme-color" content="#D81E2C">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Joan te presta">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --negro:#17181c;--negro-2:#24262e;--negro-3:#2f323c;
+    --rojo:#D81E2C;--rojo-osc:#A8121E;--rojo-claro:#fbe7e9;--rojo-tint:#fdf2f3;
+    --blanco:#ffffff;--hueso:#f3f2f1;--gris:#6c6f76;--gris-claro:#9a9da4;
+    --wa:#25D366;--linea:rgba(23,24,28,.1);--linea-2:rgba(23,24,28,.06);--r:13px;
+    --verde:#1f8a4c;--verde-tint:#e2efe7;--ambar:#b7791f;--ambar-tint:#fdf2d9;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',system-ui,sans-serif;background:var(--hueso);color:var(--negro);-webkit-font-smoothing:antialiased}
+  h1,h2,h3,h4{line-height:1.12;letter-spacing:-.01em}
+  .display{font-family:'Archivo Black',sans-serif;letter-spacing:0}
+  .mono{font-family:'JetBrains Mono',monospace}
+  button,select,input,textarea{font-family:inherit}button{cursor:pointer}
+
+  /* PIN */
+  .gate{position:fixed;inset:0;background:var(--negro);display:grid;place-items:center;z-index:100;overflow:hidden}
+  .gate::before{content:"JOAN";position:absolute;font-family:'Archivo Black';font-size:34vw;color:transparent;-webkit-text-stroke:2px rgba(216,30,44,.13);top:50%;left:50%;transform:translate(-50%,-50%);white-space:nowrap;pointer-events:none}
+  .gate-card{background:var(--blanco);border-radius:18px;padding:38px;width:340px;text-align:center;box-shadow:0 30px 80px -28px #000;position:relative;z-index:2}
+  .gate-card .mk{font-family:'Archivo Black';font-size:38px;color:var(--negro);line-height:.9}
+  .gate-card .mk em{color:var(--rojo);font-style:normal}
+  .gate-card .tag{font-size:13px;color:var(--gris);margin:6px 0 22px;font-weight:600;letter-spacing:.02em}
+  .gate-card input{width:100%;text-align:center;font-family:'JetBrains Mono';font-size:24px;letter-spacing:.4em;padding:12px;border:2px solid var(--linea);border-radius:10px;background:#fff}
+  .gate-card input:focus{outline:none;border-color:var(--rojo)}
+  .gate-card button{width:100%;margin-top:14px;background:var(--rojo);border:none;padding:13px;border-radius:10px;font-weight:700;font-size:15px;color:#fff}
+  .gate-err{color:var(--rojo);font-size:12.5px;margin-top:10px;min-height:16px;font-weight:600}
+
+  .app{display:grid;grid-template-columns:228px 1fr;min-height:100vh}
+  .side{background:var(--negro);color:#dfe0e3;padding:18px 14px;display:flex;flex-direction:column;gap:3px;position:sticky;top:0;height:100vh;overflow:hidden}
+  .side .brand{display:flex;align-items:center;gap:11px;padding:6px 6px 4px;position:relative;z-index:2}
+  .side .brand .seal{width:40px;height:40px;border-radius:11px;background:var(--rojo);color:#fff;display:grid;place-items:center;font-family:'Archivo Black';font-size:20px;flex:none;box-shadow:0 6px 16px -6px var(--rojo)}
+  .side .brand .bt .l1{font-family:'Archivo Black';font-size:16px;color:#fff;line-height:1}
+  .side .brand .bt .l2{font-size:11px;color:var(--rojo);font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-top:3px}
+  .side .sep{height:1px;background:rgba(255,255,255,.08);margin:12px 4px}
+  .navbtn{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;background:none;border:none;color:rgba(223,224,227,.72);font-size:14px;font-weight:600;text-align:left;width:100%;transition:.13s;position:relative;z-index:2}
+  .navbtn:hover{background:rgba(255,255,255,.07);color:#fff}
+  .navbtn.on{background:var(--rojo);color:#fff}
+  .navbtn .ic{font-size:16px;width:19px;text-align:center}
+  .side .joanmark{position:absolute;bottom:54px;left:-6px;font-family:'Archivo Black';font-size:62px;color:transparent;-webkit-text-stroke:1.5px rgba(255,255,255,.07);transform:rotate(-90deg);transform-origin:left bottom;pointer-events:none;letter-spacing:2px}
+  .side .horario{margin-top:auto;font-size:11px;border-radius:10px;padding:9px 10px;line-height:1.4;position:relative;z-index:2}
+  .horario.ok{background:rgba(255,255,255,.08);color:#cfd2d6;border-left:3px solid var(--wa)}
+  .horario.no{background:rgba(216,30,44,.16);color:#f3c2c6;border-left:3px solid var(--rojo)}
+  .horario b{display:block;font-size:11.5px;margin-bottom:2px}
+
+  .main{padding:24px 30px;overflow-x:hidden}
+  .ph{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:14px;margin-bottom:22px}
+  .ph h1{font-family:'Archivo Black';font-size:26px}
+  .ph h1 .dot{color:var(--rojo)}
+  .ph .sub{color:var(--gris);font-size:14px;margin-top:4px;font-weight:500}
+  .btn{display:inline-flex;align-items:center;gap:7px;border:none;font-weight:700;font-size:14px;padding:11px 18px;border-radius:10px;transition:.13s}
+  .btn-rojo{background:var(--rojo);color:#fff}.btn-rojo:hover{background:var(--rojo-osc)}
+  .btn-negro{background:var(--negro);color:#fff}.btn-negro:hover{background:var(--negro-2)}
+  .btn-wa{background:var(--wa);color:#06381c}.btn-wa:hover{filter:brightness(1.05)}
+  .btn-ghost{background:#fff;border:1.5px solid var(--linea);color:var(--negro)}.btn-ghost:hover{border-color:var(--rojo);color:var(--rojo)}
+  .btn-sm{padding:7px 12px;font-size:13px;border-radius:8px}
+  .view{display:none}.view.on{display:block}
+
+  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px}
+  .kpis2{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:22px}
+  .kpi{background:#fff;border:1px solid var(--linea);border-radius:var(--r);padding:16px;border-top:3px solid var(--negro)}
+  .kpi .et{font-size:11.5px;color:var(--gris);font-weight:600}
+  .kpi .nm{font-family:'JetBrains Mono';font-weight:700;font-size:21px;margin-top:7px}
+  .kpi .x{font-size:11px;margin-top:4px;color:var(--gris-claro)}
+  .kpi.gan{border-top-color:var(--rojo)}.kpi.gan .nm{color:var(--rojo)}
+  .kpi.alert{border-top-color:var(--rojo);background:var(--rojo-tint)}.kpi.alert .nm{color:var(--rojo)}
+  .kpi.dark{background:var(--negro);border-color:var(--negro);border-top-color:var(--rojo)}.kpi.dark .et,.kpi.dark .x{color:#b9bcc2}.kpi.dark .nm{color:#fff}
+  .kpi.verde{border-top-color:var(--verde)}.kpi.verde .nm{color:var(--verde)}
+  .kpi-title{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--gris);font-weight:800;margin:4px 0 10px}
+
+  .card{background:#fff;border:1px solid var(--linea);border-radius:var(--r);overflow:hidden;margin-bottom:20px}
+  .card-h{padding:15px 20px;border-bottom:1px solid var(--linea);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+  .card-h h3{font-size:16px;font-weight:800}.card-h .tag{font-size:12px;color:var(--gris)}
+
+  table{width:100%;border-collapse:collapse}
+  th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--gris);font-weight:700;padding:10px 18px;border-bottom:1px solid var(--linea)}
+  td{padding:11px 18px;border-bottom:1px solid var(--linea-2);font-size:14px;vertical-align:middle}
+  tr:last-child td{border-bottom:none}tr:hover td{background:var(--rojo-tint)}
+  .num{font-family:'JetBrains Mono';font-weight:700}.muted{color:var(--gris);font-size:12.5px}
+  .gano{color:var(--rojo);font-family:'JetBrains Mono';font-weight:700}
+
+  .chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:999px;white-space:nowrap}
+  .chip.al-dia{background:#eceef0;color:#3a3d44}
+  .chip.proximo{background:#e6e8ec;color:#2f323c}
+  .chip.hoy{background:var(--negro);color:#fff}
+  .chip.mora{background:var(--rojo);color:#fff}
+  .chip.prorroga{background:#2f323c;color:#fff}
+  .chip.pagado{background:#f0f0f1;color:var(--gris)}
+  .chip.riesgo-bajo{background:var(--verde-tint);color:#0d3b22}
+  .chip.riesgo-medio{background:var(--ambar-tint);color:#5c3d05}
+  .chip.riesgo-alto{background:var(--rojo);color:#fff}
+  .chip.riesgo-nuevo{background:#eceef0;color:#3a3d44}
+  tfoot td{font-weight:800;background:var(--hueso);border-top:2px solid var(--negro);border-bottom:none}
+  .ea-bad{color:var(--rojo);font-weight:700}.ea-ok{color:var(--gris)}.warn-ico{cursor:help}
+  .empty{padding:44px 20px;text-align:center;color:var(--gris)}.empty .ic{font-size:32px;opacity:.45}
+
+  .modal{position:fixed;inset:0;background:rgba(23,24,28,.6);display:none;place-items:center;z-index:50;padding:20px}
+  .modal.on{display:grid}
+  .modal-card{background:#fff;border-radius:16px;width:100%;max-width:600px;max-height:92vh;overflow-y:auto;box-shadow:0 40px 90px -30px #000}
+  .modal-h{padding:17px 22px;border-bottom:1px solid var(--linea);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#fff;z-index:2}
+  .modal-h h3{font-size:18px;font-weight:800}.modal-h .x{background:none;border:none;font-size:22px;color:var(--gris)}
+  .modal-b{padding:22px}
+  .field{margin-bottom:14px;display:flex;flex-direction:column;gap:6px}
+  .field label{font-size:12.5px;font-weight:600;color:#3a3d44}
+  .field input,.field select,.field textarea{font-size:14.5px;padding:10px 12px;border:1.5px solid var(--linea);border-radius:9px;background:#fff;color:var(--negro)}
+  .field textarea{resize:vertical;min-height:80px;line-height:1.5}
+  .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--rojo);box-shadow:0 0 0 3px rgba(216,30,44,.12)}
+  .field .help{font-size:11.5px;color:var(--gris)}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .sub-h{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--rojo);font-weight:800;margin:20px 0 10px;border-top:1px solid var(--linea);padding-top:16px}
+  .sub-h:first-child{border:none;padding-top:0;margin-top:0}
+  .calc{background:var(--rojo-tint);border:1px dashed var(--rojo);border-radius:10px;padding:13px;margin:4px 0 14px}
+  .calc-row{display:flex;justify-content:space-between;padding:4px 0;font-size:13.5px}.calc-row .v{font-family:'JetBrains Mono';font-weight:700}
+  .info-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px dashed var(--linea);font-size:14px;gap:12px}.info-row .k{color:var(--gris);flex:none}.info-row .vv{text-align:right;word-break:break-word}
+  .alerta{border-radius:9px;padding:10px 13px;font-size:13px;margin-bottom:14px;line-height:1.45}
+  .alerta.warn{background:var(--rojo-claro);color:#8a1018;border:1px solid rgba(216,30,44,.25)}
+  .alerta.info{background:#f0f0f1;color:#3a3d44;border:1px solid var(--linea)}
+  .preview{background:#e9f7ee;border:1px solid rgba(37,211,102,.3);border-radius:10px;padding:13px;font-size:13.5px;line-height:1.55;white-space:pre-wrap;color:#0d3b22;margin-top:8px}
+  .pastebox{min-height:96px;font-size:14px;line-height:1.5;padding:11px;border:1.5px solid var(--linea);border-radius:10px;background:#fff;width:100%;resize:vertical}
+
+  .up-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .up-row .up{min-height:94px;padding:10px}
+  .up-row .up .lbl{font-size:11px}
+  .up{border:1.5px dashed var(--gris-claro);border-radius:11px;padding:14px;text-align:center;cursor:pointer;background:#fafafa;position:relative;min-height:110px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px}
+  .up:hover{border-color:var(--rojo)}.up.ok{border-style:solid;border-color:var(--negro)}
+  .up img{position:absolute;inset:6px;width:calc(100% - 12px);height:calc(100% - 12px);object-fit:cover;border-radius:8px}
+  .up input{display:none}.up .ic{font-size:22px}
+  .gal{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}
+  .gal a{display:block;border:1px solid var(--linea);border-radius:9px;overflow:hidden}
+  .gal img{width:100%;height:90px;object-fit:cover;display:block}
+  .gal .cap{font-size:10px;color:var(--gris);padding:3px 5px;text-align:center}
+
+  .plt{background:#fff;border:1px solid var(--linea);border-radius:11px;padding:16px;margin-bottom:13px}
+  .plt h4{font-size:14.5px;margin-bottom:4px}.plt .et{font-size:12px;color:var(--gris);margin-bottom:9px}
+  .plt textarea{width:100%;min-height:72px;font-size:13.5px;line-height:1.5;padding:10px;border:1.5px solid var(--linea);border-radius:8px;resize:vertical;background:#fafafa}
+  .plt textarea:focus{outline:none;border-color:var(--rojo);box-shadow:0 0 0 3px rgba(216,30,44,.12)}
+  .plt-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px}
+  .plt-vars{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+  .varchip{font-family:'JetBrains Mono';font-size:11px;font-weight:700;color:var(--gris);background:var(--hueso);border:1px solid var(--linea);border-radius:999px;padding:3px 9px;transition:.12s}
+  .varchip:hover{border-color:var(--rojo);color:var(--rojo);background:#fff}
+  .plt-prev{margin-top:10px;background:#e9f7ee;border:1px solid rgba(37,211,102,.3);border-radius:9px;padding:10px 12px;font-size:13.5px;line-height:1.5;color:#0d3b22;white-space:pre-wrap}
+  .plt-prev .pl{display:block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#1f8a4c;margin-bottom:4px;opacity:.85}
+
+  .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:12px;flex-wrap:wrap}
+  .cal-head h2{font-family:'Archivo Black';font-size:19px}
+  .cal-nav{display:flex;gap:6px}
+  .cal-nav button{background:#fff;border:1.5px solid var(--linea);border-radius:9px;width:38px;height:38px;font-size:16px}
+  .cal-nav button:hover{border-color:var(--rojo);color:var(--rojo)}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+  .cal-dow{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--gris);font-weight:700;text-align:center;padding:6px 0}
+  .cal-day{background:#fafafa;border:1px solid var(--linea);border-radius:10px;min-height:82px;padding:7px 8px;cursor:pointer;transition:.12s;position:relative;display:flex;flex-direction:column;gap:3px}
+  .cal-day:hover{border-color:var(--rojo);background:#fff}
+  .cal-day.empty{background:transparent;border:none;cursor:default}
+  .cal-day.quincena{background:var(--rojo-tint);border-color:var(--rojo)}
+  .cal-day.hoy{box-shadow:0 0 0 2px var(--negro)}
+  .cal-day .dn{font-family:'JetBrains Mono';font-weight:700;font-size:13px}
+  .cal-day .dn small{font-weight:400;color:var(--rojo);font-size:9px;display:block;letter-spacing:.03em}
+  .cal-ev{font-size:10.5px;border-radius:5px;padding:1px 5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cal-ev.des{background:#e6e8ec;color:#2f323c}
+  .cal-ev.ven{background:var(--rojo);color:#fff}
+  .cal-ev.pag{background:#e2efe7;color:#226047}
+  .cal-ev.pro{background:#2f323c;color:#fff}
+  .cal-more{font-size:10px;color:var(--gris)}
+
+  .cfg{max-width:560px}
+  @media(max-width:880px){
+    .app{grid-template-columns:1fr}.side{position:static;height:auto;flex-direction:row;flex-wrap:wrap}
+    .side .brand{width:100%}.side .joanmark{display:none}.side .horario{margin:8px 0 0}.side .sep{width:100%}
+    .kpis{grid-template-columns:1fr 1fr}.kpis2{grid-template-columns:1fr 1fr}.main{padding:16px}
+    .two{grid-template-columns:1fr}.up-row{grid-template-columns:1fr}
+    .cal-day{min-height:60px}.cal-ev{display:none}.cal-day .dot{width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:2px}
+    .card>div{overflow-x:auto;-webkit-overflow-scrolling:touch}
+    table{min-width:560px}
+  }
+</style>
+</head>
+<body>
+
+<div class="gate" id="gate">
+  <div class="gate-card"><div class="mk">JO<em>A</em>N</div><div class="tag">te presta</div>
+    <input type="password" id="pinInput" inputmode="numeric" maxlength="6" placeholder="••••" aria-label="PIN de acceso">
+    <button id="pinBtn">Entrar</button><div class="gate-err" id="pinErr"></div></div>
+</div>
+
+<div class="app" id="app" style="display:none">
+  <aside class="side">
+    <div class="brand"><span class="seal">J</span><div class="bt"><div class="l1">Joan te presta</div><div class="l2">CRM</div></div></div>
+    <div class="sep"></div>
+    <button class="navbtn on" data-v="dash"><span class="ic">📊</span> Tablero</button>
+    <button class="navbtn" data-v="cred"><span class="ic">💵</span> Créditos</button>
+    <button class="navbtn" data-v="clientes"><span class="ic">🧑‍🤝‍🧑</span> Clientes</button>
+    <button class="navbtn" data-v="ciclos"><span class="ic">📈</span> Ciclos</button>
+    <button class="navbtn" data-v="cal"><span class="ic">📅</span> Calendario</button>
+    <button class="navbtn" data-v="plantillas"><span class="ic">💬</span> Plantillas</button>
+    <button class="navbtn" data-v="cfg"><span class="ic">⚙️</span> Ajustes</button>
+    <div class="joanmark">JOAN</div>
+    <div class="horario" id="horarioBox"></div>
+  </aside>
+
+  <main class="main">
+
+    <section class="view on" id="v-dash">
+      <div class="ph"><div><h1>Tablero<span class="dot">.</span></h1><div class="sub">Tu negocio y la gestión del día</div></div>
+        <button class="btn btn-rojo" onclick="nuevoCredito()">＋ Nuevo crédito</button></div>
+      <div class="kpis" id="kpis"></div>
+      <div class="kpi-title">📊 Indicadores del negocio</div>
+      <div class="kpis2" id="kpis2"></div>
+      <div class="card"><div class="card-h"><h3>Cola de gestión de hoy</h3><span class="tag">A quién contactar por WhatsApp</span></div><div id="cola"></div></div>
+    </section>
+
+    <section class="view" id="v-cred">
+      <div class="ph"><div><h1>Créditos<span class="dot">.</span></h1><div class="sub">Ciclo quincenal · costo plano sobre el capital · la prórroga cobra ese mismo costo</div></div>
+        <button class="btn btn-rojo" onclick="nuevoCredito()">＋ Nuevo crédito</button></div>
+      <div class="card"><div id="tblCred"></div></div>
+    </section>
+
+    <section class="view" id="v-clientes">
+      <div class="ph"><div><h1>Clientes<span class="dot">.</span></h1><div class="sub">Ficha completa, historial de créditos y ganancia</div></div>
+        <button class="btn btn-ghost" onclick="editarCliente()">＋ Agregar cliente</button></div>
+      <div class="card"><div id="tblClientes"></div></div>
+    </section>
+
+    <section class="view" id="v-ciclos">
+      <div class="ph"><div><h1>Ciclos<span class="dot">.</span></h1><div class="sub">Capital invertido y ganancia por cada quincena</div></div></div>
+      <div class="card"><div id="tblCiclos"></div></div>
+    </section>
+
+    <section class="view" id="v-cal">
+      <div class="ph"><div><h1>Calendario<span class="dot">.</span></h1><div class="sub">Pagos y desembolsos · conéctalo con tu Google Calendar</div></div>
+        <button class="btn btn-ghost" onclick="exportarICS()">⬇ Exportar a Google Calendar (.ics)</button></div>
+      <div class="card"><div class="modal-b">
+        <div class="cal-head"><h2 id="calTitulo"></h2><div class="cal-nav"><button onclick="moverMes(-1)">‹</button><button onclick="irHoyCal()" title="Hoy">•</button><button onclick="moverMes(1)">›</button></div></div>
+        <div class="cal-grid" id="calDow"></div>
+        <div class="cal-grid" id="calGrid" style="margin-top:6px"></div>
+        <div style="margin-top:14px;display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--gris)">
+          <span><span class="cal-ev des" style="display:inline-block">●</span> desembolso</span>
+          <span><span class="cal-ev ven" style="display:inline-block">●</span> vence/cobro</span>
+          <span><span class="cal-ev pag" style="display:inline-block">●</span> pagado</span>
+          <span><span class="cal-ev pro" style="display:inline-block">●</span> prórroga</span>
+          <span>🔴 quincena</span>
+        </div>
+      </div></div>
+    </section>
+
+    <section class="view" id="v-plantillas">
+      <div class="ph"><div><h1>Plantillas<span class="dot">.</span></h1><div class="sub">Mensajes cálidos para enviar por tu WhatsApp personal con un clic</div></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-ghost" onclick="restaurarPlantillas()">↺ Restaurar recomendados</button><button class="btn btn-rojo" onclick="guardarPlantillas()">Guardar</button></div></div>
+      <div class="alerta info">Toca una variable bajo cada mensaje para insertarla. Se reemplazan solas al enviar: <span class="mono">{nombre} {monto} {saldo} {fecha_pago} {dias_mora} {prorroga} {negocio}</span></div>
+      <div id="pltWrap"></div>
+    </section>
+
+    <section class="view" id="v-cfg">
+      <div class="ph"><div><h1>Ajustes<span class="dot">.</span></h1></div></div>
+      <div class="card"><div class="modal-b cfg">
+        <div class="field"><label>Tu nombre / negocio (para los mensajes)</label><input id="cfgNeg"></div>
+        <div class="field"><label>Costo administrativo base (%)</label><input type="number" id="cfgCosto" step="0.5"><div class="help">Plano sobre el capital, sin importar los días. La prórroga cobra este mismo porcentaje.</div></div>
+        <div class="field"><label>Tasa de usura de referencia (% E.A.)</label><input type="number" id="cfgUsura" step="0.01" placeholder="Ej: 28.5"><div class="help">Marca en rojo los créditos cuya E.A. equivalente lo supere. 0 = sin alerta.</div></div>
+        <div class="field"><label>PIN de acceso</label><input type="text" id="cfgPin" maxlength="6"></div>
+        <button class="btn btn-rojo" onclick="guardarCfg()">Guardar ajustes</button>
+        <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--linea);display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-ghost btn-sm" onclick="exportar()">⬇ Respaldo (JSON)</button>
+          <label class="btn btn-ghost btn-sm" style="cursor:pointer">⬆ Importar respaldo<input type="file" accept="application/json" style="display:none" onchange="importar(event)"></label>
+        </div>
+      </div></div>
+    </section>
+
+  </main>
+</div>
+
+<div class="modal" id="modal"><div class="modal-card"><div class="modal-h"><h3 id="mTitle"></h3><button class="x" onclick="cerrarModal()" aria-label="Cerrar" title="Cerrar (Esc)">×</button></div><div class="modal-b" id="mBody"></div></div></div>
+
+<script>
+const KEY='joan_socios_v1';
+const MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const PLANTILLAS_DEF={
+  bienvenida:{t:'Bienvenida · crédito nuevo',x:'Al desembolsar, para agradecer la confianza',m:'¡Hola {nombre}! De corazón, gracias por confiar en {negocio} 🙂 Ya te quedó entregado tu crédito de {monto}. Con calma te recuerdo que tu primera cuota de {saldo} es el {fecha_pago}. Aquí estamos para acompañarte en lo que necesites.'},
+  recordatorio2:{t:'Recordatorio · 2 días antes',x:'Aviso amable antes del vencimiento',m:'Hola {nombre}, ¿cómo va todo? Te escribe {negocio} 🙂 Solo para recordarte con tiempo que tu pago de {saldo} es el {fecha_pago}. Cualquier cosa me cuentas y lo organizamos.'},
+  recordatorio1:{t:'Recordatorio · 1 día antes',x:'El día previo',m:'Hola {nombre}, espero que estés muy bien. Mañana {fecha_pago} es tu pago de {saldo}. Si necesitas algo, me avisas y entre los dos lo cuadramos con gusto.'},
+  venceHoy:{t:'Vence hoy',x:'El día del pago',m:'Hola {nombre}, ¿cómo estás hoy? Te recuerdo que hoy es tu pago de {saldo}. Si no alcanzas a cubrir todo, no te preocupes: puedes dejar la prórroga de {prorroga} y seguimos en la otra quincena. Quedo pendiente para lo que necesites.'},
+  moraTemprana:{t:'Mora temprana · 1 a 5 días',x:'Recién vencido, con apoyo',m:'Hola {nombre}, espero que estés bien. Tu pago de {saldo} quedó pendiente desde el {fecha_pago} y quería saber cómo va todo por allá. ¿Lo coordinamos hoy con calma? Si te sirve, también puedes dejar la prórroga de {prorroga}. Aquí estoy para apoyarte.'},
+  mora:{t:'Mora · 6 días o más',x:'Respetuoso, buscando acuerdo',m:'Hola {nombre}, ¿cómo has estado? Tu obligación de {saldo} sigue pendiente ({dias_mora} días) y de verdad quiero ayudarte a resolverlo. Cuéntame cómo está tu situación y buscamos juntos un acuerdo que te sirva. Lo importante eres tú.'},
+  recibo:{t:'Pago recibido',x:'Confirmación cálida',m:'¡Recibido, {nombre}! Tu pago quedó registrado. De corazón, muchas gracias por tu cumplimiento y por la confianza. Cuando necesites, aquí me tienes 🙂'},
+  prorroga:{t:'Prórroga registrada',x:'Tras dejar la prórroga',m:'Listo {nombre}, ya registré tu prórroga de {prorroga}, no te preocupes por nada. Tu pago de {saldo} pasa tranquilo para la quincena del {fecha_pago}. Gracias por avisarme; cualquier cosa me cuentas.'}
+};
+
+let DB=cargar();
+function cargar(){
+  let d={}; try{ d=JSON.parse(localStorage.getItem(KEY)||'{}'); }catch(e){}
+  d.socios=d.socios||d.clientes||[]; d.prestamos=d.prestamos||[];
+  d.plantillas=Object.assign({},...Object.keys(PLANTILLAS_DEF).map(k=>({[k]:PLANTILLAS_DEF[k].m})),d.plantillas||{});
+  d.config=Object.assign({costoBasePct:20,tasaUsuraEA:0,pin:'1234',negocio:'Joan'},d.config||{});
+  d.contadores=Object.assign({cliente:0,credito:0},d.contadores||{});
+  d.socios.forEach(s=>{ s.gestiones=s.gestiones||[]; s.referencia=s.referencia||{nombre:'',telefono:''}; if(s.whatsappIgual===undefined)s.whatsappIgual=true;
+    if(s.cedulaFrenteFoto===undefined)s.cedulaFrenteFoto=s.cedulaFoto||null; if(s.cedulaReversoFoto===undefined)s.cedulaReversoFoto=null; if(s.selfieFoto===undefined)s.selfieFoto=null;
+    if(s.telefono2===undefined)s.telefono2=''; if(s.notaRiesgo===undefined)s.notaRiesgo=''; if(s.ubicacion===undefined)s.ubicacion=null; });
+  d.prestamos.forEach(p=>{ if(p.cicloActual===undefined)p.cicloActual=p.fechaPago; p.prorrogas=p.prorrogas||[]; p.abonosCapital=p.abonosCapital||[]; p.comprobantes=p.comprobantes||[];
+    if(p.pagado===undefined){ const ab=(p.abonos||[]).reduce((s,a)=>s+a.monto,0); p.pagado=(p.total&&ab>=p.total-0.5)||false; if(p.pagado){p.fechaPagado=p.fechaPagado||isoLocal(new Date());p.cicloPago=p.cicloPago||p.cicloActual;p.gananciaPago=p.gananciaPago||(p.capital*(p.costoPct||20)/100);} } });
+  // Numeración única (no se reasigna nunca; solo se completa la que falte, en orden de creación)
+  d.socios.slice().sort((a,b)=>String(a.id).localeCompare(String(b.id))).forEach(s=>{ if(!s.numero){ d.contadores.cliente++; s.numero=d.contadores.cliente; } });
+  d.prestamos.slice().sort((a,b)=>String(a.id).localeCompare(String(b.id))).forEach(p=>{ if(!p.numero){ d.contadores.credito++; p.numero=d.contadores.credito; } });
+  return d;
+}
+function nextNumCliente(){ DB.contadores.cliente++; return DB.contadores.cliente; }
+function nextNumCredito(){ DB.contadores.credito++; return DB.contadores.credito; }
+function codCliente(s){ return 'CL-'+String(s&&s.numero||0).padStart(4,'0'); }
+function codCredito(p){ return 'CR-'+String(p&&p.numero||0).padStart(4,'0'); }
+function guardar(){ try{ localStorage.setItem(KEY,JSON.stringify(DB)); }catch(e){ alert('Poco espacio en el navegador. Exporta un respaldo y libera espacio (las fotos pesan).'); } }
+
+const COP=n=>'$'+Math.round(n||0).toLocaleString('es-CO');
+function escHTML(s){ return String(s==null?'':s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function isoLocal(d){ const z=new Date(d.getTime()-d.getTimezoneOffset()*60000); return z.toISOString().slice(0,10); }
+function hoy0(){ const d=new Date(); d.setHours(0,0,0,0); return d; }
+function hoyISO(){ return isoLocal(new Date()); }
+function fmtFecha(iso){ if(!iso)return '—'; const d=new Date(iso.length<=10?iso+'T00:00:00':iso); return d.toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'numeric'}); }
+function fmtCorto(iso){ const d=new Date(iso+'T00:00:00'); return d.getDate()+' '+MESES[d.getMonth()].slice(0,3); }
+
+function proximaQuincena(f){ const d=new Date(f+'T00:00:00'),y=d.getFullYear(),m=d.getMonth(); const c=[new Date(y,m,15),new Date(y,m+1,0),new Date(y,m+1,15)]; return isoLocal(c.filter(x=>x>d).sort((a,b)=>a-b)[0]); }
+function quincenaQueAplica(f){ const d=new Date(f+'T00:00:00'),y=d.getFullYear(),m=d.getMonth(); const c=[new Date(y,m,15),new Date(y,m+1,0),new Date(y,m+1,15),new Date(y,m+2,0)]; return isoLocal(c.filter(x=>x>=d).sort((a,b)=>a-b)[0]); }
+function esQuincena(iso){ const d=new Date(iso+'T00:00:00'); const ult=new Date(d.getFullYear(),d.getMonth()+1,0).getDate(); return d.getDate()===15||d.getDate()===ult; }
+function cicloActualGlobal(){ return quincenaQueAplica(hoyISO()); }
+function diasEntre(a,b){ return Math.max(1,Math.round((new Date(b+'T00:00:00')-new Date(a+'T00:00:00'))/86400000)); }
+function eaEquivalente(c,dias){ return (Math.pow(1+c/100,365/dias)-1)*100; }
+function fmtEA(ea){ return ea>=100000?'≥100.000% (extrema)':ea.toLocaleString('es-CO',{maximumFractionDigits:0})+'%'; }
+
+function capitalActual(p){ return Math.max(0,p.capital-(p.abonosCapital||[]).reduce((s,a)=>s+a.monto,0)); }
+function K(p){ return capitalActual(p)*p.costoPct/100; }
+function capitalVigente(p){ return p.pagado?0:capitalActual(p); }
+function totalCiclo(p){ return capitalActual(p)+K(p); }
+function gananciaCobrada(p){ return (p.prorrogas||[]).reduce((s,pr)=>s+pr.monto,0)+(p.pagado?(p.gananciaPago||0):0); }
+function gananciaEsperada(p){ return gananciaCobrada(p)+(p.pagado?0:K(p)); }
+function capitalRecuperadoDe(p){ return p.pagado?p.capital:(p.capital-capitalActual(p)); }
+const PCT=n=>(isFinite(n)?n:0).toLocaleString('es-CO',{maximumFractionDigits:1})+'%';
+
+/* ===== Indicadores globales del negocio (histórico, todos los créditos) ===== */
+function montoTotalInvertido(){ return DB.prestamos.reduce((s,p)=>s+p.capital,0); }
+function gananciaTotalHistorica(){ return DB.prestamos.reduce((s,p)=>s+gananciaCobrada(p),0); }
+function capitalRecuperadoTotal(){ return DB.prestamos.reduce((s,p)=>s+capitalRecuperadoDe(p),0); }
+function ingresosTotales(){ return capitalRecuperadoTotal()+gananciaTotalHistorica(); }
+function gananciaPorProrrogas(){ return DB.prestamos.reduce((s,p)=>s+(p.prorrogas||[]).reduce((t,pr)=>t+pr.monto,0),0); }
+function pctRecuperacionMonto(){ const inv=montoTotalInvertido(); return inv>0?capitalRecuperadoTotal()/inv*100:0; }
+function pctRecuperacionCuentas(){ const tot=DB.prestamos.length,pag=DB.prestamos.filter(p=>p.pagado).length; return tot>0?pag/tot*100:0; }
+function gananciaProyectadaPendiente(){ return DB.prestamos.filter(p=>!p.pagado).reduce((s,p)=>s+K(p),0); }
+function totalProrrogasCliente(s){ return DB.prestamos.filter(p=>p.socioId===s.id).reduce((t,p)=>t+(p.prorrogas||[]).length,0); }
+function riesgoCliente(s){
+  const ps=DB.prestamos.filter(p=>p.socioId===s.id); if(!ps.length)return{cls:'riesgo-nuevo',txt:'Nuevo'};
+  const npr=totalProrrogasCliente(s),ratio=npr/ps.length,enMora=ps.some(p=>estadoPrestamo(p)==='mora'&&diasMora(p)>=6);
+  if(enMora||ratio>0.5)return{cls:'riesgo-alto',txt:'Alto'};
+  if(ratio>0)return{cls:'riesgo-medio',txt:'Medio'};
+  return{cls:'riesgo-bajo',txt:'Bajo'};
+}
+function estadoPrestamo(p){ if(p.pagado)return 'pagado'; const h=hoy0(),v=new Date(p.cicloActual+'T00:00:00');
+  if(v.getTime()===h.getTime())return 'hoy'; if(v<h)return 'mora'; if(diasEntre(hoyISO(),p.cicloActual)<=2)return 'proximo'; return 'al-dia'; }
+function diasMora(p){ const h=hoy0(),v=new Date(p.cicloActual+'T00:00:00'); return Math.max(0,Math.round((h-v)/86400000)); }
+function diasPara(p){ const h=hoy0(),v=new Date(p.cicloActual+'T00:00:00'); return Math.round((v-h)/86400000); }
+const ESTADO_TXT={'al-dia':'Al día','proximo':'Próximo','hoy':'Vence hoy','mora':'En mora','pagado':'Pagado'};
+
+function pascua(y){const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mes=Math.floor((h+l-7*m+114)/31),dia=((h+l-7*m+114)%31)+1;return new Date(y,mes-1,dia);}
+function sigLunes(d){const x=new Date(d),w=x.getDay();if(w!==1)x.setDate(x.getDate()+((8-w)%7||7));return x;}
+let _fc={};
+function festivos(y){ if(_fc[y])return _fc[y]; const set=new Set();
+  [[0,1],[4,1],[6,20],[7,7],[11,8],[11,25]].forEach(([m,d])=>set.add(isoLocal(new Date(y,m,d))));
+  [[0,6],[2,19],[5,29],[7,15],[9,12],[10,1],[10,11]].forEach(([m,d])=>set.add(isoLocal(sigLunes(new Date(y,m,d)))));
+  const p=pascua(y),off=n=>{const x=new Date(p);x.setDate(x.getDate()+n);return x;};
+  set.add(isoLocal(off(-3)));set.add(isoLocal(off(-2)));[43,64,71].forEach(n=>set.add(isoLocal(off(n))));
+  _fc[y]=set; return set; }
+function horarioPermitido(date){ const d=date||new Date(),dia=d.getDay(),h=d.getHours()+d.getMinutes()/60;
+  if(festivos(d.getFullYear()).has(isoLocal(d)))return{ok:false,motivo:'Hoy es festivo'};
+  if(dia===0)return{ok:false,motivo:'Domingo'};
+  if(dia===6)return(h>=8&&h<15)?{ok:true}:{ok:false,motivo:'Sábado solo 8am–3pm'};
+  return(h>=7&&h<19)?{ok:true}:{ok:false,motivo:'L–V solo 7am–7pm'}; }
+function contactadoHoy(s){ return (s.gestiones||[]).some(g=>g.fecha===hoyISO()); }
+
+/* ===== RENDER ===== */
+function render(){ renderHorario(); renderKpis(); renderCola(); renderCred(); renderClientes(); renderCiclos(); renderCalendario(); renderPlantillas(); }
+function renderHorario(){ const r=horarioPermitido(),b=document.getElementById('horarioBox'); b.className='horario '+(r.ok?'ok':'no');
+  b.innerHTML=r.ok?'<b>✓ Horario de cobro</b>Puedes contactar (Ley 2300).':'<b>✗ Fuera de horario</b>'+r.motivo+' (Ley 2300).'; }
+
+function renderKpis(){
+  const act=DB.prestamos.filter(p=>!p.pagado);
+  const capCalle=act.reduce((s,p)=>s+capitalVigente(p),0);
+  const ganTotal=gananciaTotalHistorica();
+  const cg=cicloActualGlobal(),ganCiclo=gananciaDeQuincena(cg),invCiclo=invertidoEnQuincena(cg);
+  const moraA=DB.prestamos.filter(p=>estadoPrestamo(p)==='mora');
+  document.getElementById('kpis').innerHTML=`
+    <div class="kpi"><div class="et">💼 Capital en la calle</div><div class="nm">${COP(capCalle)}</div><div class="x">${act.length} créditos activos</div></div>
+    <div class="kpi gan"><div class="et">💰 Ganancia cobrada (total)</div><div class="nm">${COP(ganTotal)}</div><div class="x">costos + prórrogas</div></div>
+    <div class="kpi gan"><div class="et">📈 Ganancia ciclo actual</div><div class="nm">${COP(ganCiclo)}</div><div class="x">quincena ${fmtCorto(cg)}</div></div>
+    <div class="kpi dark"><div class="et">🏦 Invertido en el ciclo</div><div class="nm">${COP(invCiclo)}</div><div class="x">capital activo en ${fmtCorto(cg)}</div></div>
+    <div class="kpi alert"><div class="et">⚠️ En mora</div><div class="nm">${COP(moraA.reduce((s,p)=>s+totalCiclo(p),0))}</div><div class="x">${moraA.length} vencidos</div></div>`;
+
+  const invTotal=montoTotalInvertido(),ingTotal=ingresosTotales(),ganProrr=gananciaPorProrrogas(),pctMonto=pctRecuperacionMonto(),pctCtas=pctRecuperacionCuentas(),ganProy=gananciaProyectadaPendiente();
+  document.getElementById('kpis2').innerHTML=`
+    <div class="kpi dark"><div class="et">🏦 Monto total invertido</div><div class="nm">${COP(invTotal)}</div><div class="x">histórico · todos los créditos</div></div>
+    <div class="kpi verde"><div class="et">📥 Ingresos totales</div><div class="nm">${COP(ingTotal)}</div><div class="x">capital recuperado + ganancia</div></div>
+    <div class="kpi"><div class="et">🧑‍🤝‍🧑 Clientes registrados</div><div class="nm">${DB.socios.length}</div><div class="x">total en la ficha</div></div>
+    <div class="kpi"><div class="et">📂 Créditos activos</div><div class="nm">${act.length}</div><div class="x">de ${DB.prestamos.length} en total</div></div>
+    <div class="kpi gan"><div class="et">↻ Ganancia por prórrogas</div><div class="nm">${COP(ganProrr)}</div><div class="x">la ganancia de cada prórroga</div></div>
+    <div class="kpi ${pctMonto>=70?'verde':''}"><div class="et">📊 % Recuperación de monto</div><div class="nm">${PCT(pctMonto)}</div><div class="x">capital recuperado / invertido</div></div>
+    <div class="kpi ${pctCtas>=70?'verde':''}"><div class="et">✅ % Recuperación de cuentas</div><div class="nm">${PCT(pctCtas)}</div><div class="x">créditos pagados / total</div></div>
+    <div class="kpi gan"><div class="et">🔮 Ganancia proyectada</div><div class="nm">${COP(ganProy)}</div><div class="x">de créditos aún no pagados, si pagan este ciclo</div></div>`;
+}
+
+function plantillaPara(p){ const e=estadoPrestamo(p);
+  if(e==='mora')return diasMora(p)>=6?'mora':'moraTemprana'; if(e==='hoy')return 'venceHoy';
+  if(e==='proximo')return diasPara(p)>=2?'recordatorio2':'recordatorio1'; return 'venceHoy'; }
+function waNum(s){ return (s.whatsappIgual?s.telefono:(s.whatsappNumero||s.telefono))||''; }
+function aplicarVars(txt,p,s){ return txt
+  .replaceAll('{nombre}',(s.nombre||'').split(' ')[0]||s.nombre||'').replaceAll('{negocio}',DB.config.negocio||'Joan')
+  .replaceAll('{monto}',COP(p?capitalActual(p):0)).replaceAll('{saldo}',COP(p?totalCiclo(p):0))
+  .replaceAll('{prorroga}',COP(p?K(p):0)).replaceAll('{fecha_pago}',p?fmtFecha(p.cicloActual):'')
+  .replaceAll('{dias_mora}',p?String(diasMora(p)):'0'); }
+function waLink(tel,msg){ return 'https://wa.me/57'+String(tel||'').replace(/\D/g,'')+'?text='+encodeURIComponent(msg); }
+
+function renderCola(){
+  const arr=DB.prestamos.filter(p=>['mora','hoy','proximo'].includes(estadoPrestamo(p)))
+    .sort((a,b)=>{const o={mora:0,hoy:1,proximo:2};return o[estadoPrestamo(a)]-o[estadoPrestamo(b)]||new Date(a.cicloActual)-new Date(b.cicloActual);});
+  const c=document.getElementById('cola');
+  if(!arr.length){ c.innerHTML=`<div class="empty"><div class="ic">✅</div><p>Nada por gestionar hoy.</p></div>`; return; }
+  c.innerHTML=`<table><thead><tr><th>Cliente</th><th>A pagar</th><th>Vence</th><th>Estado</th><th></th></tr></thead><tbody>${
+    arr.map(p=>{ const s=DB.socios.find(x=>x.id===p.socioId)||{nombre:p.socioNombre,telefono:p.telefono,gestiones:[]};
+      const est=estadoPrestamo(p),k=plantillaPara(p),dm=diasMora(p),dp=diasPara(p);
+      const cuando=est==='hoy'?'Hoy':est==='mora'?`Hace ${dm}d`:`En ${dp}d`;
+      return `<tr><td><b>${escHTML(s.nombre||p.socioNombre)}</b><div class="muted">${escHTML(waNum(s))}</div></td>
+        <td class="num">${COP(totalCiclo(p))}<div class="muted">prórroga ${COP(K(p))}</div></td>
+        <td>${fmtFecha(p.cicloActual)}<div class="muted">${cuando}</div></td>
+        <td><span class="chip ${est}">${ESTADO_TXT[est]}</span></td>
+        <td style="text-align:right">${contactadoHoy(s)?'<span class="muted">contactado</span> ':''}<button class="btn btn-wa btn-sm" onclick="gestionar('${p.id}','${k}')">💬</button> <button class="btn btn-negro btn-sm" onclick="abrirPago('${p.id}')">Pago</button></td></tr>`;}).join('')}</tbody></table>`;
+}
+
+function renderCred(){
+  const arr=[...DB.prestamos].sort((a,b)=>{const o={mora:0,hoy:1,proximo:2,'al-dia':3,pagado:4};return o[estadoPrestamo(a)]-o[estadoPrestamo(b)]||new Date(a.cicloActual)-new Date(b.cicloActual);});
+  const c=document.getElementById('tblCred'),usura=DB.config.tasaUsuraEA;
+  if(!arr.length){ c.innerHTML=`<div class="empty"><div class="ic">💵</div><p>Sin créditos todavía.<br><span class="muted">Toca “＋ Nuevo crédito” para registrar el primero.</span></p></div>`; return; }
+  const sumCap=arr.reduce((s,p)=>s+capitalActual(p),0),sumAPagar=arr.reduce((s,p)=>s+(p.pagado?0:totalCiclo(p)),0),sumGan=arr.reduce((s,p)=>s+gananciaCobrada(p),0);
+  c.innerHTML=`<table><thead><tr><th>N°</th><th>Cliente</th><th>Capital</th><th>A pagar</th><th>Ganancia</th><th>Desemb. → Quincena</th><th>E.A.</th><th>Estado</th><th></th></tr></thead><tbody>${
+    arr.map(p=>{ const est=estadoPrestamo(p),dias=diasEntre(p.fechaDesembolso,p.cicloActual),ea=eaEquivalente(p.costoPct,dias),sobre=usura>0&&ea>usura,npr=(p.prorrogas||[]).length,s=DB.socios.find(x=>x.id===p.socioId);
+      return `<tr><td class="mono muted">${codCredito(p)}</td><td><b>${escHTML(p.socioNombre)}</b><div class="muted">${s?codCliente(s)+' · ':''}costo ${p.costoPct}%${npr?' · '+npr+' prórr.':''}${(p.comprobantes||[]).length?' · 📎'+p.comprobantes.length:''}</div></td>
+      <td class="num">${COP(capitalActual(p))}</td>
+      <td class="num">${p.pagado?'—':COP(totalCiclo(p))}</td>
+      <td class="gano">${COP(gananciaCobrada(p))}${!p.pagado?'<div class="muted" style="font-weight:400">esp. '+COP(gananciaEsperada(p))+'</div>':''}</td>
+      <td>${fmtFecha(p.fechaDesembolso)} <span class="muted">→</span> ${fmtFecha(p.cicloActual)}<div class="muted">${dias} días</div></td>
+      <td class="${sobre?'ea-bad':'ea-ok'}">${fmtEA(ea)}${sobre?' <span class="warn-ico" title="Supera la usura de referencia">⚠️</span>':''}</td>
+      <td><span class="chip ${est}">${ESTADO_TXT[est]}</span></td>
+      <td style="text-align:right"><button class="btn btn-ghost btn-sm" onclick="verCredito('${p.id}')">Ver</button>${p.pagado?'':` <button class="btn btn-negro btn-sm" onclick="abrirPago('${p.id}')">Pago</button>`}</td></tr>`;}).join('')}</tbody>
+      <tfoot><tr><td colspan="2">Total (${arr.length} créditos)</td><td class="num">${COP(sumCap)}</td><td class="num">${COP(sumAPagar)}</td><td class="num">${COP(sumGan)}</td><td colspan="4"></td></tr></tfoot></table>`;
+}
+
+function renderClientes(){
+  const arr=[...DB.socios].sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||''));
+  const c=document.getElementById('tblClientes');
+  if(!arr.length){ c.innerHTML=`<div class="empty"><div class="ic">🧑‍🤝‍🧑</div><p>Sin clientes aún.<br><span class="muted">Crea uno con “＋ Nuevo crédito” o “＋ Agregar cliente”.</span></p></div>`; return; }
+  c.innerHTML=`<table><thead><tr><th>N°</th><th>Cliente</th><th>Contacto</th><th>Ciudad</th><th>Créditos</th><th>Prórrogas</th><th>Ganancia generada</th><th>Riesgo</th><th></th></tr></thead><tbody>${
+    arr.map(s=>{ const ps=DB.prestamos.filter(p=>p.socioId===s.id),gan=ps.reduce((t,p)=>t+gananciaCobrada(p),0),activos=ps.filter(p=>!p.pagado).length,npr=totalProrrogasCliente(s),r=riesgoCliente(s);
+      return `<tr><td class="mono muted">${codCliente(s)}</td><td><b>${escHTML(s.nombre)}</b><div class="muted">${s.cedula?'CC '+escHTML(s.cedula):''}</div></td>
+      <td>${escHTML(waNum(s))}<div class="muted">${s.whatsappIgual?'es WhatsApp':(s.whatsappNumero?'WA aparte':'cel')}</div></td>
+      <td>${escHTML(s.ciudad||'—')}<div class="muted">${escHTML(s.barrio||'')}${s.ubicacion?` ${s.barrio?'· ':''}<a target="_blank" rel="noopener" href="${mapsUrl(s.ubicacion)}" title="Ver ubicación en el mapa">📍 mapa</a>`:''}</div></td>
+      <td class="num">${ps.length}<div class="muted">${activos} activo${activos!==1?'s':''}</div></td>
+      <td class="num">${npr}</td>
+      <td class="gano">${COP(gan)}</td>
+      <td><span class="chip ${r.cls}">${r.txt}</span></td>
+      <td style="text-align:right"><a class="btn btn-wa btn-sm" target="_blank" rel="noopener" href="${waLink(waNum(s),'')}">WA</a> <button class="btn btn-ghost btn-sm" onclick="verCliente('${s.id}')">Ver</button></td></tr>`;}).join('')}</tbody></table>`;
+}
+
+/* ===== CICLOS ===== */
+function quincenasRelevantes(){
+  if(!DB.prestamos.length)return [cicloActualGlobal()];
+  let fechas=DB.prestamos.map(p=>p.fechaDesembolso).sort(); let qi=quincenaQueAplica(fechas[0]);
+  let fin=DB.prestamos.map(p=>p.cicloActual).sort(); let qf=fin[fin.length-1]; if(new Date(cicloActualGlobal())>new Date(qf))qf=cicloActualGlobal();
+  const out=[]; let cur=qi,guard=0; while(new Date(cur)<=new Date(qf)&&guard<120){ out.push(cur); cur=proximaQuincena(cur); guard++; } return out;
+}
+function gananciaDeQuincena(q){ let g=0; DB.prestamos.forEach(p=>{ (p.prorrogas||[]).forEach(pr=>{if(pr.ciclo===q)g+=pr.monto;}); if(p.pagado&&p.cicloPago===q)g+=(p.gananciaPago||0); }); return g; }
+function invertidoEnQuincena(q){ let inv=0; DB.prestamos.forEach(p=>{ const d=new Date(p.fechaDesembolso)<=new Date(q); const v=p.pagado?new Date(p.cicloPago||p.cicloActual)>=new Date(q):new Date(p.cicloActual)>=new Date(q); if(d&&v)inv+=capitalActual(p); }); return inv; }
+function porCobrarEnQuincena(q){ return DB.prestamos.filter(p=>!p.pagado&&p.cicloActual===q).reduce((s,p)=>s+totalCiclo(p),0); }
+function renderCiclos(){
+  const qs=quincenasRelevantes().reverse(),c=document.getElementById('tblCiclos'),cg=cicloActualGlobal();
+  if(!qs.length){ c.innerHTML=`<div class="empty"><div class="ic">📈</div><p>Sin ciclos todavía.</p></div>`; return; }
+  c.innerHTML=`<table><thead><tr><th>Quincena</th><th>Invertido (capital activo)</th><th>Por cobrar</th><th>Ganancia del ciclo</th><th>Vencen</th></tr></thead><tbody>${
+    qs.map(q=>{ const vencen=DB.prestamos.filter(p=>!p.pagado&&p.cicloActual===q).length,esA=q===cg;
+      return `<tr style="${esA?'background:var(--rojo-tint)':''}"><td><b>${fmtFecha(q)}</b>${esA?' <span class="chip mora">actual</span>':''}</td>
+      <td class="num">${COP(invertidoEnQuincena(q))}</td><td class="num">${COP(porCobrarEnQuincena(q))}</td>
+      <td class="gano">${COP(gananciaDeQuincena(q))}</td><td class="num">${vencen}</td></tr>`;}).join('')}</tbody></table>`;
+}
+
+/* ===== CALENDARIO ===== */
+let calY,calM;
+function eventosDia(iso){ const ev={des:[],ven:[],pag:[],pro:[]};
+  DB.prestamos.forEach(p=>{ if(p.fechaDesembolso===iso)ev.des.push(p); if(!p.pagado&&p.cicloActual===iso)ev.ven.push(p); if(p.pagado&&p.fechaPagado===iso)ev.pag.push(p); (p.prorrogas||[]).forEach(pr=>{if(pr.fecha===iso)ev.pro.push({p,pr});}); }); return ev; }
+function renderCalendario(){
+  if(calY===undefined){ const d=new Date(); calY=d.getFullYear(); calM=d.getMonth(); }
+  document.getElementById('calTitulo').textContent=MESES[calM].charAt(0).toUpperCase()+MESES[calM].slice(1)+' '+calY;
+  document.getElementById('calDow').innerHTML=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'].map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  const primero=new Date(calY,calM,1),inicio=(primero.getDay()+6)%7,dias=new Date(calY,calM+1,0).getDate();
+  let html=''; for(let i=0;i<inicio;i++)html+=`<div class="cal-day empty"></div>`;
+  for(let d=1;d<=dias;d++){ const iso=isoLocal(new Date(calY,calM,d)),ev=eventosDia(iso),q=esQuincena(iso),esHoy=iso===hoyISO();
+    const total=ev.des.length+ev.ven.length+ev.pag.length+ev.pro.length; let evs='';
+    ev.ven.slice(0,2).forEach(p=>evs+=`<div class="cal-ev ven">⏰ ${escHTML(p.socioNombre.split(' ')[0])} ${COP(totalCiclo(p))}</div>`);
+    ev.des.slice(0,1).forEach(p=>evs+=`<div class="cal-ev des">💵 ${escHTML(p.socioNombre.split(' ')[0])}</div>`);
+    ev.pag.slice(0,1).forEach(p=>evs+=`<div class="cal-ev pag">✓ ${escHTML(p.socioNombre.split(' ')[0])}</div>`);
+    ev.pro.slice(0,1).forEach(o=>evs+=`<div class="cal-ev pro">↻ ${escHTML(o.p.socioNombre.split(' ')[0])}</div>`);
+    const dots=`${ev.des.length?'<span class="dot" style="background:var(--gris)"></span>':''}${ev.ven.length?'<span class="dot" style="background:var(--rojo)"></span>':''}${ev.pag.length?'<span class="dot" style="background:var(--verde)"></span>':''}${ev.pro.length?'<span class="dot" style="background:var(--negro-3)"></span>':''}`;
+    html+=`<div class="cal-day ${q?'quincena':''} ${esHoy?'hoy':''}" onclick="verDia('${iso}')"><div class="dn">${d}${q?'<small>quincena</small>':''}</div>${evs}${total>4?`<div class="cal-more">+${total-4} más</div>`:''}<div>${dots}</div></div>`;
+  }
+  document.getElementById('calGrid').innerHTML=html;
+}
+function moverMes(n){ calM+=n; if(calM<0){calM=11;calY--;} if(calM>11){calM=0;calY++;} renderCalendario(); }
+function irHoyCal(){ const d=new Date(); calY=d.getFullYear(); calM=d.getMonth(); renderCalendario(); }
+function gcalUrl(title,iso,details){ const a=iso.replace(/-/g,''),next=isoLocal(new Date(new Date(iso+'T00:00:00').getTime()+86400000)).replace(/-/g,''); return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent(title)+'&dates='+a+'/'+next+'&details='+encodeURIComponent(details||''); }
+function verDia(iso){
+  const ev=eventosDia(iso),total=ev.des.length+ev.ven.length+ev.pag.length+ev.pro.length; let h='';
+  if(!total){ h=`<div class="empty"><div class="ic">🗓️</div><p>Sin movimientos este día.</p></div>`; }
+  else{
+    if(ev.ven.length){ h+=`<div class="sub-h">⏰ Cobros / vencimientos</div>`+ev.ven.map(p=>{const s=DB.socios.find(x=>x.id===p.socioId)||{};return `<div class="info-row"><span class="k">${escHTML(p.socioNombre)}</span><span class="vv"><b>${COP(totalCiclo(p))}</b> · <a target="_blank" href="${gcalUrl('Cobro '+p.socioNombre+' '+COP(totalCiclo(p)),iso,'Prórroga posible: '+COP(K(p)))}">+Google</a> · <a target="_blank" href="${waLink(waNum(s),aplicarVars(DB.plantillas.venceHoy,p,s))}">WA</a></span></div>`;}).join(''); }
+    if(ev.des.length){ h+=`<div class="sub-h">💵 Desembolsos</div>`+ev.des.map(p=>`<div class="info-row"><span class="k">${escHTML(p.socioNombre)}</span><span class="vv"><b>${COP(p.capital)}</b> · <a target="_blank" href="${gcalUrl('Desembolso '+p.socioNombre+' '+COP(p.capital),iso,'')}">+Google</a></span></div>`).join(''); }
+    if(ev.pag.length){ h+=`<div class="sub-h">✓ Pagos recibidos</div>`+ev.pag.map(p=>`<div class="info-row"><span class="k">${escHTML(p.socioNombre)}</span><span class="vv gano">${COP(p.capital)} + ganancia ${COP(p.gananciaPago||0)}</span></div>`).join(''); }
+    if(ev.pro.length){ h+=`<div class="sub-h">↻ Prórrogas</div>`+ev.pro.map(o=>`<div class="info-row"><span class="k">${escHTML(o.p.socioNombre)}</span><span class="vv">+${COP(o.pr.monto)} · pasa a ${fmtFecha(o.p.cicloActual)}</span></div>`).join(''); }
+  }
+  openModal(fmtFecha(iso),h);
+}
+function esc(s){ return String(s).replace(/[\\;,\n]/g,m=>({'\\':'\\\\',';':'\\;',',':'\\,','\n':'\\n'}[m])); }
+function exportarICS(){
+  let ev=''; function add(uid,iso,sum,desc){ const a=iso.replace(/-/g,''),n=isoLocal(new Date(new Date(iso+'T00:00:00').getTime()+86400000)).replace(/-/g,'');
+    ev+='BEGIN:VEVENT\r\nUID:'+uid+'@joancrm\r\nDTSTART;VALUE=DATE:'+a+'\r\nDTEND;VALUE=DATE:'+n+'\r\nSUMMARY:'+esc(sum)+'\r\nDESCRIPTION:'+esc(desc||'')+'\r\nEND:VEVENT\r\n'; }
+  DB.prestamos.forEach(p=>{ add(p.id+'-d',p.fechaDesembolso,'💵 Desembolso '+p.socioNombre+' '+COP(p.capital),'Joan te presta'); if(!p.pagado)add(p.id+'-v',p.cicloActual,'⏰ Cobro '+p.socioNombre+' '+COP(totalCiclo(p)),'Prórroga posible: '+COP(K(p))); });
+  const ics='BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Joan te presta//CRM//ES\r\nCALSCALE:GREGORIAN\r\n'+ev+'END:VCALENDAR';
+  const b=new Blob([ics],{type:'text/calendar'}),a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='joan-te-presta-calendario.ics'; a.click();
+  alert('Listo. En Google Calendar: Configuración → Importar y exportar → Importar, y sube este archivo.');
+}
+
+/* ===== PLANTILLAS ===== */
+const PLT_VARS=['nombre','negocio','monto','saldo','prorroga','fecha_pago','dias_mora'];
+function aplicarVarsDemo(txt){ return (txt||'')
+  .replaceAll('{nombre}','María').replaceAll('{negocio}',DB.config.negocio||'Joan')
+  .replaceAll('{monto}','$400.000').replaceAll('{saldo}','$480.000')
+  .replaceAll('{prorroga}','$80.000').replaceAll('{fecha_pago}','30 de junio de 2026')
+  .replaceAll('{dias_mora}','3'); }
+function renderPlantillas(){
+  document.getElementById('pltWrap').innerHTML=Object.keys(PLANTILLAS_DEF).map(k=>{
+    const val=DB.plantillas[k]!==undefined?DB.plantillas[k]:PLANTILLAS_DEF[k].m, esRec=val===PLANTILLAS_DEF[k].m;
+    return `<div class="plt">
+      <div class="plt-top"><div><h4>${escHTML(PLANTILLAS_DEF[k].t)}</h4><div class="et">${escHTML(PLANTILLAS_DEF[k].x)}</div></div>
+        <button class="btn btn-ghost btn-sm" onclick="restaurarUna('${k}')" ${esRec?'disabled style="opacity:.4;cursor:default"':''} title="Volver al mensaje recomendado">↺ Recomendado</button></div>
+      <textarea data-k="${k}" oninput="previewPlt('${k}')">${escHTML(val)}</textarea>
+      <div class="plt-vars">${PLT_VARS.map(c=>`<button type="button" class="varchip" onclick="insertarVar('${k}','{${c}}')">{${c}}</button>`).join('')}</div>
+      <div class="plt-prev"><span class="pl">Así lo verá el cliente</span><span id="prevtxt_${k}"></span></div></div>`;
+  }).join('');
+  Object.keys(PLANTILLAS_DEF).forEach(previewPlt);
+}
+function previewPlt(k){ const ta=document.querySelector('#pltWrap textarea[data-k="'+k+'"]'), p=document.getElementById('prevtxt_'+k); if(ta&&p)p.textContent=aplicarVarsDemo(ta.value); }
+function insertarVar(k,token){ const ta=document.querySelector('#pltWrap textarea[data-k="'+k+'"]'); if(!ta)return;
+  const s=ta.selectionStart!=null?ta.selectionStart:ta.value.length, e=ta.selectionEnd!=null?ta.selectionEnd:ta.value.length;
+  ta.value=ta.value.slice(0,s)+token+ta.value.slice(e); ta.focus(); const pos=s+token.length; ta.selectionStart=ta.selectionEnd=pos; previewPlt(k); }
+function restaurarUna(k){ if(!confirm('¿Volver al mensaje recomendado para "'+PLANTILLAS_DEF[k].t+'"?\nSe reemplaza tu versión actual de esta plantilla.'))return; DB.plantillas[k]=PLANTILLAS_DEF[k].m; guardar(); renderPlantillas(); }
+function restaurarPlantillas(){ if(!confirm('¿Restaurar TODOS los mensajes recomendados (las versiones nuevas, más cálidas)?\nSe reemplazan tus plantillas actuales. Esto NO afecta clientes ni créditos.'))return; Object.keys(PLANTILLAS_DEF).forEach(k=>DB.plantillas[k]=PLANTILLAS_DEF[k].m); guardar(); renderPlantillas(); alert('Listo. Ahora tus mensajes usan las versiones recomendadas.'); }
+function guardarPlantillas(){ document.querySelectorAll('#pltWrap textarea').forEach(t=>DB.plantillas[t.dataset.k]=t.value); guardar(); renderPlantillas(); alert('Plantillas guardadas.'); }
+
+/* ===== GESTIÓN WhatsApp ===== */
+function gestionar(prestId,plantKey){
+  const p=DB.prestamos.find(x=>x.id===prestId),s=DB.socios.find(x=>x.id===p.socioId),r=horarioPermitido(),yaHoy=contactadoHoy(s);
+  let txt=aplicarVars(DB.plantillas[plantKey]||PLANTILLAS_DEF[plantKey].m,p,s);
+  const ops=Object.keys(PLANTILLAS_DEF).map(k=>`<option value="${k}" ${k===plantKey?'selected':''}>${PLANTILLAS_DEF[k].t}</option>`).join('');
+  let av=''; if(!r.ok)av+=`<div class="alerta warn">⚠️ <b>Fuera de horario (Ley 2300):</b> ${r.motivo}.</div>`; if(yaHoy)av+=`<div class="alerta warn">⚠️ Ya contactaste a este cliente hoy (máx 1/día).</div>`;
+  openModal('Gestionar · '+s.nombre,`${av}
+    <div class="field"><label>Plantilla</label><select id="gPlant" onchange="recalcGestion('${prestId}')">${ops}</select></div>
+    <div class="field"><label>Mensaje (editable)</label><textarea id="gTexto">${txt}</textarea></div>
+    <div class="preview" id="gPrev">${txt}</div>
+    <div class="two" style="margin-top:14px"><a class="btn btn-wa" id="gWa" target="_blank" href="${waLink(waNum(s),txt)}" onclick="marcarGestion('${prestId}','${plantKey}')">💬 Abrir WhatsApp</a><button class="btn btn-ghost" onclick="navigator.clipboard.writeText(document.getElementById('gTexto').value)">Copiar texto</button></div>
+    <p class="muted" style="margin-top:10px">Al abrir, queda registrada la gestión de hoy. Tú presionas enviar.</p>`);
+  document.getElementById('gTexto').addEventListener('input',()=>{const v=document.getElementById('gTexto').value;document.getElementById('gPrev').textContent=v;document.getElementById('gWa').href=waLink(waNum(s),v);});
+}
+function recalcGestion(prestId){ const p=DB.prestamos.find(x=>x.id===prestId),s=DB.socios.find(x=>x.id===p.socioId),k=document.getElementById('gPlant').value,txt=aplicarVars(DB.plantillas[k]||PLANTILLAS_DEF[k].m,p,s);
+  document.getElementById('gTexto').value=txt;document.getElementById('gPrev').textContent=txt;document.getElementById('gWa').href=waLink(waNum(s),txt);document.getElementById('gWa').setAttribute('onclick',`marcarGestion('${prestId}','${k}')`); }
+function marcarGestion(prestId,k){ const p=DB.prestamos.find(x=>x.id===prestId),s=DB.socios.find(x=>x.id===p.socioId); s.gestiones=s.gestiones||[]; s.gestiones.push({fecha:hoyISO(),canal:'whatsapp',plantilla:k}); guardar(); setTimeout(render,300); }
+
+/* ===== IMÁGENES ===== */
+function comprimir(file,max=900,q=0.6){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=e=>{const img=new Image(); img.onload=()=>{let{width:w,height:h}=img; if(w>h&&w>max){h=h*max/w;w=max;}else if(h>=w&&h>max){w=w*max/h;h=max;} const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);res(c.toDataURL('image/jpeg',q));}; img.onerror=rej; img.src=e.target.result;}; r.onerror=rej; r.readAsDataURL(file); }); }
+
+/* ===== CLIENTE: ver / editar ===== */
+let _fotosTmp={frente:null,reverso:null,selfie:null};
+let _ubicTmp=null;
+function mapsUrl(u){ return 'https://www.google.com/maps?q='+u.lat+','+u.lng; }
+function pintarUbic(){ const b=document.getElementById('ubicBox'); if(!b)return;
+  if(_ubicTmp){ b.innerHTML='<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13px"><span class="chip riesgo-bajo">📍 Ubicación guardada</span><a target="_blank" rel="noopener" href="'+mapsUrl(_ubicTmp)+'">Ver en Google Maps</a><span class="muted">±'+Math.round(_ubicTmp.acc||0)+' m · '+fmtFecha(_ubicTmp.fecha)+'</span><a href="#" onclick="quitarUbicacion();return false">quitar</a></div>'; }
+  else { b.innerHTML='<span class="muted" style="font-size:12.5px">Sin ubicación aún. Estando donde el cliente, toca el botón para guardar el punto GPS.</span>'; } }
+function capturarUbicacion(){
+  if(!navigator.geolocation){ alert('Este dispositivo o navegador no permite ubicación GPS.'); return; }
+  const btn=document.getElementById('ubicBtn'); if(btn){ btn.disabled=true; btn.textContent='📍 Buscando señal…'; }
+  navigator.geolocation.getCurrentPosition(
+    pos=>{ _ubicTmp={lat:+pos.coords.latitude.toFixed(6),lng:+pos.coords.longitude.toFixed(6),acc:Math.round(pos.coords.accuracy||0),fecha:hoyISO()};
+      if(btn){ btn.disabled=false; btn.textContent='📍 Actualizar ubicación'; } pintarUbic(); },
+    err=>{ if(btn){ btn.disabled=false; btn.textContent='📍 Guardar ubicación actual (GPS)'; }
+      const m={1:'Permiso de ubicación denegado. Actívalo para esta app en los ajustes del navegador.',2:'No hay señal de ubicación por ahora. Sal a un lugar despejado e intenta de nuevo.',3:'La ubicación tardó demasiado. Intenta otra vez.'};
+      alert(m[err.code]||'No se pudo obtener la ubicación. Recuerda que el GPS y la cámara solo funcionan si abres la app desde su enlace (https), no con doble clic al archivo.'); },
+    {enableHighAccuracy:true,timeout:12000,maximumAge:0}); }
+function quitarUbicacion(){ _ubicTmp=null; pintarUbic(); }
+function verCliente(id){
+  const s=DB.socios.find(x=>x.id===id),ps=DB.prestamos.filter(p=>p.socioId===id),gan=ps.reduce((t,p)=>t+gananciaCobrada(p),0);
+  const activos=ps.filter(p=>!p.pagado),previos=ps.filter(p=>p.pagado);
+  const filaCred=p=>`<div class="info-row"><span class="k">${fmtFecha(p.fechaDesembolso)} · ${COP(p.capital)}</span><span class="vv"><span class="chip ${estadoPrestamo(p)}">${ESTADO_TXT[estadoPrestamo(p)]}</span> <span class="gano">${COP(gananciaCobrada(p))}</span> <a href="#" onclick="event.preventDefault();verCredito('${p.id}')">ver</a></span></div>`;
+  const fila=(k,v)=>v?`<div class="info-row"><span class="k">${k}</span><span class="vv">${escHTML(v)}</span></div>`:'';
+  const vivienda=[s.tipoVivienda,s.numeroVivienda].filter(Boolean).join(' ');
+  const r=riesgoCliente(s),npr=totalProrrogasCliente(s);
+  const fotos=[['Cédula (frente)',s.cedulaFrenteFoto],['Cédula (reverso)',s.cedulaReversoFoto],['Selfie con cédula',s.selfieFoto]].filter(f=>f[1]);
+  const gal=fotos.length?`<div class="sub-h">Fotos de verificación</div><div class="gal">${fotos.map(f=>`<a href="${f[1]}" target="_blank"><img src="${f[1]}"><div class="cap">${f[0]}</div></a>`).join('')}</div>`:'';
+  openModal(codCliente(s)+' · '+s.nombre,`
+    <div class="info-row"><span class="k">Ganancia generada</span><span class="vv gano">${COP(gan)}</span></div>
+    <div class="info-row"><span class="k">Riesgo (sugerido)</span><span class="vv"><span class="chip ${r.cls}">${r.txt}</span> <span class="muted">${npr} prórroga${npr!==1?'s':''} de ${ps.length} crédito${ps.length!==1?'s':''}</span></span></div>
+    ${fila('Celular',waNum(s)+(s.whatsappIgual?' (es WhatsApp)':(s.whatsappNumero?' · WA: '+s.whatsappNumero:'')))}
+    ${fila('Celular 2 (opcional)',s.telefono2)}
+    ${fila('Correo',s.email)} ${fila('Cédula',s.cedula)}
+    ${fila('Llave / transferencia',s.llave)} ${fila('Nequi',s.nequi)}
+    ${fila('Dirección',[s.direccion,vivienda].filter(Boolean).join(', '))}
+    ${fila('Ciudad / barrio',[s.ciudad,s.barrio].filter(Boolean).join(' · '))}
+    ${s.ubicacion?`<div class="info-row"><span class="k">📍 Ubicación GPS</span><span class="vv"><a target="_blank" rel="noopener" href="${mapsUrl(s.ubicacion)}">Ver en Google Maps</a> <span class="muted">±${Math.round(s.ubicacion.acc||0)} m · ${fmtFecha(s.ubicacion.fecha)}</span></span></div>`:''}
+    ${fila('Referencia',s.referencia&&s.referencia.nombre?(s.referencia.nombre+' · '+(s.referencia.telefono||'')):'')}
+    ${fila('Nota de riesgo (manual)',s.notaRiesgo)}
+    ${gal}
+    <div class="sub-h">Créditos · historial</div>
+    ${activos.length?'<div class="muted" style="margin-bottom:6px">Activos</div>'+activos.map(filaCred).join(''):''}
+    ${previos.length?'<div class="muted" style="margin:10px 0 6px">Anteriores</div>'+previos.map(filaCred).join(''):''}
+    ${!ps.length?'<p class="muted">Sin créditos.</p>':''}
+    <div class="two" style="margin-top:18px"><button class="btn btn-rojo" onclick="cerrarModal();nuevoCredito('${s.id}')">＋ Nuevo crédito</button><button class="btn btn-ghost" onclick="editarCliente('${s.id}')">✎ Editar ficha</button></div>`);
+}
+function editarCliente(id){
+  const s=id?DB.socios.find(x=>x.id===id):{};
+  _fotosTmp={frente:s.cedulaFrenteFoto||null,reverso:s.cedulaReversoFoto||null,selfie:s.selfieFoto||null};
+  _ubicTmp=s.ubicacion||null;
+  const v=(k,d='')=>s[k]!==undefined&&s[k]!==null?s[k]:d; const va=(k,d='')=>escHTML(v(k,d)); const ref=s.referencia||{};
+  const upBox=(key,ic,lbl,cap)=>`<label class="up ${_fotosTmp[key]?'ok':''}" id="fot_${key}"><span class="ic">${ic}</span><span class="lbl">${_fotosTmp[key]?'Listo · cambiar':lbl}</span><input type="file" accept="image/*"${cap?' capture="'+cap+'"':''} onchange="subirFoto(event,'${key}')">${_fotosTmp[key]?`<img src="${_fotosTmp[key]}">`:''}</label>`;
+  openModal(id?'Editar ficha · '+codCliente(s):'Agregar cliente',`
+    ${id?`<div class="info-row"><span class="k">N° cliente</span><b class="mono">${codCliente(s)}</b></div>`:'<p class="muted" style="margin-bottom:14px">Se le asignará un número de cliente único al guardar.</p>'}
+    <div class="sub-h">Datos</div>
+    <div class="field"><label>Nombre completo</label><input id="fNombre" value="${va('nombre')}"></div>
+    <div class="two"><div class="field"><label>Celular</label><input id="fTel" inputmode="numeric" value="${v('telefono')}"></div>
+      <div class="field"><label>Celular 2 <span class="muted">(opcional)</span></label><input id="fTel2" inputmode="numeric" value="${v('telefono2')}"></div></div>
+    <div class="field"><label>Cédula</label><input id="fCedula" inputmode="numeric" value="${v('cedula')}"></div>
+    <div class="field"><label>¿El celular es el mismo WhatsApp?</label>
+      <select id="fWaIgual" onchange="document.getElementById('fWaNumWrap').style.display=this.value==='no'?'flex':'none'">
+        <option value="si" ${v('whatsappIgual',true)!==false?'selected':''}>Sí, es el mismo</option>
+        <option value="no" ${v('whatsappIgual',true)===false?'selected':''}>No, tiene otro</option></select></div>
+    <div class="field" id="fWaNumWrap" style="display:${v('whatsappIgual',true)===false?'flex':'none'}"><label>Número de WhatsApp</label><input id="fWaNum" inputmode="numeric" value="${v('whatsappNumero')}"></div>
+    <div class="field"><label>Correo electrónico</label><input id="fEmail" value="${va('email')}"></div>
+    <div class="sub-h">Pagos</div>
+    <div class="two"><div class="field"><label>Llave (transferencia)</label><input id="fLlave" value="${va('llave')}" placeholder="Celular, correo o # de llave"></div>
+      <div class="field"><label>Nequi</label><input id="fNequi" inputmode="numeric" value="${v('nequi')}"></div></div>
+    <div class="sub-h">Ubicación</div>
+    <div class="field"><label>Dirección</label><input id="fDir" value="${va('direccion')}" placeholder="Calle / carrera #"></div>
+    <div class="two"><div class="field"><label>Ciudad</label><input id="fCiudad" value="${va('ciudad')}"></div>
+      <div class="field"><label>Barrio</label><input id="fBarrio" value="${va('barrio')}"></div></div>
+    <div class="two"><div class="field"><label>Casa o apartamento</label><select id="fTipo"><option value="casa" ${v('tipoVivienda')==='casa'?'selected':''}>Casa</option><option value="apartamento" ${v('tipoVivienda')==='apartamento'?'selected':''}>Apartamento</option></select></div>
+      <div class="field"><label>N° de casa / apto</label><input id="fNumViv" value="${va('numeroVivienda')}"></div></div>
+    <div class="sub-h">📍 Ubicación GPS</div>
+    <button type="button" class="btn btn-ghost btn-sm" id="ubicBtn" onclick="capturarUbicacion()">📍 Guardar ubicación actual (GPS)</button>
+    <div id="ubicBox" style="margin-top:10px"></div>
+    <div class="help" style="margin-top:6px">Tócalo cuando estés donde el cliente para guardar el punto en el mapa. Necesita permiso de ubicación y abrir la app desde su enlace (https).</div>
+    <div class="sub-h">Referencia</div>
+    <div class="two"><div class="field"><label>Nombre</label><input id="fRefN" value="${escHTML(ref.nombre||'')}"></div>
+      <div class="field"><label>Teléfono</label><input id="fRefT" inputmode="numeric" value="${ref.telefono||''}"></div></div>
+    <div class="sub-h">Verificación de identidad</div>
+    <div class="up-row">${upBox('frente','🪪','Cédula (frente)')}${upBox('reverso','🪪','Cédula (reverso)')}${upBox('selfie','🤳','Selfie con cédula','user')}</div>
+    <div class="help" style="margin-top:6px">En el celular, al tocar una foto puedes <b>tomarla con la cámara</b> o elegir una de la galería.</div>
+    <div class="sub-h">Riesgo</div>
+    <div class="field"><label>Nota de riesgo / puntuación manual <span class="muted">(opcional, solo para ti)</span></label><textarea id="fNotaRiesgo" placeholder="Ej: buen pagador, subir cupo / ha pedido 2 prórrogas, bajar cupo">${va('notaRiesgo')}</textarea></div>
+    <button class="btn btn-rojo" style="margin-top:8px" onclick="guardarCliente('${id||''}')">${id?'Guardar cambios':'Crear cliente'}</button>`);
+  pintarUbic();
+}
+async function subirFoto(e,key){ const f=e.target.files[0]; if(!f)return; try{ _fotosTmp[key]=await comprimir(f); const box=document.getElementById('fot_'+key); box.classList.add('ok'); let img=box.querySelector('img'); if(!img){img=document.createElement('img');box.appendChild(img);} img.src=_fotosTmp[key]; box.querySelector('.lbl').textContent='Listo · cambiar'; }catch(err){ alert('No pude procesar la imagen.'); } }
+function gv(id){ const el=document.getElementById(id); return el?el.value.trim():''; }
+function guardarCliente(id){
+  const nombre=gv('fNombre'); if(!nombre){ alert('Falta el nombre.'); return; }
+  const datos={ nombre, telefono:gv('fTel'), telefono2:gv('fTel2'), cedula:gv('fCedula'), whatsappIgual:gv('fWaIgual')!=='no', whatsappNumero:gv('fWaNum'),
+    email:gv('fEmail'), llave:gv('fLlave'), nequi:gv('fNequi'), direccion:gv('fDir'), ciudad:gv('fCiudad'), barrio:gv('fBarrio'),
+    tipoVivienda:gv('fTipo'), numeroVivienda:gv('fNumViv'), referencia:{nombre:gv('fRefN'),telefono:gv('fRefT')}, notaRiesgo:gv('fNotaRiesgo'),
+    cedulaFrenteFoto:_fotosTmp.frente, cedulaReversoFoto:_fotosTmp.reverso, selfieFoto:_fotosTmp.selfie, ubicacion:_ubicTmp };
+  if(id){ Object.assign(DB.socios.find(x=>x.id===id),datos); } else { DB.socios.push(Object.assign({id:'C'+Date.now(),numero:nextNumCliente(),gestiones:[],fechaRegistro:new Date().toISOString()},datos)); }
+  _fotosTmp={frente:null,reverso:null,selfie:null}; _ubicTmp=null; guardar(); cerrarModal(); render(); irA('clientes');
+}
+
+/* ===== CRÉDITO: nuevo (con pegar de WhatsApp) ===== */
+function nuevoCredito(preId){
+  const pre=preId?DB.socios.find(x=>x.id===preId):null;
+  openModal(pre?'Nuevo crédito · '+codCliente(pre)+' '+pre.nombre:'Nuevo crédito',`
+    <div class="sub-h">Pega el mensaje de WhatsApp (opcional)</div>
+    <textarea class="pastebox" id="qPaste" placeholder="Ej:&#10;Hola Joan, soy Carlos Rincón 311 245 7788&#10;correo carlos@gmail.com&#10;Necesito 400.000"></textarea>
+    <button class="btn btn-negro btn-sm" style="margin-top:10px" onclick="parsearPegado()">Leer y prellenar</button>
+    <div id="qParsed" style="margin-top:12px;display:none;font-size:13px;background:#fafafa;border:1px solid var(--linea);border-radius:10px;padding:12px"></div>
+    <div class="sub-h">Datos del crédito</div>
+    <div class="field"><label>Nombre del cliente</label><input id="qNombre" value="${pre?pre.nombre:''}"></div>
+    <div class="two"><div class="field"><label>Celular</label><input id="qTel" inputmode="numeric" value="${pre?(pre.telefono||''):''}"></div>
+      <div class="field"><label>Correo <span class="muted">(opcional)</span></label><input id="qEmail" value="${pre?(pre.email||''):''}"></div></div>
+    <div class="two"><div class="field"><label>Capital a desembolsar</label><input id="qCap" type="number" inputmode="numeric" placeholder="$" oninput="calcRapido()"></div>
+      <div class="field"><label>Costo (%)</label><input id="qCosto" type="number" step="0.5" value="${DB.config.costoBasePct}" oninput="calcRapido()"></div></div>
+    <div class="field"><label>Fecha de desembolso</label><input id="qFecha" type="date" value="${hoyISO()}" oninput="calcRapido()"></div>
+    <div class="field"><label>Próxima quincena de pago <span class="muted">(opcional — para clientes que ya venían de antes)</span></label><input id="qCiclo" type="date" oninput="calcRapido()"><div class="help">Déjalo vacío y lo calculo solo desde la fecha de desembolso.</div></div>
+    <div class="calc" id="qCalc"></div>
+    <button class="btn btn-rojo" onclick="guardarRapido()">Registrar crédito</button>`);
+  calcRapido();
+}
+function parsearPegado(){
+  const t=document.getElementById('qPaste').value; if(!t.trim())return;
+  const cleaned=t.replace(/[^\d+]/g,' '),tm=cleaned.match(/(?:\+?57)?\s*3\d{2}\s*\d{3}\s*\d{4}/),tel=tm?tm[0].replace(/\D/g,'').replace(/^57/,'').slice(-10):'';
+  const em=t.match(/[\w.+-]+@[\w-]+\.[\w.-]+/),email=em?em[0]:'';
+  const tokens=[...t.matchAll(/\$?\s?(\d[\d.,]*\d|\d)/g)].map(m=>m[1]); let cands=[];
+  for(const tok of tokens){ const sep=/[.,]\d{3}/.test(tok),dig=tok.replace(/[.,]/g,''),val=Number(dig);
+    if(!val)continue; if(tel&&(dig===tel||dig.includes(tel)))continue; if(/^3\d{9}$/.test(dig))continue; if(val<1000||val>50000000)continue; cands.push({v:val,sep}); }
+  const cs=cands.filter(c=>c.sep),pool=cs.length?cs:cands,monto=pool.length?Math.max(...pool.map(c=>c.v)):'';
+  let nombre=''; for(const l of t.split('\n').map(x=>x.trim()).filter(Boolean)){ const limpio=l.replace(/(hola|buenas|buenos dias|soy|me llamo|joan|correo|cel|celular)/gi,'').replace(/[\d+@].*/,'').replace(/[^\wáéíóúñ\s]/gi,'').trim();
+    if(limpio.split(' ').filter(w=>w.length>1).length>=1&&limpio.length>2&&limpio.length<40){ nombre=limpio.replace(/\s{2,}/g,' ').trim(); break; } }
+  if(nombre)document.getElementById('qNombre').value=nombre; if(tel)document.getElementById('qTel').value=tel; if(email)document.getElementById('qEmail').value=email; if(monto)document.getElementById('qCap').value=monto;
+  const pr=document.getElementById('qParsed'); pr.style.display='block';
+  pr.innerHTML=`<b>Leí:</b> ${nombre||'<i>nombre?</i>'} · ${tel||'<i>cel?</i>'} · ${email||'—'} · ${monto?COP(monto):'<i>monto?</i>'}`;
+  calcRapido();
+}
+function calcRapido(){
+  const cap=Number(gv('qCap'))||0,costo=Number(gv('qCosto'))||0,f=gv('qFecha'),ovr=gv('qCiclo'),c=document.getElementById('qCalc'); if(!c)return;
+  if(!f||!cap){ c.innerHTML='<span class="muted" style="font-size:12.5px">Completa capital y fecha.</span>'; return; }
+  const pago=ovr||quincenaQueAplica(f),dias=diasEntre(f,pago),k=cap*costo/100,total=cap+k,ea=eaEquivalente(costo,dias),usura=DB.config.tasaUsuraEA,sobre=usura>0&&ea>usura;
+  c.innerHTML=`<div class="calc-row"><span>Ganancia (costo ${costo}%)</span><span class="v gano">${COP(k)}</span></div>
+    <div class="calc-row"><span>Total a pagar</span><span class="v">${COP(total)}</span></div>
+    <div class="calc-row"><span>Vence (quincena)</span><span class="v">${fmtFecha(pago)} (${dias}d)</span></div>
+    <div class="calc-row"><span>E.A. equivalente</span><span class="v ${sobre?'ea-bad':''}">${fmtEA(ea)}</span></div>
+    ${sobre?`<div style="color:var(--rojo);font-size:12px;margin-top:5px">⚠️ Supera la usura de referencia (${usura}%).</div>`:''}`;
+}
+function guardarRapido(){
+  const nombre=gv('qNombre'),tel=gv('qTel'),cap=Number(gv('qCap'))||0,costo=Number(gv('qCosto'))||DB.config.costoBasePct,f=gv('qFecha'),ovr=gv('qCiclo');
+  if(!nombre||!tel){ alert('Pon al menos nombre y celular.'); return; } if(cap<=0){ alert('Pon el capital.'); return; }
+  let s=DB.socios.find(x=>tel&&(x.telefono||'').replace(/\D/g,'').slice(-10)===tel.replace(/\D/g,'').slice(-10));
+  if(!s){ s={id:'C'+Date.now(),numero:nextNumCliente(),nombre,telefono:tel,email:gv('qEmail'),whatsappIgual:true,referencia:{nombre:'',telefono:''},gestiones:[],fechaRegistro:new Date().toISOString()}; DB.socios.push(s); }
+  else if(gv('qEmail')&&!s.email)s.email=gv('qEmail');
+  const p={ id:'P'+Date.now(),numero:nextNumCredito(),socioId:s.id,socioNombre:s.nombre,telefono:s.telefono,capital:cap,costoPct:costo,fechaDesembolso:f,cicloActual:ovr||quincenaQueAplica(f),prorrogas:[],abonosCapital:[],comprobantes:[],pagado:false,fechaCreacion:new Date().toISOString() };
+  DB.prestamos.push(p);
+  guardar(); cerrarModal(); render(); irA('cred');
+  if(confirm('✓ Crédito '+codCredito(p)+' registrado para '+s.nombre+' ('+codCliente(s)+').\n\n¿Enviar mensaje de bienvenida por WhatsApp?')) gestionar(p.id,'bienvenida');
+}
+
+/* ===== VER CRÉDITO + comprobantes ===== */
+function verCredito(id){
+  const p=DB.prestamos.find(x=>x.id===id),s=DB.socios.find(x=>x.id===p.socioId)||{},est=estadoPrestamo(p);
+  const pr=(p.prorrogas||[]).map(x=>`<div class="info-row"><span class="k">${fmtFecha(x.fecha)}</span><span class="vv">prórroga ${COP(x.monto)} → pasó a ${fmtFecha(proximaQuincena(x.ciclo))}</span></div>`).join('');
+  const comps=(p.comprobantes||[]);
+  const gal=comps.length?`<div class="gal">${comps.map(c=>`<a href="${c.foto}" target="_blank"><img src="${c.foto}"><div class="cap">${({pago:'Pago',prorroga:'Prórroga',abono:'Abono'}[c.tipo]||'Comprob.')} ${COP(c.monto)}<br>${fmtFecha(c.fecha)}</div></a>`).join('')}</div>`:'<p class="muted">Sin comprobantes aún.</p>';
+  openModal('Crédito '+codCredito(p)+' · '+p.socioNombre,`
+    <div class="info-row"><span class="k">N° crédito</span><b class="mono">${codCredito(p)}</b></div>
+    <div class="info-row"><span class="k">N° cliente</span><b class="mono">${s.numero?codCliente(s):'—'}</b></div>
+    <div class="info-row"><span class="k">Estado</span><span class="vv"><span class="chip ${est}">${ESTADO_TXT[est]}</span></span></div>
+    <div class="info-row"><span class="k">Capital</span><b>${COP(capitalActual(p))}</b></div>
+    <div class="info-row"><span class="k">Costo / ganancia (${p.costoPct}%)</span><span class="vv gano">${COP(K(p))}</span></div>
+    <div class="info-row"><span class="k">${p.pagado?'Ganancia cobrada':'Total para saldar'}</span><b>${p.pagado?COP(gananciaCobrada(p)):COP(totalCiclo(p))}</b></div>
+    <div class="info-row"><span class="k">Desembolso</span><b>${fmtFecha(p.fechaDesembolso)}</b></div>
+    <div class="info-row"><span class="k">${p.pagado?'Pagado el':'Vence (quincena)'}</span><b>${p.pagado?fmtFecha(p.fechaPagado):fmtFecha(p.cicloActual)}</b></div>
+    ${pr?`<div class="sub-h">Prórrogas</div>${pr}`:''}
+    <div class="sub-h">Comprobantes de pago</div>${gal}
+    <div class="two" style="margin-top:18px">${p.pagado?'<span></span>':`<button class="btn btn-rojo" onclick="abrirPago('${p.id}')">Registrar cobro / prórroga</button>`}<button class="btn btn-ghost" onclick="verCliente('${s.id}')">Ver cliente</button></div>`);
+}
+
+/* ===== PAGO / PRÓRROGA / COMPROBANTE ===== */
+let _compTmp=null;
+function abrirPago(id){
+  _compTmp=null; const p=DB.prestamos.find(x=>x.id===id);
+  openModal('Cobro · '+p.socioNombre,`
+    <div class="info-row"><span class="k">Capital</span><b>${COP(capitalActual(p))}</b></div>
+    <div class="info-row"><span class="k">Costo del ciclo (${p.costoPct}%)</span><b>${COP(K(p))}</b></div>
+    <div class="info-row"><span class="k">Total para saldar</span><b style="color:var(--rojo)">${COP(totalCiclo(p))}</b></div>
+    <div class="info-row"><span class="k">Vence</span><b>${fmtFecha(p.cicloActual)}</b></div>
+    ${(p.prorrogas||[]).length?`<div class="muted" style="margin-top:8px">Prórrogas: ${p.prorrogas.length} · ganancia acumulada ${COP(gananciaCobrada(p))}</div>`:''}
+    <div class="sub-h">Comprobante (opcional)</div>
+    <label class="up ${_compTmp?'ok':''}" id="compBox"><span class="ic">📎</span><span class="lbl">Subir foto del comprobante</span><input type="file" accept="image/*" onchange="subirComprobante(event)"></label>
+    <div class="alerta info" style="margin-top:14px">Si no puede pagar todo, registra una <b>prórroga</b>: paga ${COP(K(p))} (el ${p.costoPct}%) y el capital pasa a la quincena del <b>${fmtFecha(proximaQuincena(p.cicloActual))}</b>.</div>
+    <div class="two"><button class="btn btn-rojo" onclick="pagarTotal('${p.id}')">✓ Pagó todo (${COP(totalCiclo(p))})</button><button class="btn btn-negro" onclick="registrarProrroga('${p.id}')">↻ Prórroga (${COP(K(p))})</button></div>
+    <div class="sub-h">Abono parcial a capital (opcional)</div>
+    <div class="field"><input id="abCap" type="number" inputmode="numeric" placeholder="$ que abona al capital"></div>
+    <button class="btn btn-ghost btn-sm" onclick="abonarCapital('${p.id}')">Aplicar abono a capital</button>`);
+}
+async function subirComprobante(e){ const f=e.target.files[0]; if(!f)return; try{ _compTmp=await comprimir(f); const box=document.getElementById('compBox'); box.classList.add('ok'); let img=box.querySelector('img'); if(!img){img=document.createElement('img');box.appendChild(img);} img.src=_compTmp; box.querySelector('.lbl').textContent='Comprobante listo'; }catch(err){ alert('No pude procesar la imagen.'); } }
+function addComp(p,tipo,monto){ if(_compTmp){ p.comprobantes=p.comprobantes||[]; p.comprobantes.push({fecha:hoyISO(),tipo,monto,foto:_compTmp}); _compTmp=null; } }
+function pagarTotal(id){ const p=DB.prestamos.find(x=>x.id===id); const tot=totalCiclo(p); p.pagado=true; p.fechaPagado=hoyISO(); p.cicloPago=p.cicloActual; p.gananciaPago=K(p); addComp(p,'pago',tot); guardar(); cerrarModal(); render();
+  const s=DB.socios.find(x=>x.id===p.socioId); if(s&&confirm('¡Pago completo! ¿Enviar recibo por WhatsApp?'))gestionar(id,'recibo'); }
+function registrarProrroga(id){ const p=DB.prestamos.find(x=>x.id===id),k=K(p); if(!confirm(`Registrar prórroga de ${COP(k)} y pasar el pago a ${fmtFecha(proximaQuincena(p.cicloActual))}?`))return;
+  p.prorrogas=p.prorrogas||[]; p.prorrogas.push({fecha:hoyISO(),ciclo:p.cicloActual,monto:k}); addComp(p,'prorroga',k); p.cicloActual=proximaQuincena(p.cicloActual); guardar(); cerrarModal(); render();
+  const s=DB.socios.find(x=>x.id===p.socioId); if(s&&confirm('Prórroga registrada. ¿Avisar por WhatsApp?'))gestionar(id,'prorroga'); }
+function abonarCapital(id){ const p=DB.prestamos.find(x=>x.id===id),m=Number(document.getElementById('abCap').value)||0; if(m<=0){ alert('Monto inválido.'); return; }
+  if(m>=capitalActual(p)){ if(confirm('Ese abono cubre todo el capital. ¿Marcar como pagado el ciclo completo?')){ pagarTotal(id); return; } }
+  p.abonosCapital=p.abonosCapital||[]; p.abonosCapital.push({fecha:hoyISO(),monto:m}); addComp(p,'abono',m); guardar(); abrirPago(id); render(); }
+
+/* ===== CONFIG ===== */
+function pintarCfg(){ document.getElementById('cfgNeg').value=DB.config.negocio; document.getElementById('cfgCosto').value=DB.config.costoBasePct; document.getElementById('cfgUsura').value=DB.config.tasaUsuraEA||''; document.getElementById('cfgPin').value=DB.config.pin; }
+function guardarCfg(){ DB.config.negocio=gv('cfgNeg')||'Joan'; DB.config.costoBasePct=Number(gv('cfgCosto'))||20; DB.config.tasaUsuraEA=Number(gv('cfgUsura'))||0; DB.config.pin=gv('cfgPin')||'1234'; guardar(); render(); alert('Ajustes guardados.'); }
+function exportar(){ const b=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'}),a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='respaldo-joan-te-presta.json'; a.click(); }
+function importar(e){ const f=e.target.files[0]; if(!f)return; const inp=e.target; const r=new FileReader();
+  r.onload=()=>{ try{ const d=JSON.parse(r.result); const socios=d.socios||d.clientes, prest=d.prestamos;
+    if(!Array.isArray(socios)&&!Array.isArray(prest)){ alert('Ese archivo no parece un respaldo de Joan te presta.'); inp.value=''; return; }
+    const nS=(socios||[]).length, nP=(prest||[]).length;
+    if(!confirm('Esto REEMPLAZA todos los datos actuales por el respaldo:\n• '+nS+' cliente(s)\n• '+nP+' crédito(s)\n\n¿Continuar? Si no está seguro, primero exporte un respaldo del estado actual.')){ inp.value=''; return; }
+    localStorage.setItem(KEY,JSON.stringify(d)); DB=cargar(); render(); alert('Respaldo importado: '+nS+' cliente(s) y '+nP+' crédito(s).');
+  }catch(err){ alert('Archivo inválido.'); } finally { inp.value=''; } }; r.readAsText(f); }
+
+/* ===== NAV / MODAL / PIN ===== */
+const modal=document.getElementById('modal');
+function cerrarModal(){ modal.classList.remove('on'); }
+function openModal(t,h){ document.getElementById('mTitle').textContent=t; document.getElementById('mBody').innerHTML=h; modal.classList.add('on'); modal.querySelector('.modal-card').scrollTop=0; }
+modal.addEventListener('click',e=>{ if(e.target===modal)cerrarModal(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&modal.classList.contains('on'))cerrarModal(); });
+function irA(v){ document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('on',b.dataset.v===v)); document.querySelectorAll('.view').forEach(s=>s.classList.toggle('on',s.id==='v-'+v));
+  if(v==='cfg')pintarCfg(); if(v==='plantillas')renderPlantillas(); if(v==='cal')renderCalendario(); }
+document.querySelectorAll('.navbtn').forEach(b=>b.addEventListener('click',()=>irA(b.dataset.v)));
+function entrar(){ if(document.getElementById('pinInput').value===DB.config.pin){ document.getElementById('gate').style.display='none'; document.getElementById('app').style.display='grid'; render(); } else document.getElementById('pinErr').textContent='PIN incorrecto.'; }
+document.getElementById('pinBtn').addEventListener('click',entrar);
+document.getElementById('pinInput').addEventListener('keydown',e=>{ if(e.key==='Enter')entrar(); });
+document.getElementById('pinInput').focus();
+</script>
+<script>
+if('serviceWorker' in navigator && location.protocol.indexOf('http')===0){
+  window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
+}
+</script>
+</body>
+</html>
