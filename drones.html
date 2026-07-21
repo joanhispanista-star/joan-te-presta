@@ -428,7 +428,7 @@
   <!-- ===== MENÚ PRINCIPAL ===== -->
   <div class="overlay on" id="menu">
     <div class="card">
-      <div class="brand"><div class="seal">◈</div><div><div class="l1">DRONES DE COMBATE</div><div class="l2">Simulador táctico · v0.8.2</div></div></div>
+      <div class="brand"><div class="seal">◈</div><div><div class="l1">DRONES DE COMBATE</div><div class="l2">Simulador táctico · v0.8.3</div></div></div>
       <div class="title">DRONES DE COMBATE</div>
       <div class="subtitle">Simulador de <b>drones terrestres y aéreos</b> no tripulados. Sensores <b>térmico y nocturno</b>, <b>enlace por línea de vista</b>, terreno <b>real del planeta</b>, día/noche y clima. Núcleo abierto para seguir sumando sistemas. <span style="color:var(--gris-2)">por Joan</span></div>
 
@@ -503,7 +503,7 @@
       <div id="tab-help" style="display:none">
         <div class="h-sec">UGV terrestre (tanque‑dron)</div>
         <div class="kbd-help">
-          <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> conducir</span>
+          <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> o <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> conducir</span>
           <span><b>Ratón</b> apuntar la torreta</span>
           <span><b>Clic izq</b> / <kbd>Espacio</kbd> disparar cañón</span>
           <span><b>Clic der</b> / <kbd>E</kbd> 2ª arma</span>
@@ -527,7 +527,7 @@
         <div class="h-sec">Flota de drones (garaje) y escuadrón IA</div>
         <div class="subtitle" style="margin:0 0 8px">En el <b>Garaje</b> eliges tu dron: <b>Reconocimiento</b>, <b>Ataque/kamikaze</b>, <b>Fibra óptica</b> (inmune a jamming, sin pérdida de señal, largo alcance), <b>Larga distancia</b> (gran altura, cámara 360°), <b>Marítimo</b>, <b>Submarino</b> e <b>Híbrido</b> (vuela y se sumerge) — estos brillan en el mapa <b>naval</b>. La tecla <kbd>C</kbd> alterna la cámara del dron: <b>FPV / 360° / Cenital</b>. También eliges tu <b>escuadrón de compañeros IA</b> (Veterano o Élite) que pelean a tu lado.</div>
         <div class="h-sec">👁️ Apuntar con la mirada (webcam)</div>
-        <div class="subtitle" style="margin:0 0 8px">Toca <b>👁️ MIRADA</b> (o <kbd>M</kbd>): la cámara lee <b>hacia dónde miras</b> y la <b>torreta/cámara del dron apunta allá</b>. <b>Tu cara NO se muestra</b> (privacidad); solo un pequeño indicador de que te sigue. Mira al frente al activarla para que se <b>centre</b> — luego <b>⊙ Centrar</b> (<kbd>G</kbd>) recalibra y <b>⇄ Invertir</b> (<kbd>H</kbd>) voltea el sentido. Necesita <b>permiso de cámara</b> y estar <b>publicado (HTTPS)</b>.</div>
+        <div class="subtitle" style="margin:0 0 8px">Toca <b>👁️ MIRADA</b> (o <kbd>M</kbd>): <b>gira la cabeza y el cañón sigue girando</b> hacia ese lado (sin tope — control por velocidad); vuelve la cabeza al frente y se detiene. En el <b>computador</b> además <b>sigue tus ojos</b> (iris) para más precisión. <b>Tu cara NO se muestra</b> (privacidad); solo un indicador. Mira al frente al activarla para <b>centrar</b> — <b>⊙ Centrar</b> (<kbd>G</kbd>) recalibra, <b>⇄ Invertir</b> (<kbd>H</kbd>) voltea el sentido. Necesita <b>permiso de cámara</b> y estar <b>publicado (HTTPS)</b>.</div>
         <div class="h-sec">En el celular</div>
         <div class="subtitle" style="margin:0">Palanca IZQ = conducir/volar y girar · palanca DER = apuntar (o subir/bajar el dron). Botones a los lados para disparar, sensor, cámara y 💥 kamikaze. Juega en horizontal.</div>
       </div>
@@ -1736,7 +1736,7 @@ addEventListener('keydown',e=>{ keys[e.code]=true;
   if(e.code==='KeyG' && gaze.ready){ calibrateGaze(); }
   if(e.code==='KeyH' && gaze.ready){ gaze.invertYaw=!gaze.invertYaw; feed('Mirada '+(gaze.invertYaw?'normal':'invertida')); }
   if(e.code==='KeyB' && playing && mode==='drone'){ drone.acro=!drone.acro; feed('Vuelo: '+(drone.acro?'ACRO (manual)':'ÁNGULO (auto-nivel)')); updateChips(); }
-  if(['Space','KeyW','KeyA','KeyS','KeyD'].includes(e.code)) e.preventDefault();
+  if(['Space','KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)) e.preventDefault();
 });
 addEventListener('keyup',e=>{ keys[e.code]=false; });
 
@@ -1802,7 +1802,8 @@ function enableGyro(){
    ===================================================================== */
 const gaze={ on:false, ready:false, loading:false, active:false, detected:false,
   video:null, stream:null, model:null, yaw:0, pitch:0, baseYaw:0, basePitch:0,
-  calibViewYaw:0, calibViewPitch:-0.12, sens:2.2, invertYaw:false, lastT:0 };
+  eyeRawX:0, eyeRawY:0, baseEyeX:0, baseEyeY:0, hasEye:false,
+  calibViewPitch:-0.12, rate:3.6, pitchGain:1.3, eyeGain:0.6, invertYaw:false, lastT:0 };
 const _gm4=new THREE.Matrix4(), _ge=new THREE.Euler();
 function gazeStatus(txt, cls){ const el=$('gazeState'); if(el){ el.textContent='👁️ '+txt; el.className=cls||''; } }
 async function toggleGaze(){
@@ -1841,30 +1842,48 @@ function disableGaze(){
 }
 function calibrateGaze(){ if(!gaze.ready) return;
   gaze.baseYaw=gaze.yaw; gaze.basePitch=gaze.pitch;
-  gaze.calibViewYaw=player.view.yaw; gaze.calibViewPitch=player.view.pitch;
-  gaze.active=true; feed('👁️ Mirada centrada — apunta con la cabeza','good'); }
+  gaze.baseEyeX=gaze.eyeRawX; gaze.baseEyeY=gaze.eyeRawY;
+  gaze.calibViewPitch=player.view.pitch;
+  gaze.active=true; feed('👁️ Centrado — gira la cabeza y el cañón sigue girando','good'); }
 function detectGaze(){
   if(!gaze.ready || !gaze.video || gaze.video.readyState<2) return;
   const t=performance.now(); if(t-gaze.lastT<45) return; gaze.lastT=t;
   try{
     const res=gaze.model.detectForVideo(gaze.video, t);
+    let ok=false;
+    // pose de la CABEZA
     if(res && res.facialTransformationMatrixes && res.facialTransformationMatrixes.length){
       _gm4.fromArray(res.facialTransformationMatrixes[0].data); _ge.setFromRotationMatrix(_gm4,'YXZ');
-      gaze.yaw=_ge.y; gaze.pitch=_ge.x; gaze.detected=true; gazeStatus('Siguiendo','');
-    } else { gaze.detected=false; gazeStatus('Sin rostro','no'); }
+      gaze.yaw=_ge.y; gaze.pitch=_ge.x; ok=true;
+    }
+    // seguimiento FINO de los OJOS (iris) — más preciso en el PC
+    const lm = res && res.faceLandmarks && res.faceLandmarks[0];
+    if(lm && lm.length>=478){
+      const lOut=lm[33], lIn=lm[133], lIris=lm[468], lTop=lm[159], lBot=lm[145];
+      const rOut=lm[263], rIn=lm[362], rIris=lm[473], rTop=lm[386], rBot=lm[374];
+      const lw=Math.abs(lOut.x-lIn.x)/2||0.01, rw=Math.abs(rOut.x-rIn.x)/2||0.01;
+      const lh=Math.abs(lTop.y-lBot.y)/2||0.01, rh=Math.abs(rTop.y-rBot.y)/2||0.01;
+      const ex=((lIris.x-(lOut.x+lIn.x)/2)/lw + (rIris.x-(rOut.x+rIn.x)/2)/rw)/2;
+      const ey=((lIris.y-(lTop.y+lBot.y)/2)/lh + (rIris.y-(rTop.y+rBot.y)/2)/rh)/2;
+      if(isFinite(ex)&&isFinite(ey)){ gaze.eyeRawX=gaze.eyeRawX*0.55+ex*0.45; gaze.eyeRawY=gaze.eyeRawY*0.55+ey*0.45; gaze.hasEye=true; ok=true; }
+    }
+    gaze.detected=ok; gazeStatus(ok?(gaze.hasEye?'Siguiendo ojos':'Siguiendo'):'Sin rostro', ok?'':'no');
   }catch(e){ gaze.detected=false; }
 }
-function gazeAim(){
-  const dy=(gaze.yaw-gaze.baseYaw)*(gaze.invertYaw?-1:1)*gaze.sens;
-  const dp=(gaze.pitch-gaze.basePitch)*gaze.sens*0.9;
-  return { yaw: gaze.calibViewYaw + clamp(dy,-1.5,1.5), pitch: clamp(gaze.calibViewPitch - dp, -0.6, 0.4) };
+/* desplazamiento total (cabeza + ojos) respecto al centro calibrado */
+function gazeOffset(){
+  const hy=(gaze.yaw-gaze.baseYaw), hp=(gaze.pitch-gaze.basePitch);
+  const ex=gaze.hasEye?(gaze.eyeRawX-gaze.baseEyeX)*gaze.eyeGain:0;
+  const ey=gaze.hasEye?(gaze.eyeRawY-gaze.baseEyeY)*gaze.eyeGain:0;
+  return { yaw:hy+ex, pitch:hp+ey };
 }
 
 /* lee la intención del jugador (unificado) */
 function readInput(dt){
   const inp={ moveF:0, moveT:0, dyaw:0, dpitch:0, dr_yaw:0, dr_pitch:0, dr_roll:0, fire:false, sec:false, up:false, down:false, boost:false };
   // teclado (casco)
-  inp.moveF=(keys.KeyW?1:0)-(keys.KeyS?1:0); inp.moveT=(keys.KeyD?1:0)-(keys.KeyA?1:0);
+  inp.moveF=((keys.KeyW||keys.ArrowUp)?1:0)-((keys.KeyS||keys.ArrowDown)?1:0);
+  inp.moveT=((keys.KeyD||keys.ArrowRight)?1:0)-((keys.KeyA||keys.ArrowLeft)?1:0);
   if(keys.KeyE) inp.sec=true;
   if(keys.ShiftLeft||keys.ShiftRight){ if(mode==='tank') inp.boost=true; else inp.down=true; }
   if(keys.Space){ if(mode==='drone') inp.up=true; else inp.fire=true; }
@@ -1908,10 +1927,14 @@ function readInput(dt){
 function updatePlayer(dt, inp){
   // vista libre (torreta en tanque, cámara 360° en dron)
   player.view.yaw+=inp.dyaw||0; player.view.pitch=clamp(player.view.pitch+(inp.dpitch||0),-0.7,0.5);
-  // apuntar con la mirada: la pose de la cabeza guía la torreta/cámara
-  if(gaze.active && gaze.detected){ const g=gazeAim();
-    player.view.yaw=damp(player.view.yaw, g.yaw, 8, dt);
-    player.view.pitch=damp(player.view.pitch, g.pitch, 8, dt); }
+  // apuntar con la mirada: TASA de giro (gira mientras la cabeza esté girada, sin tope) + pitch proporcional
+  if(gaze.active && gaze.detected){
+    const o=gazeOffset(), dz=0.035;
+    const sy=Math.sign(o.yaw)*Math.max(0,Math.abs(o.yaw)-dz);
+    player.view.yaw += (gaze.invertYaw?-1:1)*sy*gaze.rate*dt;
+    const pTarget=clamp(gaze.calibViewPitch - o.pitch*gaze.pitchGain, -0.55, 0.4);
+    player.view.pitch=damp(player.view.pitch, pTarget, 7, dt);
+  }
   if(mode==='tank'){
     const mob=1-dmg.movilidad*0.6;
     // pendiente en la dirección de marcha (afecta tracción)
@@ -2253,7 +2276,7 @@ function deployMission(m){
   if(IS_TOUCH) $('touch').classList.add('on');
   $('reticle').classList.add('on');
   updateChips(); updateObjText();
-  if(gaze.active){ gaze.calibViewYaw=player.view.yaw; gaze.calibViewPitch=player.view.pitch; } // reancla la mirada
+  if(gaze.active){ gaze.calibViewPitch=player.view.pitch; } // reancla el pitch de la mirada
   playing=true; paused=false; checkRotate();
 }
 function startMission(idx){
@@ -2931,6 +2954,9 @@ if(location.search.indexOf('dbg')>=0) window.DRONES={
   setLoadout:(slot,id)=>{ const l=currentLoadout(); l[slot]=id; store.loadout=l; return l; },
   terrH:(x,z)=>+terrainHeight(x,z).toFixed(2),
   waterY:()=>(water&&water.visible)?water.position.y:null,
+  simGaze:(headYaw,headPitch)=>{ gaze.active=true; gaze.detected=true; gaze.ready=true; gaze.hasEye=false;
+    gaze.baseYaw=0; gaze.basePitch=0; gaze.yaw=headYaw||0; gaze.pitch=headPitch||0; return true; },
+  viewYaw:()=>+player.view.yaw.toFixed(3),
   postfx:()=>({bloom:useComposer, phys:physReady}),
   phys:()=>({ready:physReady, bodies:physBodies.length, barrels:physBodies.filter(p=>p.explosive).length}),
   barrelY:()=>{ const b=physBodies.find(p=>p.explosive); return b?{x:+b.body.position.x.toFixed(1),y:+b.body.position.y.toFixed(2),z:+b.body.position.z.toFixed(1),terr:+terrainHeight(b.body.position.x,b.body.position.z).toFixed(2)}:null; },
