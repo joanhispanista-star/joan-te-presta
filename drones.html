@@ -146,7 +146,7 @@
     mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3px));pointer-events:none}
   /* botones izquierda (cámara / dron) */
   .tleft{position:absolute;left:calc(var(--sa-l) + 4px);bottom:calc(var(--sa-b) + 150px);z-index:9;
-    display:flex;flex-direction:column;gap:10px;pointer-events:none}
+    display:flex;flex-flow:row wrap;gap:10px;width:116px;pointer-events:none}
 
   /* ===== OVERLAYS / MENÚS ===== */
   .overlay{position:fixed;inset:0;z-index:20;display:none;place-items:center;padding:16px;overflow:auto;
@@ -322,7 +322,7 @@
   .cz-in{flex:1;min-width:0;background:var(--panel-2);border:1.5px solid var(--linea);color:#fff;border-radius:10px;padding:12px;font-size:14px;font-weight:600;font-family:inherit}
   .cz-in:focus{outline:none;border-color:var(--hud)}
   /* apuntar con la mirada (webcam) */
-  #gazeBox{position:fixed;left:var(--sa-l);top:calc(var(--sa-t) + 96px);z-index:9;width:104px;display:none;pointer-events:none}
+  #gazeBox{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--sa-b) + 6px);z-index:9;width:104px;display:none;pointer-events:none}
   #gazeBox.on{display:block}
   #gazeCam{width:104px;height:78px;border-radius:9px;object-fit:cover;transform:scaleX(-1);background:#000;
     border:1px solid rgba(63,240,192,.5);box-shadow:0 6px 18px -8px #000}
@@ -426,7 +426,7 @@
   <!-- ===== MENÚ PRINCIPAL ===== -->
   <div class="overlay on" id="menu">
     <div class="card">
-      <div class="brand"><div class="seal">◈</div><div><div class="l1">DRONES DE COMBATE</div><div class="l2">Simulador táctico · v0.8</div></div></div>
+      <div class="brand"><div class="seal">◈</div><div><div class="l1">DRONES DE COMBATE</div><div class="l2">Simulador táctico · v0.8.1</div></div></div>
       <div class="title">DRONES DE COMBATE</div>
       <div class="subtitle">Simulador de <b>drones terrestres y aéreos</b> no tripulados. Sensores <b>térmico y nocturno</b>, <b>enlace por línea de vista</b>, terreno <b>real del planeta</b>, día/noche y clima. Núcleo abierto para seguir sumando sistemas. <span style="color:var(--gris-2)">por Joan</span></div>
 
@@ -1798,7 +1798,7 @@ function enableGyro(){
    ===================================================================== */
 const gaze={ on:false, ready:false, loading:false, active:false, detected:false,
   video:null, stream:null, model:null, yaw:0, pitch:0, baseYaw:0, basePitch:0,
-  calibViewYaw:0, calibViewPitch:-0.12, sens:2.2, invertYaw:true, lastT:0 };
+  calibViewYaw:0, calibViewPitch:-0.12, sens:2.2, invertYaw:false, lastT:0 };
 const _gm4=new THREE.Matrix4(), _ge=new THREE.Euler();
 function gazeStatus(txt, cls){ const el=$('gazeState'); if(el){ el.textContent=txt; el.className=cls||''; } }
 async function toggleGaze(){
@@ -2036,8 +2036,7 @@ function armKamikaze(){
 function toggleDrone(){
   if(mode==='tank'){
     if(!drone.active) deployDrone();
-    mode='drone'; feed('Dron aéreo · ENLACE ACTIVO','good');
-    $('btnUp').style.display=IS_TOUCH?'grid':'none'; $('btnDown').style.display=IS_TOUCH?'grid':'none';
+    mode='drone'; feed('Dron aéreo · ENLACE ACTIVO — palanca izq. sube/baja','good');
     if(IS_TOUCH) enableGyro();
   } else {
     mode='tank'; feed('Control · UGV terrestre');
