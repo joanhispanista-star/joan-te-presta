@@ -322,11 +322,12 @@
   .cz-in{flex:1;min-width:0;background:var(--panel-2);border:1.5px solid var(--linea);color:#fff;border-radius:10px;padding:12px;font-size:14px;font-weight:600;font-family:inherit}
   .cz-in:focus{outline:none;border-color:var(--hud)}
   /* apuntar con la mirada (webcam) */
-  #gazeBox{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--sa-b) + 6px);z-index:9;width:104px;display:none;pointer-events:none}
+  #gazeBox{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--sa-b) + 6px);z-index:9;display:none;pointer-events:none;
+    background:rgba(8,10,14,.6);border:1px solid var(--linea);border-radius:11px;padding:6px 10px}
   #gazeBox.on{display:block}
-  #gazeCam{width:104px;height:78px;border-radius:9px;object-fit:cover;transform:scaleX(-1);background:#000;
-    border:1px solid rgba(63,240,192,.5);box-shadow:0 6px 18px -8px #000}
-  #gazeState{font-size:9px;font-weight:800;letter-spacing:.12em;color:var(--hud);text-align:center;margin-top:3px;text-transform:uppercase}
+  /* la webcam NUNCA se muestra (privacidad): 2px invisible, solo para que el modelo la analice */
+  #gazeCam{position:absolute;left:0;bottom:0;width:2px;height:2px;opacity:.01;pointer-events:none}
+  #gazeState{font-size:10px;font-weight:800;letter-spacing:.1em;color:var(--hud);text-align:center;text-transform:uppercase}
   #gazeState.no{color:var(--rojo-2)}
   #gazeState.wait{color:var(--ambar)}
   #gazeBtns{display:flex;gap:4px;margin-top:4px}
@@ -400,6 +401,7 @@
     <div class="tbuts">
       <button class="tbtn" id="btnFire"><div class="ring"></div><span class="ic">🔥</span>DISPARAR</button>
       <button class="tbtn sec" id="btnSec"><div class="ring"></div><span class="ic">🚀</span>2ª ARMA</button>
+      <button class="tbtn sec" id="btnKmk" style="display:none;background:rgba(216,30,44,.32);border-color:rgba(255,59,70,.9)"><span class="ic">💥</span>KAMIKAZE</button>
     </div>
     <div class="tleft">
       <button class="tbtn util" id="btnDrone"><span class="ic">🚁</span>DRON</button>
@@ -426,7 +428,7 @@
   <!-- ===== MENÚ PRINCIPAL ===== -->
   <div class="overlay on" id="menu">
     <div class="card">
-      <div class="brand"><div class="seal">◈</div><div><div class="l1">DRONES DE COMBATE</div><div class="l2">Simulador táctico · v0.8.1</div></div></div>
+      <div class="brand"><div class="seal">◈</div><div><div class="l1">DRONES DE COMBATE</div><div class="l2">Simulador táctico · v0.8.2</div></div></div>
       <div class="title">DRONES DE COMBATE</div>
       <div class="subtitle">Simulador de <b>drones terrestres y aéreos</b> no tripulados. Sensores <b>térmico y nocturno</b>, <b>enlace por línea de vista</b>, terreno <b>real del planeta</b>, día/noche y clima. Núcleo abierto para seguir sumando sistemas. <span style="color:var(--gris-2)">por Joan</span></div>
 
@@ -513,13 +515,11 @@
         </div>
         <div class="h-sec">Dron aéreo · munición merodeadora</div>
         <div class="kbd-help">
-          <span><kbd>W</kbd><kbd>S</kbd> adelante/atrás</span>
-          <span><kbd>A</kbd><kbd>D</kbd> girar</span>
+          <span><b>Móvil:</b> palanca IZQ vuela y gira · palanca DER sube/baja</span>
+          <span><kbd>W</kbd><kbd>S</kbd> adelante/atrás · <kbd>A</kbd><kbd>D</kbd> girar</span>
           <span><kbd>Espacio</kbd> subir · <kbd>Shift</kbd> bajar</span>
-          <span><b>Clic</b> soltar carga / marcar</span>
-          <span><kbd>K</kbd> armar kamikaze (dron de ataque)</span>
-          <span><b>Disparar armado</b> = picado y detonación</span>
-          <span><kbd>B</kbd> modo de vuelo: Ángulo (auto‑nivel) / Acro (manual, FPV real)</span>
+          <span><b>Clic</b> / DISPARAR: soltar carga o marcar</span>
+          <span>💥 <b>KAMIKAZE</b> (botón) o <kbd>K</kbd> = picar y explotar</span>
           <span><b>Barriles rojos</b> explotan en cadena — física real</span>
         </div>
         <div class="h-sec">Sistemas realistas</div>
@@ -527,9 +527,9 @@
         <div class="h-sec">Flota de drones (garaje) y escuadrón IA</div>
         <div class="subtitle" style="margin:0 0 8px">En el <b>Garaje</b> eliges tu dron: <b>Reconocimiento</b>, <b>Ataque/kamikaze</b>, <b>Fibra óptica</b> (inmune a jamming, sin pérdida de señal, largo alcance), <b>Larga distancia</b> (gran altura, cámara 360°), <b>Marítimo</b>, <b>Submarino</b> e <b>Híbrido</b> (vuela y se sumerge) — estos brillan en el mapa <b>naval</b>. La tecla <kbd>C</kbd> alterna la cámara del dron: <b>FPV / 360° / Cenital</b>. También eliges tu <b>escuadrón de compañeros IA</b> (Veterano o Élite) que pelean a tu lado.</div>
         <div class="h-sec">👁️ Apuntar con la mirada (webcam)</div>
-        <div class="subtitle" style="margin:0 0 8px">Toca <b>👁️ MIRADA</b> (o <kbd>B</kbd>): la cámara lee <b>hacia dónde miras</b> (la pose de tu cabeza) y la <b>torreta/cámara del dron apunta allá</b>. Mira al frente al activarla para que se <b>centre</b> — luego usa <b>⊙ Centrar</b> (o <kbd>G</kbd>) cuando quieras recalibrar, y <b>⇄ Invertir</b> (o <kbd>H</kbd>) si apunta al lado contrario. Necesita <b>permiso de cámara</b> y estar <b>publicado (HTTPS)</b> — no funciona abriendo el archivo local.</div>
+        <div class="subtitle" style="margin:0 0 8px">Toca <b>👁️ MIRADA</b> (o <kbd>M</kbd>): la cámara lee <b>hacia dónde miras</b> y la <b>torreta/cámara del dron apunta allá</b>. <b>Tu cara NO se muestra</b> (privacidad); solo un pequeño indicador de que te sigue. Mira al frente al activarla para que se <b>centre</b> — luego <b>⊙ Centrar</b> (<kbd>G</kbd>) recalibra y <b>⇄ Invertir</b> (<kbd>H</kbd>) voltea el sentido. Necesita <b>permiso de cámara</b> y estar <b>publicado (HTTPS)</b>.</div>
         <div class="h-sec">En el celular</div>
-        <div class="subtitle" style="margin:0">Palancas en pantalla + botón de sensor. El dron aéreo se pilota <b>inclinando el teléfono</b> (giroscopio): tócalo para dar permiso. Mantén pulsado <b>DRON</b> para armar el kamikaze. Juega en horizontal.</div>
+        <div class="subtitle" style="margin:0">Palanca IZQ = conducir/volar y girar · palanca DER = apuntar (o subir/bajar el dron). Botones a los lados para disparar, sensor, cámara y 💥 kamikaze. Juega en horizontal.</div>
       </div>
 
       <div class="foot">Cada archivo funciona solo. Guarda tu progreso en este navegador. <a id="resetProg">Borrar progreso</a></div>
@@ -1732,7 +1732,7 @@ addEventListener('keydown',e=>{ keys[e.code]=true;
   if(e.code==='KeyF' && playing){ toggleDrone(); }
   if(e.code==='KeyV' && playing){ cycleSensor(); }
   if(e.code==='KeyK' && playing){ armKamikaze(); }
-  if(e.code==='KeyB'){ toggleGaze(); }
+  if(e.code==='KeyM'){ toggleGaze(); }
   if(e.code==='KeyG' && gaze.ready){ calibrateGaze(); }
   if(e.code==='KeyH' && gaze.ready){ gaze.invertYaw=!gaze.invertYaw; feed('Mirada '+(gaze.invertYaw?'normal':'invertida')); }
   if(e.code==='KeyB' && playing && mode==='drone'){ drone.acro=!drone.acro; feed('Vuelo: '+(drone.acro?'ACRO (manual)':'ÁNGULO (auto-nivel)')); updateChips(); }
@@ -1766,8 +1766,12 @@ function bindStick(zoneId, stickId, slot){
     stick.style.opacity='0'; knob.style.transform='translate(-50%,-50%)'; };
   ['pointerup','pointercancel','lostpointercapture'].forEach(ev=>zone.addEventListener(ev,end));
   function move(e){ let dx=e.clientX-TS[slot].ox, dy=e.clientY-TS[slot].oy; const d=Math.hypot(dx,dy);
-    if(d>SR){ dx=dx/d*SR; dy=dy/d*SR; } TS[slot].dx=dx/SR; TS[slot].dy=dy/SR; TS[slot].mag=Math.min(d,SR)/SR;
-    knob.style.transform='translate(calc(-50% + '+dx+'px),calc(-50% + '+dy+'px))'; }
+    if(d>SR){ dx=dx/d*SR; dy=dy/d*SR; }
+    knob.style.transform='translate(calc(-50% + '+dx+'px),calc(-50% + '+dy+'px))';
+    // zona muerta + reescalado suave: un toque leve no mueve, y sube progresivo
+    let nx=dx/SR, ny=dy/SR; const mag=Math.hypot(nx,ny), DZ=0.15;
+    if(mag<DZ){ nx=0; ny=0; } else { const s=((mag-DZ)/(1-DZ))/mag; nx*=s; ny*=s; }
+    TS[slot].dx=nx; TS[slot].dy=ny; TS[slot].mag=mag<DZ?0:(mag-DZ)/(1-DZ); }
 }
 
 /* botones táctiles */
@@ -1800,7 +1804,7 @@ const gaze={ on:false, ready:false, loading:false, active:false, detected:false,
   video:null, stream:null, model:null, yaw:0, pitch:0, baseYaw:0, basePitch:0,
   calibViewYaw:0, calibViewPitch:-0.12, sens:2.2, invertYaw:false, lastT:0 };
 const _gm4=new THREE.Matrix4(), _ge=new THREE.Euler();
-function gazeStatus(txt, cls){ const el=$('gazeState'); if(el){ el.textContent=txt; el.className=cls||''; } }
+function gazeStatus(txt, cls){ const el=$('gazeState'); if(el){ el.textContent='👁️ '+txt; el.className=cls||''; } }
 async function toggleGaze(){
   if(gaze.on || gaze.loading){ disableGaze(); return; }
   gaze.loading=true; $('gazeBox').classList.add('on'); gazeStatus('Cámara…','wait');
@@ -1872,15 +1876,13 @@ function readInput(dt){
   if(IS_TOUCH){
     if(mode==='tank'){
       inp.moveF += -TS.L.dy; inp.moveT += TS.L.dx;
-      inp.dyaw += -TS.R.dx*2.4*dt; inp.dpitch += -TS.R.dy*1.8*dt;
+      inp.dyaw += -TS.R.dx*1.5*dt; inp.dpitch += -TS.R.dy*1.1*dt;   // apuntado menos sensible
     } else {
-      // dron: L = subir/bajar + giro, R = adelante/lados (o giroscopio)
-      if(TS.L.dy<-0.3||T.up) inp.up=true; if(TS.L.dy>0.3||T.down) inp.down=true;
-      inp.dr_yaw += TS.L.dx;
-      if(droneCam===1){ // 360°: el stick derecho mira alrededor (no controla el alabeo)
-        inp.dyaw += -TS.R.dx*2.4*dt; inp.dpitch += -TS.R.dy*1.8*dt;
-      } else { inp.dr_pitch += -TS.R.dy; inp.dr_roll += TS.R.dx; }
-      if(gyro.on && gyro.base){ inp.dr_pitch += clamp(-(gyro.beta-gyro.base.b)/35,-1,1); inp.dr_roll += clamp((gyro.gamma-gyro.base.g)/35,-1,1); }
+      // DRON simplificado: palanca IZQ = adelante/atrás + girar · palanca DER = subir/bajar
+      inp.dr_pitch += -TS.L.dy;
+      inp.dr_yaw   += TS.L.dx;
+      if(TS.R.dy<-0.28) inp.up=true; else if(TS.R.dy>0.28) inp.down=true;
+      if(droneCam===1) inp.dyaw += -TS.R.dx*1.5*dt;                 // en 360°, der = mirar alrededor
     }
     if(T.fire) inp.fire=true; if(T.sec) inp.sec=true;
   }
@@ -2028,16 +2030,15 @@ function deployDrone(){
 }
 function armKamikaze(){
   if(mode!=='drone'||!drone.active) return;
-  if(!stats.drone.armed){ feed('El dron recon no lleva carga kamikaze'); return; }
-  drone.kamikaze=!drone.kamikaze;
-  feed(drone.kamikaze?'⚠ MUNICIÓN MERODEADORA ARMADA':'Kamikaze desarmado', drone.kamikaze?'bad':'');
-  updateChips();
+  if(!stats.drone.armed){ feed('Este dron no lleva carga — usa Ataque, Fibra o Híbrido'); return; }
+  if(drone.diving) return;
+  drone.kamikaze=true; drone.diving=true;   // un toque = pica en picado y detona al impactar
+  feed('💥 ¡PICADO KAMIKAZE!','bad'); updateChips();
 }
 function toggleDrone(){
   if(mode==='tank'){
     if(!drone.active) deployDrone();
-    mode='drone'; feed('Dron aéreo · ENLACE ACTIVO — palanca izq. sube/baja','good');
-    if(IS_TOUCH) enableGyro();
+    mode='drone'; feed('Dron aéreo · IZQ vuela/gira, DER sube/baja','good');
   } else {
     mode='tank'; feed('Control · UGV terrestre');
     $('btnUp').style.display='none'; $('btnDown').style.display='none';
@@ -2058,9 +2059,8 @@ function updateDrone(dt, inp){
   drone.batt=clamp(drone.batt - dt*0.018*(1+(inp.up?0.6:0)), 0, 1);
   const power = drone.batt>0.04 ? 1 : 0.3;
   // kamikaze: al disparar, se compromete al picado
-  if(drone.kamikaze && inp.fire) drone.diving=true;
-  // yaw
-  drone.yaw -= (inp.dr_yaw||0)*2.2*dt;
+  // yaw — mismo sentido que el tanque (derecha = gira a la derecha)
+  drone.yaw += (inp.dr_yaw||0)*2.0*dt;
   // inclinación -> aceleración. Dos modos FPV:
   const inPitch=clamp(inp.dr_pitch||0,-1,1), inRoll=clamp(inp.dr_roll||0,-1,1);
   if(drone.acro){ // ACRO: control por tasa, la actitud se mantiene (FPV manual real)
@@ -2544,6 +2544,10 @@ function updateChips(){
   $('chipWeap').textContent=w;
   $('chipWeap').className='chip '+((mode==='drone'&&drone.kamikaze)?'warn':'');
   $('reticle').classList.toggle('on', mode==='tank' && camMode!==2);
+  // botón KAMIKAZE (solo en dron con carga) · 2ª arma solo en tanque
+  const droneArmed = mode==='drone' && drone.active && stats.drone.armed;
+  if($('btnKmk')) $('btnKmk').style.display = droneArmed?'grid':'none';
+  if($('btnSec')) $('btnSec').style.display = (mode==='drone')?'none':'grid';
 }
 const radarCtx=$('radar').getContext('2d');
 function drawRadar(){
@@ -2845,9 +2849,8 @@ function wireUI(){
   $('btnGaze').onclick=()=>toggleGaze();
   $('gazeCal').onclick=(e)=>{ e.stopPropagation(); calibrateGaze(); };
   $('gazeInv').onclick=(e)=>{ e.stopPropagation(); gaze.invertYaw=!gaze.invertYaw; feed('Mirada '+(gaze.invertYaw?'normal':'invertida')); };
-  // toque largo en el botón del dron = armar/desarmar kamikaze
-  let dHold=null; $('btnDrone').addEventListener('pointerdown',()=>{ dHold=setTimeout(()=>{ if(playing&&mode==='drone')armKamikaze(); }, 550); });
-  ['pointerup','pointercancel','pointerleave'].forEach(ev=>$('btnDrone').addEventListener(ev,()=>{ if(dHold){clearTimeout(dHold);dHold=null;} }));
+  // botón KAMIKAZE (un toque = picado y detonación)
+  $('btnKmk').addEventListener('pointerdown',e=>{ e.preventDefault(); if(playing) armKamikaze(); });
   // mando
   $('btnHost').onclick=()=>{ $('hostBox').style.display='block'; $('joinBox').style.display='none'; remoteHost(); };
   $('btnJoin').onclick=()=>{ $('joinBox').style.display='block'; $('hostBox').style.display='none'; };
