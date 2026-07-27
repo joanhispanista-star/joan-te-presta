@@ -322,6 +322,11 @@
   #linkWarn{position:fixed;left:50%;top:calc(var(--sa-t) + 46px);transform:translateX(-50%);z-index:8;pointer-events:none;
     font-size:12px;font-weight:900;letter-spacing:.14em;color:var(--rojo-2);text-align:center;display:none;text-shadow:0 1px 6px #000}
   #linkWarn.on{display:block;animation:blink .5s infinite}
+  #mouseHint{position:fixed;left:50%;bottom:calc(var(--sa-b) + 74px);transform:translateX(-50%);z-index:8;
+    pointer-events:none;display:none;font-size:12.5px;font-weight:700;color:#dfe6ee;white-space:nowrap;
+    background:rgba(8,10,14,.72);border:1px solid var(--linea);border-radius:10px;padding:7px 14px}
+  #mouseHint.on{display:block}
+  #mouseHint b{color:var(--hud)}
   /* selector de condiciones (menú) */
   #condBar{display:none;gap:8px;margin-bottom:12px;flex-wrap:wrap}
   #condBar .cond{flex:1;min-width:150px}
@@ -383,6 +388,7 @@
     </div>
 
     <div id="linkWarn">⚠ ENLACE DÉBIL</div>
+    <div id="mouseHint">🖱️ Haz <b>clic</b> para apuntar con el ratón · luego <b>clic = disparo</b></div>
 
     <div id="feed"></div>
     <div id="centerMsg"></div>
@@ -442,7 +448,7 @@
   <!-- ===== MENÚ PRINCIPAL ===== -->
   <div class="overlay on" id="menu">
     <div class="card">
-      <div class="brand"><div class="seal">◈</div><div><div class="l1">DRONES DE COMBATE</div><div class="l2">Simulador táctico · v0.14</div></div></div>
+      <div class="brand"><div class="seal">◈</div><div><div class="l1">DRONES DE COMBATE</div><div class="l2">Simulador táctico · v0.15</div></div></div>
       <div class="title">DRONES DE COMBATE</div>
       <div class="subtitle">Simulador de <b>drones terrestres y aéreos</b> no tripulados. Sensores <b>térmico y nocturno</b>, <b>enlace por línea de vista</b>, terreno <b>real del planeta</b>, día/noche y clima. Núcleo abierto para seguir sumando sistemas. <span style="color:var(--gris-2)">por Joan</span></div>
 
@@ -525,7 +531,7 @@
         <div class="h-sec">UGV terrestre (tanque‑dron)</div>
         <div class="kbd-help">
           <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> o <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> conducir</span>
-          <span><b>Ratón</b> apuntar la torreta</span>
+          <span><b>Ratón</b> apuntar (haz <b>clic</b> una vez para tomar el control)</span>
           <span><b>Clic izq</b> / <kbd>Espacio</kbd> disparar cañón</span>
           <span><b>Clic der</b> / <kbd>E</kbd> 2ª arma</span>
           <span><kbd>Shift</kbd> impulso</span>
@@ -2517,7 +2523,24 @@ function resolveColliders(pos, r){
 /* =====================================================================
    ENTRADA (teclado, ratón, táctil, giroscopio, mando remoto)
    ===================================================================== */
-const IS_TOUCH = ('ontouchstart' in window) || navigator.maxTouchPoints>0;
+/* ¿Táctil o ratón? NO se decide por las capacidades del aparato: casi todos los
+   PC con Windows dicen tener pantalla táctil (maxTouchPoints>0) y el juego se
+   quedaba en modo móvil, SIN ratón. Se decide por el último mando que usaste. */
+let IS_TOUCH = ('ontouchstart' in window) || navigator.maxTouchPoints>0;
+function setModoEntrada(touch){
+  if(IS_TOUCH===touch) return;
+  IS_TOUCH=touch;
+  $('touch').classList.toggle('on', touch && playing);
+  if(!touch && document.exitPointerLock && !playing) {}
+  checkRotate(); avisoRaton();
+}
+addEventListener('pointerdown', e=>{ if(e.pointerType) setModoEntrada(e.pointerType==='touch'); }, true);
+addEventListener('mousemove', e=>{ if(e.movementX||e.movementY) setModoEntrada(false); }, {passive:true});
+addEventListener('keydown', ()=>setModoEntrada(false));
+function avisoRaton(){
+  const el=$('mouseHint'); if(!el) return;
+  el.classList.toggle('on', !!(playing && !paused && !IS_TOUCH && !pointerLocked));
+}
 const keys={};
 addEventListener('keydown',e=>{ keys[e.code]=true;
   if(e.code==='Escape'){ if(playing && !paused) doPause(); }
@@ -2539,11 +2562,19 @@ addEventListener('keyup',e=>{ keys[e.code]=false; });
 /* ratón: pointer lock para apuntar */
 let pointerLocked=false, mouseFire=false, mouseSec=false;
 const cvs=$('c');
-cvs.addEventListener('click',()=>{ if(playing && !paused && !IS_TOUCH && !pointerLocked){ cvs.requestPointerLock&&cvs.requestPointerLock(); } });
-document.addEventListener('pointerlockchange',()=>{ pointerLocked=(document.pointerLockElement===cvs); });
+document.addEventListener('pointerlockchange',()=>{ pointerLocked=(document.pointerLockElement===cvs); avisoRaton(); });
 addEventListener('mousemove',e=>{ if(pointerLocked){ const s=0.0024;
   player.view.yaw -= e.movementX*s; player.view.pitch=clamp(player.view.pitch - e.movementY*s, -0.5, 0.35); }});
-addEventListener('mousedown',e=>{ if(!pointerLocked) return; if(e.button===0)mouseFire=true; if(e.button===2)mouseSec=true; });
+/* En computador: el 1er clic toma el control del ratón (y NO gasta un disparo);
+   a partir de ahí, clic izquierdo = disparar, clic derecho = 2ª arma. */
+addEventListener('mousedown',e=>{
+  if(!playing || paused) return;
+  if(!pointerLocked && !IS_TOUCH){
+    if(e.button===0 && cvs.requestPointerLock){ cvs.requestPointerLock(); return; }
+  }
+  if(e.button===0) mouseFire=true;
+  if(e.button===2) mouseSec=true;
+});
 addEventListener('mouseup',e=>{ if(e.button===0)mouseFire=false; if(e.button===2)mouseSec=false; });
 addEventListener('contextmenu',e=>{ if(playing)e.preventDefault(); });
 
@@ -2831,7 +2862,9 @@ function updatePlayer(dt, inp){
        (incluso un poco mejor, como el giro neutral real) y responde más rápido. */
     const enSitio = Math.abs(inp.moveF)<0.05 ? 1.15 : 1;
     const turnAuth=stats.turn*(1-dmg.movilidad*0.5)*(0.9+0.2*clamp(Math.abs(player.speed)/6,0,1))*enSitio;
-    player.yawRate=damp(player.yawRate, inp.moveT*turnAuth, 7, dt);
+    /* signo NEGATIVO: comprobado con la matemática de la cámara, AUMENTAR yaw gira
+       hacia la izquierda de la pantalla. Con el signo anterior, D/→ giraba al revés. */
+    player.yawRate=damp(player.yawRate, -inp.moveT*turnAuth, 7, dt);
     player.yaw += player.yawRate*dt;
     player.vel.set(fX*player.speed, 0, fZ*player.speed);
     player.pos.addScaledVector(player.vel, dt);
@@ -2963,8 +2996,8 @@ function updateDrone(dt, inp){
   drone.batt=clamp(drone.batt - dt*0.018*(1+(inp.up?0.6:0)), 0, 1);
   const power = drone.batt>0.04 ? 1 : 0.3;
   // kamikaze: al disparar, se compromete al picado
-  // yaw — mismo sentido que el tanque (derecha = gira a la derecha)
-  drone.yaw += (inp.dr_yaw||0)*2.6*dt;
+  // yaw — derecha = gira a la derecha (signo negativo, ver nota en updatePlayer)
+  drone.yaw -= (inp.dr_yaw||0)*2.6*dt;
   // inclinación -> aceleración. Dos modos FPV:
   const inPitch=clamp(inp.dr_pitch||0,-1,1), inRoll=clamp(inp.dr_roll||0,-1,1);
   if(drone.acro){ // ACRO: control por tasa, la actitud se mantiene (FPV manual real)
@@ -2973,7 +3006,9 @@ function updateDrone(dt, inp){
     drone.pitch=damp(drone.pitch, inPitch*0.5, 8, dt); drone.roll=damp(drone.roll, inRoll*0.5, 8, dt);
   }
   const cy=Math.cos(drone.yaw), sy=Math.sin(drone.yaw);
-  const fwd=new THREE.Vector3(sy,0,cy), right=new THREE.Vector3(cy,0,-sy);
+  // "right" es la DERECHA DE LA PANTALLA (comprobado con la matriz de la cámara):
+  // con el signo anterior, inclinar a la derecha desplazaba el dron a la izquierda.
+  const fwd=new THREE.Vector3(sy,0,cy), right=new THREE.Vector3(-cy,0,sy);
   const accel=38*power;
   drone.vel.addScaledVector(fwd, drone.pitch*accel*dt);   // empuje según la actitud real del dron
   drone.vel.addScaledVector(right, drone.roll*accel*dt);
@@ -3510,6 +3545,7 @@ function updateHUD(dt){
   else { $('mtimer').textContent=''+fmtTime(missionTime); $('mtimer').classList.remove('low'); }
   // fijado + gunnery (telémetro, impacto balístico, adelanto)
   updateGunneryHUD();
+  avisoRaton();          // en computador: recuerda que hay que hacer clic para apuntar
   // flash de daño
   if(flashT>0){ flashT-=dt; document.body.style.boxShadow='inset 0 0 200px rgba(216,30,44,'+(flashT/0.18*0.6)+')'; } else document.body.style.boxShadow='';
   // marcadores giran
