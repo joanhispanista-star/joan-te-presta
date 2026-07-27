@@ -433,12 +433,16 @@
       <button id="gazeCal">⊙ Centrar</button>
       <button id="gazeInv">⇄ Invertir</button>
     </div>
+    <div id="gazeBtns" style="margin-top:3px">
+      <button id="gazeMenos">− lento</button>
+      <button id="gazeMas">+ rápido</button>
+    </div>
   </div>
 
   <!-- ===== MENÚ PRINCIPAL ===== -->
   <div class="overlay on" id="menu">
     <div class="card">
-      <div class="brand"><div class="seal">◈</div><div><div class="l1">DRONES DE COMBATE</div><div class="l2">Simulador táctico · v0.12 · IA etapa 2</div></div></div>
+      <div class="brand"><div class="seal">◈</div><div><div class="l1">DRONES DE COMBATE</div><div class="l2">Simulador táctico · v0.13 · ciudades</div></div></div>
       <div class="title">DRONES DE COMBATE</div>
       <div class="subtitle">Simulador de <b>drones terrestres y aéreos</b> no tripulados. Sensores <b>térmico y nocturno</b>, <b>enlace por línea de vista</b>, terreno <b>real del planeta</b>, día/noche y clima. Núcleo abierto para seguir sumando sistemas. <span style="color:var(--gris-2)">por Joan</span></div>
 
@@ -466,6 +470,13 @@
         <div class="h-sec">Mundo real · relieve + satélite + ciudad en 3D</div>
         <div class="subtitle" style="margin-bottom:10px">Se descargan la <b>altura real</b> del terreno, la <b>imagen satelital</b> y, de <b>OpenStreetMap</b>, los <b>edificios con su forma real</b>, los ríos, lagos y el arbolado del lugar. El campo abarca <b>~2,4 km</b> a escala correcta (1 unidad ≈ 5 m). Tarda unos segundos y necesita internet.</div>
         <div class="missions" id="realList"></div>
+        <div class="h-sec" style="margin-top:16px">🏙️ Ciudades · combate urbano con edificios reales</div>
+        <div class="subtitle" style="margin-bottom:8px">Elige una ciudad y se levantan sus edificios, ríos y parques de verdad.</div>
+        <div class="row" style="gap:8px;align-items:stretch;margin-bottom:6px">
+          <select id="citySel" class="cz-in" style="flex:2"></select>
+          <button class="play" id="cityGo" style="flex:0 0 auto;width:auto;margin:0;padding:0 20px">Desplegar →</button>
+        </div>
+
         <div class="h-sec" style="margin-top:16px">📍 Tu zona · cualquier lugar del planeta</div>
         <div class="subtitle" style="margin-bottom:8px">Pega latitud y longitud (en Google Maps: clic derecho → copia las coordenadas). Ej: Bogotá <b>4.60, -74.08</b>.</div>
         <div class="row" style="gap:8px;align-items:stretch">
@@ -538,7 +549,7 @@
         <div class="h-sec">Flota de drones (garaje) y escuadrón IA</div>
         <div class="subtitle" style="margin:0 0 8px">En el <b>Garaje</b> eliges tu dron: <b>Reconocimiento</b>, <b>Ataque/kamikaze</b>, <b>Fibra óptica</b> (inmune a jamming, sin pérdida de señal, largo alcance), <b>Larga distancia</b> (gran altura, cámara 360°), <b>Marítimo</b>, <b>Submarino</b> e <b>Híbrido</b> (vuela y se sumerge) — estos brillan en el mapa <b>naval</b>. La tecla <kbd>C</kbd> alterna la cámara del dron: <b>FPV / 360° / Cenital</b>. También eliges tu <b>escuadrón de compañeros IA</b> (Veterano o Élite) que pelean a tu lado.</div>
         <div class="h-sec">👁️ Apuntar con la mirada (webcam)</div>
-        <div class="subtitle" style="margin:0 0 8px">Toca <b>👁️ MIRADA</b> (o <kbd>M</kbd>): <b>gira la cabeza y el cañón sigue girando</b> hacia ese lado (sin tope — control por velocidad); vuelve la cabeza al frente y se detiene. En el <b>computador</b> además <b>sigue tus ojos</b> (iris) para más precisión. <b>Tu cara NO se muestra</b> (privacidad); solo un indicador. Mira al frente al activarla para <b>centrar</b> — <b>⊙ Centrar</b> (<kbd>G</kbd>) recalibra, <b>⇄ Invertir</b> (<kbd>H</kbd>) voltea el sentido. Necesita <b>permiso de cámara</b> y estar <b>publicado (HTTPS)</b>.</div>
+        <div class="subtitle" style="margin:0 0 8px">Toca <b>👁️ MIRADA</b> (o <kbd>M</kbd>): <b>gira la cabeza y el cañón sigue girando</b> hacia ese lado (sin tope); vuelve la cabeza al frente y se detiene. En el <b>computador</b> además <b>sigue tus ojos</b> (iris). <b>Tu cara NO se muestra</b>: solo un indicador que marca <b>hacia dónde y cuánto</b> está girando (<b>◀◀ / ▶▶</b> y un número) — si ahí ves <b>0.00</b> es que no está leyendo tu giro, y si ves <b>“Sin rostro”</b> es que no te encuentra (ponte de frente y con luz). Botones: <b>⊙ Centrar</b> (<kbd>G</kbd>), <b>⇄ Invertir</b> (<kbd>H</kbd>) y <b>− lento / + rápido</b> para la sensibilidad. Necesita <b>cámara</b> y <b>HTTPS</b>.</div>
         <div class="h-sec">🎥 Control por cámara y 🎤 voz (manos libres)</div>
         <div class="subtitle" style="margin:0 0 8px">Con <b>👁️ MIRADA</b> activa (cámara): <b>gira la cabeza / mira</b> para apuntar, <b>haz un beso 💋</b> (juntar los labios) para <b>disparar</b>, y <b>señala con el dedo índice</b> para mover — apunta arriba = adelante, abajo = reversa, a los lados = girar; <b>esconde el dedo y se detiene</b>. Con <b>🎤 VOZ</b>: di <b>"desplegar dron"</b>, <b>"tanque"</b>, <b>"fuego"</b>, <b>"kamikaze"</b>, <b>"cámara"</b>, <b>"sensor"</b>. (Todo necesita permiso de cámara/micrófono y HTTPS.)</div>
         <div class="h-sec">📲 Instalar como app</div>
@@ -862,7 +873,7 @@ function derivedStats(l){
   const hp=ch.hp+ (bl.hp||0);
   const speed=(ch.speed + (bl.speed||0) + (mo.speed||0));
   return {
-    hpMax:hp, hp, speed:14*speed, turn:1.7*ch.turn, boost:(mo.boost||1),
+    hpMax:hp, hp, speed:14*speed, turn:2.1*ch.turn, boost:(mo.boost||1),
     stealth:(mo.stealth||1),
     cannon:ca, secondary:se, drone:dr, allies:al, color:ch.color, l:l
   };
@@ -1254,6 +1265,39 @@ const REAL_MAPS=[
   { id:'aconcagua', name:'Aconcagua', pais:'Argentina 🇦🇷', lat:-32.653, lon:-70.011, zoom:12, tiles:4, vexag:1.0,
     desc:'La cumbre más alta de América (6.961 m). Mapa de alta resolución (4×4).',
     enemies:[{t:'tank',n:5},{t:'airdrone',n:3}], objs:[{type:'destroy',tag:'enemy',n:8,text:'Conquista la cumbre (8)'}] },
+];
+/* Ciudades listas para desplegar: se levantan sus edificios reales (OpenStreetMap).
+   Añadir una es poner su nombre y sus coordenadas del centro. */
+const CIUDADES=[
+  {g:'🇨🇴 Colombia', c:[
+    ['Bogotá · Plaza de Bolívar', 4.598, -74.076],
+    ['Bogotá · Chapinero',        4.646, -74.062],
+    ['Medellín · El Poblado',     6.209, -75.571],
+    ['Cali · Centro',             3.451, -76.532],
+    ['Cartagena · Ciudad amurallada', 10.423, -75.551],
+    ['Barranquilla · Centro',    10.968, -74.783],
+    ['Bucaramanga · Centro',      7.119, -73.122],
+  ]},
+  {g:'🌎 América', c:[
+    ['Nueva York · Manhattan',   40.758, -73.985],
+    ['Ciudad de México · Zócalo',19.433, -99.133],
+    ['Buenos Aires · Obelisco',  -34.604, -58.382],
+    ['São Paulo · Paulista',     -23.561, -46.656],
+    ['Lima · Centro',            -12.046, -77.031],
+    ['Santiago · Centro',        -33.438, -70.650],
+    ['Quito · Centro',           -0.220,  -78.512],
+    ['Panamá · Centro',           8.983,  -79.518],
+  ]},
+  {g:'🌍 Europa y el mundo', c:[
+    ['París · Torre Eiffel',     48.858,   2.294],
+    ['Madrid · Sol',             40.417,  -3.703],
+    ['Barcelona · Eixample',     41.390,   2.170],
+    ['Londres · Westminster',    51.501,  -0.125],
+    ['Roma · Coliseo',           41.890,  12.492],
+    ['Tokio · Shibuya',          35.659, 139.700],
+    ['Dubái · Burj Khalifa',     25.197,  55.274],
+    ['El Cairo · Centro',        30.045,  31.236],
+  ]},
 ];
 function lon2tileX(lon,z){ return (lon+180)/360*Math.pow(2,z); }
 function lat2tileY(lat,z){ const r=lat*Math.PI/180; return (1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*Math.pow(2,z); }
@@ -2531,7 +2575,8 @@ function enableGyro(){
 const gaze={ on:false, ready:false, loading:false, active:false, detected:false,
   video:null, stream:null, model:null, yaw:0, pitch:0, baseYaw:0, basePitch:0,
   eyeRawX:0, eyeRawY:0, baseEyeX:0, baseEyeY:0, hasEye:false,
-  calibViewPitch:-0.12, rate:3.6, pitchGain:1.3, eyeGain:0.6, invertYaw:false, lastT:0, kiss:false };
+  calibViewPitch:-0.12, rate:6.0, pitchGain:1.6, eyeGain:0.7, invertYaw:false, lastT:0, kiss:false,
+  alterna:false, dbgYaw:0 };
 const _gm4=new THREE.Matrix4(), _ge=new THREE.Euler();
 /* control por mano (dedo índice): señala para mover; esconde el dedo para detener */
 const hand={ model:null, active:false, moveF:0, moveT:0 };
@@ -2606,10 +2651,15 @@ function detectGaze(){
     // BESO (gesto de boca) -> dispara. Blendshape 'mouthPucker'
     const bs = res && res.faceBlendshapes && res.faceBlendshapes[0] && res.faceBlendshapes[0].categories;
     if(bs){ let pk=0; for(const c of bs){ if(c.categoryName==='mouthPucker'){ pk=c.score; break; } } gaze.kiss = pk>0.55; }
-    gaze.detected=ok; gazeStatus(ok?(gaze.kiss?'💋 fuego':(gaze.hasEye?'Siguiendo ojos':'Siguiendo')):'Sin rostro', ok?'':'no');
+    gaze.detected=ok;
+    if(ok){                                  // muestra HACIA DÓNDE y CUÁNTO está girando (para poder ajustarlo)
+      const v=gaze.dbgYaw, fl = v>0.12?'▶▶' : v<-0.12?'◀◀' : '•';
+      gazeStatus((gaze.kiss?'💋 ':'')+fl+' '+Math.abs(v).toFixed(2)+(gaze.hasEye?' 👁':''), '');
+    } else gazeStatus('Sin rostro','no');
   }catch(e){ gaze.detected=false; }
-  // MANO: dedo índice para conducir
-  detectHand();
+  // MANO: se alterna con la cara para no ralentizar el seguimiento (dos modelos a la vez van lentos)
+  gaze.alterna=!gaze.alterna;
+  if(gaze.alterna) detectHand();
 }
 function detectHand(){
   if(!hand.model || !gaze.video) { hand.active=false; return; }
@@ -2730,12 +2780,14 @@ function updatePlayer(dt, inp){
   player.view.yaw+=inp.dyaw||0; player.view.pitch=clamp(player.view.pitch+(inp.dpitch||0),-0.7,0.5);
   // apuntar con la mirada: TASA de giro (gira mientras la cabeza esté girada, sin tope) + pitch proporcional
   if(gaze.active && gaze.detected){
-    const o=gazeOffset(), dz=0.035;
-    const sy=Math.sign(o.yaw)*Math.max(0,Math.abs(o.yaw)-dz);
-    player.view.yaw += (gaze.invertYaw?-1:1)*sy*gaze.rate*dt;
+    const o=gazeOffset(), dz=0.02;                       // zona muerta pequeña: reacciona con poco giro
+    const m=Math.max(0, Math.abs(o.yaw)-dz);
+    const vel=Math.sign(o.yaw)*Math.pow(m,1.2)*gaze.rate*6;   // suave cerca del centro, rápido al girar más
+    gaze.dbgYaw=vel;
+    player.view.yaw += (gaze.invertYaw?-1:1)*vel*dt;
     const pTarget=clamp(gaze.calibViewPitch - o.pitch*gaze.pitchGain, -0.55, 0.4);
     player.view.pitch=damp(player.view.pitch, pTarget, 7, dt);
-  }
+  } else gaze.dbgYaw=0;
   if(mode==='tank'){
     const mob=1-dmg.movilidad*0.6;
     // pendiente en la dirección de marcha (afecta tracción)
@@ -2747,11 +2799,15 @@ function updatePlayer(dt, inp){
     const maxSp=stats.speed*(inp.boost&&player.boost>0.05?stats.boost:1)*mob;
     const targetSp=inp.moveF*maxSp*tract;
     const prevSp=player.speed;
-    player.speed=damp(player.speed, targetSp, (Math.abs(targetSp)<Math.abs(player.speed)?4.5:2.6), dt);
+    // arranca y frena con más nervio (antes 2.6/4.5: se sentía pesado)
+    player.speed=damp(player.speed, targetSp, (Math.abs(targetSp)<Math.abs(player.speed)?7:4), dt);
     const accelLong=(player.speed-prevSp)/Math.max(dt,0.001);
-    // giro con momento angular (mejor girando en marcha; neutral-steer lento parado)
-    const turnAuth=stats.turn*(1-dmg.movilidad*0.5)*(0.55+0.45*clamp(Math.abs(player.speed)/5,0,1));
-    player.yawRate=damp(player.yawRate, inp.moveT*turnAuth, 4.5, dt);
+    /* Giro: un blindado de orugas GIRA SOBRE SU EJE. Antes solo tenía el 55% de
+       autoridad parado y se sentía atascado; ahora gira casi igual de bien quieto
+       (incluso un poco mejor, como el giro neutral real) y responde más rápido. */
+    const enSitio = Math.abs(inp.moveF)<0.05 ? 1.15 : 1;
+    const turnAuth=stats.turn*(1-dmg.movilidad*0.5)*(0.9+0.2*clamp(Math.abs(player.speed)/6,0,1))*enSitio;
+    player.yawRate=damp(player.yawRate, inp.moveT*turnAuth, 7, dt);
     player.yaw += player.yawRate*dt;
     player.vel.set(fX*player.speed, 0, fZ*player.speed);
     player.pos.addScaledVector(player.vel, dt);
@@ -2884,17 +2940,17 @@ function updateDrone(dt, inp){
   const power = drone.batt>0.04 ? 1 : 0.3;
   // kamikaze: al disparar, se compromete al picado
   // yaw — mismo sentido que el tanque (derecha = gira a la derecha)
-  drone.yaw += (inp.dr_yaw||0)*2.0*dt;
+  drone.yaw += (inp.dr_yaw||0)*2.6*dt;
   // inclinación -> aceleración. Dos modos FPV:
   const inPitch=clamp(inp.dr_pitch||0,-1,1), inRoll=clamp(inp.dr_roll||0,-1,1);
   if(drone.acro){ // ACRO: control por tasa, la actitud se mantiene (FPV manual real)
-    drone.pitch=clamp(drone.pitch+inPitch*1.7*dt, -1, 1); drone.roll=clamp(drone.roll+inRoll*1.7*dt, -1, 1);
-  } else {        // ÁNGULO: auto-nivelado al soltar
-    drone.pitch=damp(drone.pitch, inPitch*0.45, 6, dt); drone.roll=damp(drone.roll, inRoll*0.45, 6, dt);
+    drone.pitch=clamp(drone.pitch+inPitch*1.9*dt, -1, 1); drone.roll=clamp(drone.roll+inRoll*1.9*dt, -1, 1);
+  } else {        // ÁNGULO: auto-nivelado al soltar (más vivo que antes)
+    drone.pitch=damp(drone.pitch, inPitch*0.5, 8, dt); drone.roll=damp(drone.roll, inRoll*0.5, 8, dt);
   }
   const cy=Math.cos(drone.yaw), sy=Math.sin(drone.yaw);
   const fwd=new THREE.Vector3(sy,0,cy), right=new THREE.Vector3(cy,0,-sy);
-  const accel=30*power;
+  const accel=38*power;
   drone.vel.addScaledVector(fwd, drone.pitch*accel*dt);   // empuje según la actitud real del dron
   drone.vel.addScaledVector(right, drone.roll*accel*dt);
   drone.vel.addScaledVector(windVec, dt);                 // viento (clima)
@@ -3681,13 +3737,33 @@ function wireUI(){
   $('btnGaze').onclick=()=>toggleGaze();
   $('btnVoice').onclick=()=>toggleVoice();
   $('gazeCal').onclick=(e)=>{ e.stopPropagation(); calibrateGaze(); };
-  $('gazeInv').onclick=(e)=>{ e.stopPropagation(); gaze.invertYaw=!gaze.invertYaw; feed('Mirada '+(gaze.invertYaw?'normal':'invertida')); };
+  $('gazeInv').onclick=(e)=>{ e.stopPropagation(); gaze.invertYaw=!gaze.invertYaw; feed('Mirada '+(gaze.invertYaw?'invertida':'normal')); };
+  $('gazeMas').onclick=(e)=>{ e.stopPropagation(); gaze.rate=Math.min(16,gaze.rate*1.35); feed('Mirada más rápida ('+gaze.rate.toFixed(1)+')'); };
+  $('gazeMenos').onclick=(e)=>{ e.stopPropagation(); gaze.rate=Math.max(1.5,gaze.rate/1.35); feed('Mirada más lenta ('+gaze.rate.toFixed(1)+')'); };
   // botón KAMIKAZE (un toque = picado y detonación)
   $('btnKmk').addEventListener('pointerdown',e=>{ e.preventDefault(); if(playing) armKamikaze(); });
   // mando
   $('btnHost').onclick=()=>{ $('hostBox').style.display='block'; $('joinBox').style.display='none'; remoteHost(); };
   $('btnJoin').onclick=()=>{ $('joinBox').style.display='block'; $('hostBox').style.display='none'; };
   $('btnConnect').onclick=()=>{ const c=($('codeInput').value||'').trim(); if(c.length===4){ enableGyro(); remoteJoin(c); } else $('joinPill').innerHTML='<span class="d"></span> Escribe 4 dígitos'; };
+  // catálogo de ciudades
+  (function(){
+    const sel=$('citySel'); if(!sel) return;
+    for(const grupo of CIUDADES){
+      const og=document.createElement('optgroup'); og.label=grupo.g;
+      for(const [nom,la,lo] of grupo.c){
+        const o=document.createElement('option'); o.value=la+','+lo; o.textContent=nom; og.appendChild(o);
+      }
+      sel.appendChild(og);
+    }
+    $('cityGo').onclick=()=>{
+      const [la,lo]=sel.value.split(',').map(Number);
+      const nombre=sel.options[sel.selectedIndex].textContent;
+      startRealMission({ id:'city_'+sel.value, name:nombre, pais:'🏙️ '+nombre, lat:la, lon:lo, vexag:1.0,
+        enemies:[{t:'tank',n:4},{t:'airdrone',n:2}],
+        objs:[{type:'destroy',tag:'enemy',n:6,text:'Limpia el sector (6)'}] });
+    };
+  })();
   // "tu zona": jugar en cualquier coordenada real
   $('czGo').onclick=()=>{ const lat=parseFloat($('czLat').value), lon=parseFloat($('czLon').value);
     if(isNaN(lat)||isNaN(lon)||lat<-85||lat>85||lon<-180||lon>180){ alert('Coordenadas inválidas.\nEjemplo (Bogotá): 4.60, -74.08'); return; }
