@@ -1,0 +1,16 @@
+{
+  "name": "Drones de Combate",
+  "short_name": "Drones",
+  "description": "Simulador táctico de drones terrestres y aéreos",
+  "start_url": "drones.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#0c0e13",
+  "theme_color": "#0c0e13",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
