@@ -438,7 +438,7 @@
   <!-- ===== MENÚ PRINCIPAL ===== -->
   <div class="overlay on" id="menu">
     <div class="card">
-      <div class="brand"><div class="seal">◈</div><div><div class="l1">DRONES DE COMBATE</div><div class="l2">Simulador táctico · v0.11 · ciudades reales</div></div></div>
+      <div class="brand"><div class="seal">◈</div><div><div class="l1">DRONES DE COMBATE</div><div class="l2">Simulador táctico · v0.12 · IA etapa 2</div></div></div>
       <div class="title">DRONES DE COMBATE</div>
       <div class="subtitle">Simulador de <b>drones terrestres y aéreos</b> no tripulados. Sensores <b>térmico y nocturno</b>, <b>enlace por línea de vista</b>, terreno <b>real del planeta</b>, día/noche y clima. Núcleo abierto para seguir sumando sistemas. <span style="color:var(--gris-2)">por Joan</span></div>
 
@@ -717,6 +717,22 @@ const CONFIG_IA = {
     aliado:   { fov:230, alcance:250, ojo:0.4 },
   },
 
+  /* Etapa 2 · máquina de estados. Todo lo que decide CUÁNDO cambia de
+     comportamiento una unidad. Los rangos van en unidades (1 u ≈ 5 m). */
+  COMBATE: {
+    rangoTiro:  { tank:110, turret:140, airdrone:85,  jammer:0, aliado:120 },
+    distIdeal:  { tank:55,  turret:0,   airdrone:45,  jammer:0, aliado:38  },
+    cargador:   { tank:6,   turret:8,   airdrone:4,   jammer:0, aliado:10  },
+    tRecarga:   { tank:4.5, turret:3.5, airdrone:3.0, jammer:0, aliado:2.5 },
+    umbralRepliegue: 0.28,   // por debajo de este blindaje se repliega
+    umbralCubrirse:  0.65,   // por debajo, si le disparan y hay cobertura, se cubre
+    tCubierto: 5.5,          // s que aguanta cubierto antes de volver a asomarse
+    tReposicionar: 8,        // s disparando desde el mismo sitio antes de moverse
+    radioCobertura: 48,      // dónde busca un obstáculo tras el que taparse
+    velScan: 0.55,           // rad/s de barrido de la torreta cuando patrulla
+    histeresis: 0.7,         // s mínimos en un estado (evita parpadeo)
+  },
+
   PERCEPCION: {
     hz: 6,              // reevaluaciones por segundo (escalonadas entre unidades)
     tContacto: 0.25,    // s de visión continua: sospecha -> CONTACTO
@@ -968,7 +984,9 @@ async function initPostFX(){
     useComposer=true;
   }catch(e){ console.warn('Bloom no disponible:', e&&e.message); useComposer=false; }
 }
-function renderScene(){ if(useComposer && composer) composer.render(); else if(renderer&&scene) renderer.render(scene, camera); }
+let RENDER_ON = location.search.indexOf('norender')<0;   // ?norender: mide la lógica sin dibujar
+function renderScene(){ if(!RENDER_ON) return;
+  if(useComposer && composer) composer.render(); else if(renderer&&scene) renderer.render(scene, camera); }
 
 /* ---- Cielo con degradado + disco solar (shader) ---- */
 function initSky(){
@@ -1844,7 +1862,9 @@ function buildTurret(){
 function pickWaypoint(e){ const a=Math.random()*TAU, r=30+Math.random()*120; e.wp.set(Math.cos(a)*r, 0, Math.sin(a)*r); }
 function damageEnemy(e, dmg){
   if(!e.alive) return; e.hp-=dmg;
-  if(e.hp<=0){ e.alive=false; e.mesh.visible=false; spawnExplosion(e.pos, e.air?6:8, 0xffa040); spawnSmoke(e.pos);
+  if(e.ia) IA.anotarDanio(e);                       // le están disparando → puede buscar cobertura
+  if(e.hp<=0){ e.alive=false; e.mesh.visible=false; if(e.ia) IA.cambiar(e,'DESTRUIDO','destruido');
+    spawnExplosion(e.pos, e.air?6:8, 0xffa040); spawnSmoke(e.pos);
     killCount.enemy++; killCount[e.tag]=(killCount[e.tag]||0)+1;
     const nm = e.kind==='airdrone'?'Dron derribado' : e.kind==='jammer'?'Jammer destruido · enlace libre' : e.tag==='turret'?'Torreta destruida' : 'Blindado destruido';
     feed(nm,'good');
@@ -1908,9 +1928,13 @@ const IA=(function(){
     return u.yaw||0;
   }
   function iaInit(u, fac, kind){
+    const C=CONFIG_IA.COMBATE, cargador=(C.cargador[kind]!==undefined?C.cargador[kind]:C.cargador.tank);
     u.ia={ fac, kind, sensor:CONFIG_IA.SENSOR[kind]||CONFIG_IA.SENSOR.tank,
       contacts:new Map(), tNext:Math.random()*0.25,
-      estado:'PATRULLA', motivo:'inicio', alerta:0 };
+      estado:'PATRULLA', prev:'—', motivo:'despliegue', tEstado:0, log:[],
+      gun:{ municion:cargador, cargador, recargando:0 },
+      scan:Math.random()*TAU, scanDir:Math.random()<0.5?-1:1,
+      cobertura:null, tCob:-99, tDanio:-99, destino:null, alerta:0 };
     return u.ia;
   }
   /* lista de blancos potenciales por bando (se refresca 1 vez por fotograma) */
@@ -1989,6 +2013,141 @@ const IA=(function(){
     return _lk.copy(best.pos).addScaledVector(best.vel, Math.min(best.edad,3)*f);
   }
 
+  /* =====================================================================
+     ETAPA 2 · MÁQUINA DE ESTADOS (FSM jerárquica)
+     Separa DECIDIR de MOVER: aquí solo se decide QUÉ hacer y se devuelve
+     una "orden"; el movimiento lo ejecuta moverUnidad(). Las transiciones
+     son explícitas, con histéresis para que no parpadeen, y quedan
+     registradas (visibles con F1) para poder depurarlas.
+     ===================================================================== */
+  const ESTADOS=['IDLE','PATRULLA','INVESTIGAR','PERSEGUIR','ATACAR','REPOSICIONAR','CUBRIRSE','REPLEGARSE','REARMAR','DESTRUIDO'];
+  const EMERGENCIA={DESTRUIDO:1, REARMAR:1, REPLEGARSE:1, CUBRIRSE:1};
+  function cambiar(u, nuevo, motivo){
+    const ia=u.ia; if(ia.estado===nuevo) return;
+    ia.prev=ia.estado; ia.estado=nuevo; ia.motivo=motivo; ia.tEstado=0; ia.destino=null;
+    ia.log.push(fmtTime(missionTime)+' '+ia.prev+'→'+nuevo+' · '+motivo);
+    if(ia.log.length>8) ia.log.shift();
+  }
+  /* busca un obstáculo tras el que taparse, del lado opuesto a la amenaza */
+  function buscarCobertura(u, amenaza){
+    const C=CONFIG_IA.COMBATE, G=ensureGrid(), n=G.n, R=C.radioCobertura;
+    const cx=Math.floor((u.pos.x+HALF)/CELL), cz=Math.floor((u.pos.z+HALF)/CELL), rad=Math.ceil(R/CELL);
+    let mejor=null, ms=-1e9;
+    for(let dz=-rad;dz<=rad;dz++) for(let dx=-rad;dx<=rad;dx++){
+      const xx=cx+dx, zz=cz+dz; if(xx<0||zz<0||xx>=n||zz>=n) continue;
+      const list=G.buckets[zz*n+xx]; if(!list) continue;
+      for(const i of list){
+        const c=colliders[i]; if((c.h||0)<2.5 || c.r<1) continue;      // debe tapar de verdad
+        const d=Math.hypot(c.x-u.pos.x, c.z-u.pos.z); if(d>R) continue;
+        let vx=c.x-amenaza.x, vz=c.z-amenaza.z; const L=Math.hypot(vx,vz)||1;
+        const px=c.x+vx/L*(c.r+2.6), pz=c.z+vz/L*(c.r+2.6);            // detrás del obstáculo
+        const s = Math.min(c.h,12)*2.2 - d*0.8 - Math.hypot(px-amenaza.x,pz-amenaza.z)*0.05;
+        if(s>ms){ ms=s; mejor={x:clamp(px,-HALF+6,HALF-6), z:clamp(pz,-HALF+6,HALF-6)}; }
+      }
+    }
+    return mejor;
+  }
+  /* estado que "debería" tener la unidad ahora mismo (antes de la histéresis) */
+  function estadoDeseado(u, c, lk, dist, rango, hpF, bajoFuego){
+    const C=CONFIG_IA.COMBATE, ia=u.ia, g=ia.gun;
+    if(!u.alive)                       return ['DESTRUIDO','destruido'];
+    if(u.jammer)                       return ['IDLE','emisor de interferencia'];
+    if(g.recargando>0)                 return ['REARMAR','recargando'];
+    if(g.municion<=0)                  return ['REARMAR','sin munición'];
+    if(c && hpF<C.umbralRepliegue)     return ['REPLEGARSE','blindaje crítico'];
+    if(bajoFuego && hpF<C.umbralCubrirse && u.mobile && ia.cobertura) return ['CUBRIRSE','bajo fuego'];
+    if(c){
+      if(!u.mobile) return dist<=rango ? ['ATACAR','blanco a tiro'] : ['IDLE','fuera de alcance'];
+      if(dist>rango) return ['PERSEGUIR','blanco lejos'];
+      if(ia.estado==='ATACAR' && ia.tEstado>C.tReposicionar) return ['REPOSICIONAR','lleva mucho en el mismo sitio'];
+      if(ia.estado==='REPOSICIONAR' && ia.tEstado<3.5)        return ['REPOSICIONAR','flanqueando'];
+      return ['ATACAR','blanco identificado'];
+    }
+    if(lk) return u.mobile ? ['INVESTIGAR','rastro del enemigo'] : ['IDLE','rastro fuera de alcance'];
+    return u.mobile ? ['PATRULLA','sin contactos'] : ['IDLE','vigilando'];
+  }
+  /* DECIDIR: evalúa la FSM y devuelve la orden para moverUnidad() */
+  function decidir(u, dt){
+    const ia=u.ia, C=CONFIG_IA.COMBATE, k=ia.kind, g=ia.gun;
+    const orden={ ir:null, mirar:null, fuego:false, prisa:1 };
+    ia.tEstado+=dt;
+    if(g.recargando>0){ g.recargando-=dt; if(g.recargando<=0) g.municion=g.cargador; }
+    const c=mejorContacto(u), lk=ultimaPos(u);
+    ia.blanco = c ? c.obj : null;
+    const amenaza = c ? c.pos : lk;
+    const dist = amenaza ? Math.hypot(amenaza.x-u.pos.x, amenaza.z-u.pos.z) : 1e9;
+    const rango = C.rangoTiro[k]!==undefined ? C.rangoTiro[k] : C.rangoTiro.tank;
+    const ideal = C.distIdeal[k]!==undefined ? C.distIdeal[k] : C.distIdeal.tank;
+    const hpF = u.hp/Math.max(1,u.hpMax);
+    const bajoFuego = (missionTime-ia.tDanio) < 3;
+    const puedeDisparar = !!(c && c.certeza>=2 && g.municion>0 && g.recargando<=0);
+    // cobertura: se busca solo mientras le disparan (es cara de calcular)
+    if(bajoFuego && amenaza && u.mobile && missionTime-ia.tCob>2){ ia.cobertura=buscarCobertura(u,amenaza); ia.tCob=missionTime; }
+    if(!bajoFuego) ia.cobertura=null;
+    // --- transición ---
+    const [des,motivo]=estadoDeseado(u,c,lk,dist,rango,hpF,bajoFuego);
+    if(des!==ia.estado && (EMERGENCIA[des] || ia.tEstado>=C.histeresis)) cambiar(u,des,motivo);
+    // al entrar en REARMAR hay que ARRANCAR la recarga (si no, se quedaría sin munición para siempre)
+    if(ia.estado==='REARMAR' && g.recargando<=0 && g.municion<=0){
+      g.recargando = C.tRecarga[k]!==undefined ? C.tRecarga[k] : 3.5;
+    }
+    // --- orden según el estado ---
+    switch(ia.estado){
+      case 'PATRULLA':
+        if(Math.hypot(u.pos.x-u.wp.x,u.pos.z-u.wp.z)<10) pickWaypoint(u);
+        orden.ir=u.wp; orden.prisa=0.7;                       // mirar=null → barrido de sensores
+        break;
+      case 'INVESTIGAR': orden.ir=lk; orden.mirar=lk; orden.prisa=1.05; break;
+      case 'PERSEGUIR':  orden.ir=amenaza; orden.mirar=amenaza; orden.prisa=1.2; break;
+      case 'ATACAR':
+        orden.mirar=amenaza; orden.fuego=puedeDisparar && dist<=rango;
+        if(u.mobile && amenaza && ideal>0){ const d=dist||1;
+          orden.ir={ x:amenaza.x+(u.pos.x-amenaza.x)/d*ideal, z:amenaza.z+(u.pos.z-amenaza.z)/d*ideal };
+          orden.prisa=0.8; }
+        break;
+      case 'REPOSICIONAR':
+        if(!ia.destino && amenaza){
+          const ang=Math.atan2(u.pos.x-amenaza.x,u.pos.z-amenaza.z)+(Math.random()<0.5?1:-1)*(0.8+Math.random()*0.6);
+          ia.destino={ x:clamp(amenaza.x+Math.sin(ang)*ideal,-HALF+6,HALF-6), z:clamp(amenaza.z+Math.cos(ang)*ideal,-HALF+6,HALF-6) }; }
+        orden.ir=ia.destino; orden.mirar=amenaza; orden.prisa=1.25;
+        orden.fuego=puedeDisparar && dist<=rango*0.9;         // dispara en movimiento, con menos alcance
+        break;
+      case 'CUBRIRSE':
+        orden.ir=ia.cobertura; orden.mirar=amenaza; orden.prisa=1.35;
+        orden.fuego=puedeDisparar && dist<=rango && ia.tEstado>1.2;   // asoma tras llegar
+        break;
+      case 'REPLEGARSE':
+        if(amenaza){ const d=dist||1;
+          orden.ir={ x:clamp(u.pos.x+(u.pos.x-amenaza.x)/d*70,-HALF+6,HALF-6), z:clamp(u.pos.z+(u.pos.z-amenaza.z)/d*70,-HALF+6,HALF-6) }; }
+        orden.mirar=amenaza; orden.prisa=1.4;
+        break;
+      case 'REARMAR':
+        orden.mirar=amenaza; orden.prisa=0.6;
+        if(u.mobile && amenaza){ const d=dist||1;
+          orden.ir={ x:clamp(u.pos.x+(u.pos.x-amenaza.x)/d*30,-HALF+6,HALF-6), z:clamp(u.pos.z+(u.pos.z-amenaza.z)/d*30,-HALF+6,HALF-6) }; }
+        break;
+      default: /* IDLE */ orden.mirar = c?amenaza:null; break;
+    }
+    u.state = (ia.estado==='ATACAR'||ia.estado==='PERSEGUIR'||ia.estado==='REPOSICIONAR') ? 'engage' : 'patrol';
+    return orden;
+  }
+  function anotarDanio(u){ if(u&&u.ia) u.ia.tDanio=missionTime; }
+  /* Inyecta un contacto YA IDENTIFICADO en varias unidades (designación láser).
+     Es el primer ladrillo del blackboard de escuadra (etapa 5). */
+  function compartirContacto(unidades, obj, tipo){
+    if(!obj) return 0; let n=0;
+    for(const u of unidades){
+      if(!u || !u.alive || !u.ia) continue;
+      const id=uid(obj); let c=u.ia.contacts.get(id);
+      if(!c){ c={ id, obj, tipo:tipo||'tank', pos:new THREE.Vector3(), vel:new THREE.Vector3(),
+                  tVisto:missionTime, tVista:9, certeza:2, edad:0, visible:true };
+              u.ia.contacts.set(id,c); }
+      c.pos.copy(obj.pos); if(obj.vel) c.vel.copy(obj.vel);
+      c.tVisto=missionTime; c.edad=0; c.certeza=2; c.tVista=9; c.visible=true; n++;
+    }
+    return n;
+  }
+
   /* ---------------- MODO DEPURACIÓN (F1) ---------------- */
   let dbgL=null, dbgBox=null; const dbgLabels=[];
   function ensureDbg(){
@@ -2034,7 +2193,8 @@ const IA=(function(){
         dbgBox.appendChild(el); dbgLabels[li]=el; }
       if(sp.vis){ el.style.display='block'; el.style.left=sp.x+'px'; el.style.top=sp.y+'px';
         el.style.color = c ? '#ffd24a' : (u.ia.fac==='rojo' ? '#ff8a7a' : '#8be0ff');
-        el.textContent = u.ia.estado+' · '+(c?CERT[c.certeza]:'—')+' · c'+u.ia.contacts.size;
+        el.innerHTML = '<b>'+u.ia.estado+'</b> · '+(c?CERT[c.certeza]:'—')+' · 🔫'+u.ia.gun.municion
+          +(u.ia.gun.recargando>0?' ⟳':'')+'<br><span style="opacity:.7;font-weight:400">'+u.ia.motivo+'</span>';
       } else el.style.display='none';
       li++;
     }
@@ -2043,110 +2203,124 @@ const IA=(function(){
   }
 
   return { percibir, mejorContacto, ultimaPos, iaInit, losBlocked, dibujarDebug, dbgOff, skill:SKILL, CERT,
+    decidir, anotarDanio, cambiar, ESTADOS, compartirContacto,
     tick(dt){ if(CONFIG_IA.enabled) refrescarBlancos(); },
     resumen(){ const r=[]; for(const e of enemies) if(e.alive&&e.ia){ const c=mejorContacto(e);
-        r.push({t:e.kind, est:e.ia.estado, cont:e.ia.contacts.size, ve:!!c, cert:c?c.certeza:-1, rastro:!!ultimaPos(e)}); }
-      return r; } };
+        r.push({t:e.kind, est:e.ia.estado, por:e.ia.motivo, mun:e.ia.gun.municion,
+          cont:e.ia.contacts.size, ve:!!c, cert:c?c.certeza:-1, rastro:!!ultimaPos(e)}); }
+      return r; },
+    historial(){ const r=[]; for(const e of enemies) if(e.ia&&e.ia.log.length) r.push(e.kind+': '+e.ia.log.join(' | ')); return r; } };
 })();
 
 const _toP=new THREE.Vector3();   // vector propio: V lo pisa terrainNormal() dentro de alignToGround
+/* =====================================================================
+   ENEMIGOS · ahora en dos pasos (etapa 2 de la IA):
+     1) IA.percibir()  → qué sabe          2) IA.decidir() → qué quiere hacer
+     3) moverUnidad()  → lo EJECUTA (no decide nada)
+   Con CONFIG_IA.enabled=false se usa una orden simple de respaldo.
+   ===================================================================== */
 function updateEnemies(dt){
   for(const e of enemies){
     if(!e.alive) continue;
-    /* ===== PERCEPCIÓN (capa IA): qué SABE la unidad antes de decidir nada ===== */
-    let contacto=null, rastro=null, foco=null, puedeDisparar=false, investigando=false;
     if(CONFIG_IA.enabled){
       IA.percibir(e, dt);
-      contacto=IA.mejorContacto(e); rastro=IA.ultimaPos(e);
-      foco = contacto ? contacto.pos : rastro;
-      puedeDisparar = !!(contacto && contacto.certeza>=2);         // solo IDENTIFICADO abre fuego
-      if(contacto){
-        e.state='engage'; e.target=contacto.obj; e.ia.estado='ATACAR';
-        if(contacto.obj===player){ player.detected=true; player.detTimer=3; }
-      } else if(rastro && e.state==='engage'){
-        investigando=true; e.ia.estado='INVESTIGAR';               // va a la última posición conocida
-      } else {
-        e.state='patrol'; e.target=null; e.ia.estado='PATRULLA'; foco=null;
-      }
-    } else {                                                       // comportamiento anterior (interruptor)
-      const dR=130*(player.detected?1.2:1)*(stats.stealth||1), dd=player.pos.distanceTo(e.pos);
-      if(dd<dR){ e.state='engage'; e.target=player; player.detected=true; player.detTimer=3; }
-      else if(e.state==='engage' && dd>dR*1.5) e.state='patrol';
-      foco=player.pos; puedeDisparar=(e.state==='engage');
+      moverUnidad(e, IA.decidir(e, dt), dt);
+    } else {
+      moverUnidad(e, ordenSimple(e), dt);
     }
-    const toP=_toP.copy(foco||e.wp).sub(e.pos); const distP=foco?toP.length():9999;
+  }
+}
+/* Respaldo sin capa de IA: perseguir y disparar por pura distancia */
+function ordenSimple(e){
+  const d=player.pos.distanceTo(e.pos), ve=(d<130 && player.alive);
+  if(ve){ player.detected=true; player.detTimer=3; }
+  return { ir: ve?{x:player.pos.x,z:player.pos.z}:e.wp, mirar: ve?player.pos:null,
+           fuego: ve&&d<120, prisa: ve?1:0.7 };
+}
+function gastarMunicion(e){ if(e.ia) e.ia.gun.municion=Math.max(0,e.ia.gun.municion-1); }
 
-    // DRON AÉREO ENEMIGO: vuela, orbita y ataca en picado
-    if(e.air){
-      if(!foco && Math.hypot(e.pos.x-e.wp.x, e.pos.z-e.wp.z)<12) pickWaypoint(e);   // patrulla sin contacto
-      const desiredAlt=terrainHeight(e.pos.x,e.pos.z)+16, ideal=(contacto?45:0);
-      let dir=toP.clone().setY(0); const d2=dir.length()||1; dir.multiplyScalar(1/d2);
-      if(d2<ideal) dir.multiplyScalar(-1);
-      const lat=new THREE.Vector3(-dir.z,0,dir.x).multiplyScalar(0.6);
-      const sp=e.state==='engage'?16:9;
-      e.vel.set((dir.x+lat.x)*sp, (desiredAlt-e.pos.y)*1.5, (dir.z+lat.z)*sp);
-      e.pos.addScaledVector(e.vel, dt);
-      e.pos.x=clamp(e.pos.x,-HALF+4,HALF-4); e.pos.z=clamp(e.pos.z,-HALF+4,HALF-4);
-      e.bob+=dt*3; e.mesh.position.copy(e.pos);
-      e.yaw=Math.atan2(toP.x,toP.z); e.mesh.rotation.set(0.15, e.yaw, Math.sin(e.bob)*0.1);
-      if(e.mesh.userData.rotors) for(const r of e.mesh.userData.rotors) r.rotation.y+=dt*80;
-      e.reload-=dt;
-      if(e.state==='engage' && puedeDisparar && distP<95 && e.reload<=0){ e.reload=1.3+Math.random();
-        const d=toP.clone().normalize(); d.x+=(Math.random()-0.5)*0.05; d.z+=(Math.random()-0.5)*0.05; d.normalize();
-        fireProjectile(e.pos.clone(), d, {speed:120, dmg:9, from:'enemy', color:0xff7a4a, splash:1.5, life:3}); }
-      continue;
-    }
-    // JAMMER (guerra electrónica): estático, solo emite — su efecto está en computeSignal
-    if(e.jammer){
-      e.pos.y=damp(e.pos.y, terrainHeight(e.pos.x,e.pos.z), 10, dt); e.mesh.position.copy(e.pos);
-      if(e.mesh.userData.led) e.mesh.userData.led.material.emissiveIntensity=1.5+Math.sin(missionTime*8)*1.2;
-      continue;
-    }
+/* ---------------------------------------------------------------------
+   MOVER: ejecuta una orden {ir, mirar, fuego, prisa}. Sin decisiones.
+   --------------------------------------------------------------------- */
+function moverUnidad(e, orden, dt){
+  const ud=e.mesh.userData, mirar=orden.mirar;
 
-    if(e.mobile){
-      let dir;
-      if(e.state==='engage'){
-        // mantener distancia media
-        const ideal=investigando?10:55;   // si solo hay rastro, se ACERCA a la última posición conocida
-        dir=toP.clone().setY(0).normalize(); if(distP<ideal) dir.multiplyScalar(-1);
-      } else {
-        dir=V2.copy(e.wp).sub(e.pos).setY(0); if(dir.length()<8){ pickWaypoint(e); } dir.normalize();
-      }
-      const tgtYaw=Math.atan2(dir.x, dir.z);
-      e.yaw=angLerp(e.yaw, tgtYaw, 1.4*dt);
-      const sp=(e.state==='engage'?10:7);
+  // ---------- DRON AÉREO ----------
+  if(e.air){
+    const alt=terrainHeight(e.pos.x,e.pos.z)+16;
+    let vx=0, vz=0;
+    if(orden.ir){
+      const dx=orden.ir.x-e.pos.x, dz=orden.ir.z-e.pos.z, L=Math.hypot(dx,dz)||1;
+      const sp=13*(orden.prisa||1);
+      if(L>4){ vx=dx/L*sp; vz=dz/L*sp; }
+      if(e.ia && e.ia.estado==='ATACAR'){ vx+=-dz/L*sp*0.55; vz+=dx/L*sp*0.55; }   // orbita al blanco
+    }
+    e.vel.set(vx,(alt-e.pos.y)*1.5,vz);
+    e.pos.addScaledVector(e.vel,dt);
+    e.pos.x=clamp(e.pos.x,-HALF+4,HALF-4); e.pos.z=clamp(e.pos.z,-HALF+4,HALF-4);
+    e.bob+=dt*3; e.mesh.position.copy(e.pos);
+    const my = mirar ? Math.atan2(mirar.x-e.pos.x, mirar.z-e.pos.z)
+                     : (Math.hypot(e.vel.x,e.vel.z)>1 ? Math.atan2(e.vel.x,e.vel.z) : e.yaw);
+    e.yaw=angLerp(e.yaw,my,4*dt); e.aim=e.yaw;
+    e.mesh.rotation.set(0.15, e.yaw, Math.sin(e.bob)*0.1);
+    if(ud.rotors) for(const r of ud.rotors) r.rotation.y+=dt*80;
+    e.reload-=dt;
+    if(orden.fuego && mirar && e.reload<=0){
+      e.reload=1.3+Math.random(); gastarMunicion(e);
+      const d=_toP.copy(mirar).sub(e.pos).normalize(), disp=IA.skill().error;
+      d.x+=(Math.random()-0.5)*disp; d.z+=(Math.random()-0.5)*disp; d.normalize();
+      fireProjectile(e.pos.clone(), d, {speed:120, dmg:9, from:'enemy', color:0xff7a4a, splash:1.5, life:3});
+    }
+    return;
+  }
+  // ---------- JAMMER (estático, no combate) ----------
+  if(e.jammer){
+    e.pos.y=damp(e.pos.y, terrainHeight(e.pos.x,e.pos.z), 10, dt); e.mesh.position.copy(e.pos);
+    if(ud.led) ud.led.material.emissiveIntensity=1.5+Math.sin(missionTime*8)*1.2;
+    return;
+  }
+  // ---------- TERRESTRE (blindado / torreta) ----------
+  if(e.mobile && orden.ir){
+    const dx=orden.ir.x-e.pos.x, dz=orden.ir.z-e.pos.z, L=Math.hypot(dx,dz);
+    if(L>3.5){
+      e.yaw=angLerp(e.yaw, Math.atan2(dx,dz), 1.4*dt);
+      const sp=9*(orden.prisa||1);
       e.vel.set(Math.sin(e.yaw)*sp, 0, Math.cos(e.yaw)*sp);
       e.pos.addScaledVector(e.vel, dt);
       e.pos.x=clamp(e.pos.x,-HALF+6,HALF-6); e.pos.z=clamp(e.pos.z,-HALF+6,HALF-6);
-      // resuelve colisiones simples
       resolveColliders(e.pos, 2.2);
-    }
-    // altura
-    const gy=terrainHeight(e.pos.x,e.pos.z);
-    e.pos.y=damp(e.pos.y, gy, 12, dt);
-    e.mesh.position.copy(e.pos);
-    if(e.mobile){ e.mesh.rotation.y=e.yaw; alignToGround(e.mesh, e.pos, e.yaw, 6, dt); }
+    } else e.vel.set(0,0,0);
+  } else e.vel.set(0,0,0);
+  e.pos.y=damp(e.pos.y, terrainHeight(e.pos.x,e.pos.z), 12, dt);
+  e.mesh.position.copy(e.pos);
+  if(e.mobile){ e.mesh.rotation.y=e.yaw; alignToGround(e.mesh, e.pos, e.yaw, 6, dt); }
 
-    // torreta apunta al jugador
-    const ud=e.mesh.userData;
-    if(ud.turret){
-      const desired=Math.atan2(toP.x, toP.z);
-      e.aim=angLerp(e.aim, desired, 2.6*dt);
-      ud.turret.rotation.y=e.aim - (e.mobile? e.mesh.rotation.y:0);
-      const pitch=clamp(Math.atan2(toP.y+1.2, Math.hypot(toP.x,toP.z)), -0.3,0.4);
-      e.aimPitch=damp(e.aimPitch, -pitch, 5, dt); ud.barrelPiv.rotation.x=e.aimPitch;
+  // ---------- TORRETA: apunta al blanco, o BARRE si vigila ----------
+  if(ud.turret){
+    let deseado=e.aim;
+    if(mirar) deseado=Math.atan2(mirar.x-e.pos.x, mirar.z-e.pos.z);
+    else if(e.ia){                                   // barrido de vigilancia
+      const ia=e.ia; ia.scan+=CONFIG_IA.COMBATE.velScan*ia.scanDir*dt;
+      if(Math.abs(angDiff(ia.scan, e.yaw))>1.25) ia.scanDir*=-1;
+      deseado=ia.scan;
     }
-    // dispara
-    e.reload-=dt;
-    if(e.state==='engage' && puedeDisparar && distP<150 && e.reload<=0 && Math.abs(angDiff(e.aim, Math.atan2(toP.x,toP.z)))<0.25){
-      e.reload=1.6+Math.random()*1.1;
-      const muzzle=e.pos.clone().setY(e.pos.y+2.0);
-      const d=toP.clone().normalize();
-      // dispersión
-      d.x+=(Math.random()-0.5)*0.06; d.y+=(Math.random()-0.5)*0.04; d.z+=(Math.random()-0.5)*0.06; d.normalize();
-      muzzle.addScaledVector(d, 3);
-      fireProjectile(muzzle, d, {speed:150, dmg:e.tag==='turret'?14:12, from:'enemy', color:0xff6a4a, splash:2, life:3});
-    }
+    e.aim=angLerp(e.aim, deseado, 2.6*dt);
+    ud.turret.rotation.y=e.aim-(e.mobile? e.mesh.rotation.y:0);
+    if(mirar){ const pitch=clamp(Math.atan2(mirar.y-e.pos.y+1.2, Math.hypot(mirar.x-e.pos.x,mirar.z-e.pos.z)), -0.3,0.4);
+      e.aimPitch=damp(e.aimPitch,-pitch,5,dt); }
+    else e.aimPitch=damp(e.aimPitch,0,3,dt);
+    ud.barrelPiv.rotation.x=e.aimPitch;
+  }
+  // ---------- FUEGO ----------
+  e.reload-=dt;
+  if(orden.fuego && mirar && e.reload<=0 &&
+     Math.abs(angDiff(e.aim, Math.atan2(mirar.x-e.pos.x, mirar.z-e.pos.z)))<0.25){
+    e.reload=1.6+Math.random()*1.1; gastarMunicion(e);
+    const muzzle=e.pos.clone().setY(e.pos.y+2.0);
+    const d=_toP.copy(mirar).sub(e.pos).normalize(), disp=IA.skill().error;
+    d.x+=(Math.random()-0.5)*disp; d.y+=(Math.random()-0.5)*disp*0.6; d.z+=(Math.random()-0.5)*disp; d.normalize();
+    muzzle.addScaledVector(d, 3);
+    fireProjectile(muzzle, d, {speed:150, dmg:e.tag==='turret'?14:12, from:'enemy', color:0xff6a4a, splash:2, life:3});
   }
 }
 function alignToGround(mesh, pos, yaw, l, dt){
@@ -2166,7 +2340,8 @@ function spawnAlly(idx, lvl){
   const L=AI_LVL[lvl]||AI_LVL.vet;
   const mesh=buildDrone(0x2f9bff); scene.add(mesh); addHeat(mesh,0.4,4);
   const a={ mesh, pos:new THREE.Vector3(), vel:new THREE.Vector3(), yaw:0, hp:L.hp, hpMax:L.hp,
-    alive:true, state:'follow', target:null, reload:Math.random(), L, lvl, offset:idx, bob:Math.random()*TAU };
+    alive:true, state:'follow', target:null, reload:Math.random(), L, lvl, offset:idx, bob:Math.random()*TAU,
+    mobile:true, aim:0, wp:new THREE.Vector3() };
   a.pos.copy(player.pos).add(new THREE.Vector3((idx%2?1:-1)*8, 16+idx*2, -5));
   IA.iaInit(a, 'azul', 'aliado');      // sensores + memoria táctica propios
   allies.push(a);
@@ -2175,51 +2350,57 @@ function damageAlly(a, dmg){
   if(!a.alive) return; a.hp-=dmg;
   if(a.hp<=0){ a.alive=false; a.mesh.visible=false; spawnExplosion(a.pos, 6, 0x8be0ff); feed('Compañero derribado','bad'); }
 }
+const _al=new THREE.Vector3();
+/* Los compañeros usan la MISMA máquina de estados que el enemigo.
+   Para ellos, PATRULLA = mantener formación con el jugador. */
 function updateAllies(dt){
   for(const a of allies){
     if(!a.alive) continue;
-    /* ===== PERCEPCIÓN (capa IA): el compañero solo ataca lo que de verdad ve ===== */
-    let tgt=null, puedeDisparar=false;
     if(CONFIG_IA.enabled){
       IA.percibir(a, dt);
-      const c=IA.mejorContacto(a);
-      // un blanco DESIGNADO por láser cuenta como identificado (se lo pasó el operador)
-      if(a.L!==AI_LVL.rec && designatedTarget && designatedTarget.alive && a.pos.distanceTo(designatedTarget.pos)<a.L.det*1.4){
-        tgt=designatedTarget; puedeDisparar=true; a.ia.estado='ATACAR·designado';
-      } else if(c){ tgt=c.obj; puedeDisparar=(c.certeza>=2); a.ia.estado='ATACAR'; }
-      else a.ia.estado='ESCOLTA';
-    } else {                                                    // comportamiento anterior (interruptor)
-      if(a.L!==AI_LVL.rec && designatedTarget && designatedTarget.alive && a.pos.distanceTo(designatedTarget.pos)<a.L.det*1.4) tgt=designatedTarget;
-      if(!tgt){ let bd=a.L.det; for(const e of enemies){ if(!e.alive)continue; const d=a.pos.distanceTo(e.pos); if(d<bd){bd=d;tgt=e;} } }
-      puedeDisparar=!!tgt;
+      moverAliado(a, IA.decidir(a, dt), dt);
+    } else {
+      let tgt=null, bd=a.L.det;
+      for(const e of enemies){ if(!e.alive)continue; const d=a.pos.distanceTo(e.pos); if(d<bd){bd=d;tgt=e;} }
+      a.ia.blanco=tgt;
+      moverAliado(a, { ir:tgt?{x:tgt.pos.x,z:tgt.pos.z}:null, mirar:tgt?tgt.pos:null, fuego:!!tgt, prisa:tgt?1.1:1 }, dt);
     }
-    a.target=tgt;
-    // objetivo de vuelo: orbitar al blanco o formación con el jugador
-    let goal;
-    if(tgt){ a.state='engage';
-      const to=V.copy(tgt.pos).sub(a.pos); const dist=to.length();
-      goal=dist>42 ? tgt.pos.clone().add(new THREE.Vector3(0,14,0)) : a.pos.clone().addScaledVector(to.normalize(),-6).setY(tgt.pos.y+14);
-    } else { a.state='follow';
-      const ang=a.offset*2.2+missionTime*0.15;
-      goal=player.pos.clone().add(new THREE.Vector3(Math.cos(ang)*13, 16, Math.sin(ang)*13));
-    }
-    const dir=V2.copy(goal).sub(a.pos); const gd=dir.length(); if(gd>0.5) dir.multiplyScalar(1/gd);
-    a.vel.lerp(dir.multiplyScalar(a.state==='engage'?21:16), clamp(3*dt,0,1));
-    a.pos.addScaledVector(a.vel, dt);
-    a.pos.x=clamp(a.pos.x,-HALF+4,HALF-4); a.pos.z=clamp(a.pos.z,-HALF+4,HALF-4);
-    const minY=terrainHeight(a.pos.x,a.pos.z)+6; if(a.pos.y<minY)a.pos.y=minY; a.pos.y=Math.min(a.pos.y,160);
-    a.bob+=dt*3; a.yaw= tgt?Math.atan2(tgt.pos.x-a.pos.x,tgt.pos.z-a.pos.z):Math.atan2(a.vel.x,a.vel.z);
-    a.mesh.position.copy(a.pos); a.mesh.rotation.set(0.1, a.yaw, Math.sin(a.bob)*0.08);
-    if(a.mesh.userData.rotors) for(const r of a.mesh.userData.rotors) r.rotation.y+=dt*80;
-    // dispara con predicción según el nivel
-    a.reload-=dt;
-    if(tgt && puedeDisparar && a.reload<=0){ const dist=a.pos.distanceTo(tgt.pos);
-      if(dist<a.L.det){ a.reload=a.L.reload;
-        const tt=dist/150; const aim=tgt.pos.clone().addScaledVector(tgt.vel||UP.clone().multiplyScalar(0), tt*a.L.lead); aim.y+=1;
-        const d=aim.sub(a.pos).normalize();
-        d.x+=(Math.random()-0.5)*a.L.disp; d.y+=(Math.random()-0.5)*a.L.disp; d.z+=(Math.random()-0.5)*a.L.disp; d.normalize();
-        fireProjectile(a.pos.clone(), d, {speed:160, dmg:16, splash:2, from:'player', color:0x8be0ff, r:0.3, life:3});
-      } }
+  }
+}
+function moverAliado(a, orden, dt){
+  const enFormacion = (a.ia.estado==='PATRULLA' || a.ia.estado==='IDLE' || !orden.ir);
+  let goal=orden.ir;
+  if(enFormacion){                                   // vuela en formación alrededor del jugador
+    const ang=a.offset*2.2+missionTime*0.15;
+    goal={ x:player.pos.x+Math.cos(ang)*13, z:player.pos.z+Math.sin(ang)*13 };
+  }
+  const alt = enFormacion ? player.pos.y+16 : terrainHeight(goal.x,goal.z)+15;
+  const dx=goal.x-a.pos.x, dz=goal.z-a.pos.z, L=Math.hypot(dx,dz)||1;
+  const sp=17*(orden.prisa||1);
+  _al.set(L>3?dx/L*sp:0, (alt-a.pos.y)*1.6, L>3?dz/L*sp:0);
+  a.vel.lerp(_al, clamp(3*dt,0,1));
+  a.pos.addScaledVector(a.vel, dt);
+  a.pos.x=clamp(a.pos.x,-HALF+4,HALF-4); a.pos.z=clamp(a.pos.z,-HALF+4,HALF-4);
+  const minY=terrainHeight(a.pos.x,a.pos.z)+6; if(a.pos.y<minY)a.pos.y=minY; a.pos.y=Math.min(a.pos.y,160);
+  a.bob+=dt*3;
+  const my = orden.mirar ? Math.atan2(orden.mirar.x-a.pos.x, orden.mirar.z-a.pos.z)
+                         : (Math.hypot(a.vel.x,a.vel.z)>1 ? Math.atan2(a.vel.x,a.vel.z) : a.yaw);
+  a.yaw=angLerp(a.yaw, my, 5*dt); a.aim=a.yaw;
+  a.mesh.position.copy(a.pos); a.mesh.rotation.set(0.1, a.yaw, Math.sin(a.bob)*0.08);
+  if(a.mesh.userData.rotors) for(const r of a.mesh.userData.rotors) r.rotation.y+=dt*80;
+  a.target=a.ia.blanco;
+  // ---- fuego con anticipación según el nivel de la IA ----
+  a.reload-=dt;
+  if(orden.fuego && orden.mirar && a.reload<=0){
+    a.reload=a.L.reload;
+    if(a.ia) a.ia.gun.municion=Math.max(0, a.ia.gun.municion-1);
+    const dist=Math.hypot(orden.mirar.x-a.pos.x, orden.mirar.z-a.pos.z), tt=dist/160;
+    _al.copy(orden.mirar);
+    const t=a.ia.blanco; if(t && t.vel) _al.addScaledVector(t.vel, tt*a.L.lead);   // anticipa el movimiento
+    _al.y+=1;
+    const d=_al.sub(a.pos).normalize(), disp=a.L.disp;
+    d.x+=(Math.random()-0.5)*disp; d.y+=(Math.random()-0.5)*disp; d.z+=(Math.random()-0.5)*disp; d.normalize();
+    fireProjectile(a.pos.clone(), d, {speed:160, dmg:16, splash:2, from:'player', color:0x8be0ff, r:0.3, life:3});
   }
 }
 
@@ -2759,7 +2940,9 @@ function updateDrone(dt, inp){
     } else {
       // designación láser: marca el enemigo bajo el dron; tus misiles lo seguirán aunque no lo veas
       let best=null,bd=30; for(const e of enemies){ if(!e.alive)continue; const d=Math.hypot(e.pos.x-drone.pos.x,e.pos.z-drone.pos.z); if(d<bd){bd=d;best=e;} }
-      if(best){ best.marked=true; designatedTarget=best; feed('◎ Blanco DESIGNADO (láser)','good'); }
+      if(best){ best.marked=true; designatedTarget=best;
+        const n=IA.compartirContacto(allies, best, best.air?'dron':'tank');   // se lo pasa al escuadrón
+        feed('◎ Blanco DESIGNADO'+(n?' · '+n+' compañero'+(n>1?'s':'')+' avisado'+(n>1?'s':''):''),'good'); }
     }
   }
 }
@@ -3281,27 +3464,30 @@ function fmtTime(t){ const s=Math.floor(t); return String(Math.floor(s/60)).padS
    ===================================================================== */
 /* Un paso de simulación · lo usan tanto el bucle real como las pruebas */
 function simulate(dt){
+  const F=(n)=>{ if(window.__trace) window.__fase=n; };   // marcador de diagnóstico (inactivo por defecto)
+  F('inicio');
   missionTime+=dt;
   computeSignal(dt); updateDmg(dt);
   if(mode!=='drone' && drone.batt<1) drone.batt=Math.min(1, drone.batt+dt*0.04);  // recarga en tierra
-  const inp=readInput(dt);
-  updatePlayer(dt, inp);
-  IA.tick(dt);            // capa de IA: refresca los blancos percibibles de cada bando
-  updateEnemies(dt);
-  updateAllies(dt);
-  updateProjectiles(dt);
-  updateEffects(dt);
-  stepPhysics(dt);
+  F('entrada'); const inp=readInput(dt);
+  F('jugador');  updatePlayer(dt, inp);
+  F('ia.tick');  IA.tick(dt);            // capa de IA: refresca los blancos percibibles de cada bando
+  F('enemigos'); updateEnemies(dt);
+  F('aliados');  updateAllies(dt);
+  F('proyectiles'); updateProjectiles(dt);
+  F('efectos');  updateEffects(dt);
+  F('fisica');   stepPhysics(dt);
   if(mode==='tank') computeGunnery();
   // objetivo "llegar a la zona"
   if(extractZone && player.pos.distanceTo(extractZone)<8){ const st=objState.find(s=>s.def.type==='reach'); if(st&&!st.done){ st.done=true; feed('Zona alcanzada','good'); checkObjectives(); } }
   // supervivencia + oleadas
   if(mission.survive){ surviveTimer-=dt; if(surviveTimer<=0){ const st=objState.find(s=>s.def.type==='survive'); if(st&&!st.done){ st.done=true; checkObjectives(); } }
     if(enemies.filter(e=>e.alive).length<2 && surviveTimer>4){ const a=Math.random()*TAU, r=150; spawnEnemy('tank', Math.cos(a)*r, Math.sin(a)*r); } }
-  updateCamera(dt);
+  F('camara'); updateCamera(dt);
   updateUnderwater();
-  updateHUD(dt);
-  IA.dibujarDebug();      // F1: conos de visión, estado y blanco de cada unidad
+  F('hud'); updateHUD(dt);
+  F('debug'); IA.dibujarDebug();      // F1: conos de visión, estado y blanco de cada unidad
+  F('fin');
 }
 let errCount=0;
 function frame(){
@@ -3557,6 +3743,12 @@ if(location.search.indexOf('dbg')>=0) window.DRONES={
     h00:+realHeightAt(0,0).toFixed(1), hasTex:!!(terrainMesh&&terrainMesh.material.map),
     osm:REAL.osm||null, colliders:colliders.length}:'no-real',
   sim:(dt)=>{ const d=dt||0.016; if(!playing)return 'no-playing'; simulate(d); renderScene(); return 'ok'; },
+  /* pasos de simulación SIN dibujar: mide la lógica pura (el panel de pruebas
+     renderiza por software y falsea cualquier medición de rendimiento) */
+  render:(on)=>{ RENDER_ON=!!on; return RENDER_ON; },
+  simN:(n,dt)=>{ const d=dt||0.016; if(!playing)return 'no-playing';
+    const t0=performance.now(); for(let i=0;i<(n||60);i++) simulate(d);
+    return { pasos:n||60, ms:+(performance.now()-t0).toFixed(1), msPorPaso:+((performance.now()-t0)/(n||60)).toFixed(3) }; },
   fireTest:()=>{ mouseFire=true; },
   snapshot:()=>{ try{ const w=320,h=180; renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix();
     if(composer)composer.setSize(w,h); if(skyMesh)skyMesh.position.copy(camera.position); renderScene();
@@ -3589,6 +3781,7 @@ if(location.search.indexOf('dbg')>=0) window.DRONES={
   bbLL:()=>REAL?REAL.bbLL:null,
   osmRun:async()=>{ try{ await buildOSM(); return REAL&&REAL.osm?REAL.osm:'terminó sin datos'; }catch(e){ return 'THROW '+(e&&e.message)+' | '+(e&&e.stack||'').slice(0,200); } },
   ia:()=>IA.resumen(),
+  iaLog:()=>IA.historial(),
   iaCfg:(k,v)=>{ if(v!==undefined) CONFIG_IA[k]=v; return {enabled:CONFIG_IA.enabled,debug:CONFIG_IA.debug,dificultad:CONFIG_IA.dificultad}; },
   los:(ax,ay,az,bx,by,bz)=>IA.losBlocked({x:ax,y:ay,z:az},{x:bx,y:by,z:bz}),
   colliders:()=>colliders.length,
