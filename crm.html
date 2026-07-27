@@ -311,6 +311,7 @@ const PLANTILLAS_DEF={
   moraTemprana:{t:'Mora temprana · 1 a 5 días',x:'Recién vencido, con apoyo',m:'Hola {nombre}, espero que estés bien. Tu pago de {saldo} quedó pendiente desde el {fecha_pago} y quería saber cómo va todo por allá. ¿Lo coordinamos hoy con calma? Si te sirve, también puedes dejar la prórroga de {prorroga}. Aquí estoy para apoyarte.'},
   mora:{t:'Mora · 6 días o más',x:'Respetuoso, buscando acuerdo',m:'Hola {nombre}, ¿cómo has estado? Tu obligación de {saldo} sigue pendiente ({dias_mora} días) y de verdad quiero ayudarte a resolverlo. Cuéntame cómo está tu situación y buscamos juntos un acuerdo que te sirva. Lo importante eres tú.'},
   recibo:{t:'Pago recibido',x:'Confirmación cálida',m:'¡Recibido, {nombre}! Tu pago quedó registrado. De corazón, muchas gracias por tu cumplimiento y por la confianza. Cuando necesites, aquí me tienes 🙂'},
+  historial:{t:'Su historial de socio',x:'Le manda a su celular todo lo que ha construido contigo',m:'Hola {nombre} 🙂 Te comparto tu historial con {negocio}, para que lo veas cuando quieras desde tu celular. Ahí sale todo lo que has pagado, la garantía que llevas acumulada, hasta cuánto puedes pedir y con qué tasa. Y algo que quiero que tengas claro: aunque alguna vez te atrases, sigues siendo socio y aquí te seguimos prestando.\n\n{enlace}'},
   prorroga:{t:'Prórroga registrada',x:'Tras dejar la prórroga',m:'Listo {nombre}, ya registré tu prórroga de {prorroga}, no te preocupes por nada. Tu pago de {saldo} pasa tranquilo para la quincena del {fecha_pago}. Gracias por avisarme; cualquier cosa me cuentas.'}
 };
 
@@ -435,11 +436,12 @@ function plantillaPara(p){ const e=estadoPrestamo(p);
   if(e==='mora')return diasMora(p)>=6?'mora':'moraTemprana'; if(e==='hoy')return 'venceHoy';
   if(e==='proximo')return diasPara(p)>=2?'recordatorio2':'recordatorio1'; return 'venceHoy'; }
 function waNum(s){ return (s.whatsappIgual?s.telefono:(s.whatsappNumero||s.telefono))||''; }
-function aplicarVars(txt,p,s){ return txt
+function aplicarVars(txt,p,s,enlace){ return txt
   .replaceAll('{nombre}',(s.nombre||'').split(' ')[0]||s.nombre||'').replaceAll('{negocio}',DB.config.negocio||'Joan')
   .replaceAll('{monto}',COP(p?capitalActual(p):0)).replaceAll('{saldo}',COP(p?totalCiclo(p):0))
   .replaceAll('{prorroga}',COP(p?K(p):0)).replaceAll('{fecha_pago}',p?fmtFecha(p.cicloActual):'')
-  .replaceAll('{dias_mora}',p?String(diasMora(p)):'0'); }
+  .replaceAll('{dias_mora}',p?String(diasMora(p)):'0')
+  .replaceAll('{enlace}',enlace||''); }
 function waLink(tel,msg){ return 'https://wa.me/57'+String(tel||'').replace(/\D/g,'')+'?text='+encodeURIComponent(msg); }
 
 function renderCola(){
@@ -538,7 +540,7 @@ function renderClientes(){
       <td class="num">${npr}</td>
       <td class="gano">${COP(gan)}</td>
       <td><span class="chip ${r.cls}">${r.txt}</span></td>
-      <td style="text-align:right"><a class="btn btn-wa btn-sm" target="_blank" rel="noopener" href="${waLink(waNum(s),'')}">WA</a> <button class="btn btn-ghost btn-sm" onclick="verCliente('${s.id}')">Ver</button></td></tr>`;}).join('')}</tbody></table>`;
+      <td style="text-align:right"><a class="btn btn-wa btn-sm" target="_blank" rel="noopener" href="${waLink(waNum(s),'')}">WA</a> <button class="btn btn-ghost btn-sm" onclick="mandarHistorial('${s.id}')" title="Mandarle su historial de socio al celular">📲</button> <button class="btn btn-ghost btn-sm" onclick="verCliente('${s.id}')">Ver</button></td></tr>`;}).join('')}</tbody></table>`;
 }
 
 /* ===== CICLOS ===== */
@@ -607,12 +609,12 @@ function exportarICS(){
 }
 
 /* ===== PLANTILLAS ===== */
-const PLT_VARS=['nombre','negocio','monto','saldo','prorroga','fecha_pago','dias_mora'];
+const PLT_VARS=['nombre','negocio','monto','saldo','prorroga','fecha_pago','dias_mora','enlace'];
 function aplicarVarsDemo(txt){ return (txt||'')
   .replaceAll('{nombre}','María').replaceAll('{negocio}',DB.config.negocio||'Joan')
   .replaceAll('{monto}','$400.000').replaceAll('{saldo}','$480.000')
   .replaceAll('{prorroga}','$80.000').replaceAll('{fecha_pago}','30 de junio de 2026')
-  .replaceAll('{dias_mora}','3'); }
+  .replaceAll('{dias_mora}','3').replaceAll('{enlace}',URL_APP_DEF+'#…'); }
 function renderPlantillas(){
   document.getElementById('pltWrap').innerHTML=Object.keys(PLANTILLAS_DEF).map(k=>{
     const val=DB.plantillas[k]!==undefined?DB.plantillas[k]:PLANTILLAS_DEF[k].m, esRec=val===PLANTILLAS_DEF[k].m;
@@ -873,6 +875,7 @@ function pintarCfg(){ document.getElementById('cfgNeg').value=DB.config.negocio;
    viejo no arranque en cero, y lo sube para que lo vea en su celular. */
 const SB_KEY='joan_socios_sb';
 const CUPON_KYC={0:0,1:100000,2:200000,3:300000};
+const URL_APP_DEF='https://joanhispanista-star.github.io/joan-te-presta/socios/socio.html';
 function sbCfg(){ try{ return JSON.parse(localStorage.getItem(SB_KEY)||'{}'); }catch(e){ return {}; } }
 function guardarSupabase(){
   const c={url:gv('cfgSbUrl').replace(/\/+$/,''),anon:gv('cfgSbAnon'),clave:document.getElementById('cfgSbClave').value};
@@ -929,6 +932,48 @@ function verMigracion(){
       return `<div class="info-row"><span class="k">${escHTML(x.nombre)}<div class="muted">CC ${escHTML(x.cedula)} · cel …${escHTML(x.telefono.slice(-4))}</div></span>
       <span class="vv"><b>${COP(g.total)}</b> de garantía<div class="muted">${g.nivel} · ${g.creditos_total} crédito(s) · ${g.pagados_a_tiempo} puntual(es)</div></span></div>`; }).join('')
     +(lote.length>40?`<div class="muted" style="margin-top:10px">…y ${lote.length-40} más.</div>`:''));
+}
+/* ===== ENLACE PERSONAL POR WHATSAPP (sin nube, funciona hoy) =====
+   El historial del cliente viaja DENTRO del enlace, en la parte de después del
+   #, que el navegador nunca le manda al servidor. Así no hay base de datos, no
+   hay cuenta, no hay claves: se lo mandás por WhatsApp y lo abre en su celular.
+   Contra: es una foto del momento; cuando cambien sus números le mandás otro. */
+function urlApp(){ return DB.config.urlApp||URL_APP_DEF; }
+function aB64Url(str){
+  const bytes=new TextEncoder().encode(str); let bin='';
+  bytes.forEach(b=>{ bin+=String.fromCharCode(b); });
+  return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+function enlaceHistorial(s){
+  const d=migrarSocio(s);
+  d.creditos=d.creditos.slice(0,24);   // los 24 más recientes, para no alargar el enlace
+  return urlApp()+'#d='+aB64Url(JSON.stringify({n:s.nombre||'Socio',d:d,f:hoyISO()}));
+}
+function mandarHistorial(id){
+  const s=DB.socios.find(x=>x.id===id); if(!s)return;
+  if(!DB.prestamos.some(p=>p.socioId===s.id))
+    return alert(s.nombre+' todavía no tiene créditos registrados, así que no hay historial para mandarle.');
+  const enlace=enlaceHistorial(s);
+  const msg=aplicarVars(DB.plantillas.historial||PLANTILLAS_DEF.historial.m,null,s,enlace);
+  const g=migrarSocio(s).garantia;
+  openModal('Su historial · '+s.nombre,`
+    <div class="info-row"><span class="k">Garantía que va a ver</span><b>${COP(g.total)}</b></div>
+    <div class="info-row"><span class="k">Nivel</span><b>${escHTML(g.nivel)}</b></div>
+    <div class="info-row"><span class="k">Créditos en el enlace</span><b>${Math.min(g.creditos_total,24)}</b></div>
+    <div class="sub-h">Mensaje que le llega</div>
+    <div class="alerta info" style="white-space:pre-wrap">${escHTML(msg)}</div>
+    <div class="two" style="margin-top:16px">
+      <a class="btn btn-wa" target="_blank" rel="noopener" href="${waLink(waNum(s),msg)}">💬 Mandar por WhatsApp</a>
+      <button class="btn btn-ghost" onclick="copiarEnlace('${s.id}')">📋 Copiar el enlace</button>
+    </div>
+    <div class="muted" style="font-size:12px;margin-top:12px">Sus datos viajan dentro del enlace, no quedan en ningún servidor. Es una foto de hoy: cuando pague o pida otro crédito, mandale el enlace de nuevo y verá los números al día.</div>
+    <div class="muted" style="font-size:12px;margin-top:6px">El mensaje se edita en Plantillas → “Su historial de socio”.</div>`);
+}
+function copiarEnlace(id){
+  const s=DB.socios.find(x=>x.id===id); if(!s)return;
+  const t=enlaceHistorial(s);
+  if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(()=>alert('Enlace copiado.'),()=>prompt('Copialo de aquí:',t));
+  else prompt('Copialo de aquí:',t);
 }
 function sincronizarSocios(){
   const c=sbCfg();

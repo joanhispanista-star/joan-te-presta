@@ -219,6 +219,24 @@ var DEMO = {
   actualizado_en: null
 };
 
+/* ===================== HISTORIAL QUE VIENE EN EL ENLACE ===================
+   Joan manda por WhatsApp un enlace con los datos del socio adentro, después
+   del #. Esa parte el navegador NO se la manda a ningún servidor: se lee acá
+   mismo. Sin cuenta, sin base de datos y sin necesidad de internet una vez
+   abierta la página. */
+function desdeEnlace() {
+  var m = /[#&]d=([A-Za-z0-9\-_]+)/.exec(location.hash || '');
+  if (!m) return null;
+  try {
+    var s = m[1].replace(/-/g, '+').replace(/_/g, '/');
+    var bin = atob(s), by = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) by[i] = bin.charCodeAt(i);
+    var paq = JSON.parse(new TextDecoder().decode(by));
+    if (!paq || !paq.d) return null;
+    return { nombre: paq.n, datos: paq.d, actualizado_en: paq.f || null, deEnlace: true };
+  } catch (e) { return null; }
+}
+
 /* ============================== ENTRAR =================================== */
 function mostrar(cual) {
   ['pantallaEntrar', 'pantallaCargando', 'pantallaCuenta'].forEach(function (p) {
@@ -332,12 +350,15 @@ function pintar(resp, esDemo) {
   else pagados.forEach(function (c) { h += lineaHistorial(c); });
   h += '</div>';
 
-  if (resp.actualizado_en) {
+  if (resp.deEnlace) {
+    h += '<div class="pie">Estos son tus números al ' + fmtFecha(resp.actualizado_en || hoyISO()) + '.<br>' +
+         'Cuando pagues o pidas otro crédito, pedile a Joan que te mande el enlace de nuevo.</div>';
+  } else if (resp.actualizado_en) {
     h += '<div class="pie">Datos al ' + fmtFecha(resp.actualizado_en) + '.<br>Si ves algo raro, escribile a Joan.</div>';
   } else {
     h += '<div class="pie">Si ves algo raro en tus números, escribile a Joan.</div>';
   }
-  h += '<button class="btn sec" style="margin-top:18px" onclick="salir()">Salir</button>';
+  if (!resp.deEnlace) h += '<button class="btn sec" style="margin-top:18px" onclick="salir()">Salir</button>';
 
   $('cuerpo').innerHTML = h;
   mostrar('pantallaCuenta');
@@ -468,6 +489,8 @@ function pantallaConfig() {
       '</div></div>';
     return;
   }
+  var delEnlace = desdeEnlace();
+  if (delEnlace) { pintar(delEnlace, false); return; }   // Joan ya le mandó todo adentro
   if (!CFG.url || !CFG.anon) {
     var a = $('avisoDemo');
     a.innerHTML = '<b>Modo ejemplo.</b> Todavía no está conectada la base de datos, ' +
