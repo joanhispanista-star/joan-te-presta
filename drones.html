@@ -438,7 +438,7 @@
   <!-- ===== MENÚ PRINCIPAL ===== -->
   <div class="overlay on" id="menu">
     <div class="card">
-      <div class="brand"><div class="seal">◈</div><div><div class="l1">DRONES DE COMBATE</div><div class="l2">Simulador táctico · v0.10 · IA etapa 1</div></div></div>
+      <div class="brand"><div class="seal">◈</div><div><div class="l1">DRONES DE COMBATE</div><div class="l2">Simulador táctico · v0.11 · ciudades reales</div></div></div>
       <div class="title">DRONES DE COMBATE</div>
       <div class="subtitle">Simulador de <b>drones terrestres y aéreos</b> no tripulados. Sensores <b>térmico y nocturno</b>, <b>enlace por línea de vista</b>, terreno <b>real del planeta</b>, día/noche y clima. Núcleo abierto para seguir sumando sistemas. <span style="color:var(--gris-2)">por Joan</span></div>
 
@@ -463,8 +463,8 @@
 
       <!-- MUNDO REAL -->
       <div id="tab-real" style="display:none">
-        <div class="h-sec">Terreno real del planeta · elevación + satélite</div>
-        <div class="subtitle" style="margin-bottom:10px">Se descargan datos <b>reales</b> de altura y una <b>imagen satelital</b> del lugar para construir el mapa. Necesita internet un momento.</div>
+        <div class="h-sec">Mundo real · relieve + satélite + ciudad en 3D</div>
+        <div class="subtitle" style="margin-bottom:10px">Se descargan la <b>altura real</b> del terreno, la <b>imagen satelital</b> y, de <b>OpenStreetMap</b>, los <b>edificios con su forma real</b>, los ríos, lagos y el arbolado del lugar. El campo abarca <b>~2,4 km</b> a escala correcta (1 unidad ≈ 5 m). Tarda unos segundos y necesita internet.</div>
         <div class="missions" id="realList"></div>
         <div class="h-sec" style="margin-top:16px">📍 Tu zona · cualquier lugar del planeta</div>
         <div class="subtitle" style="margin-bottom:8px">Pega latitud y longitud (en Google Maps: clic derecho → copia las coordenadas). Ej: Bogotá <b>4.60, -74.08</b>.</div>
@@ -1251,38 +1251,68 @@ function realHeightAt(x,z){
   const a=h[z0*G+x0], b=h[z0*G+x1], c=h[z1*G+x0], d=h[z1*G+x1];
   return lerp(lerp(a,b,tx), lerp(c,d,tx), tz);
 }
+/* ---------------------------------------------------------------------
+   Mundo real v2 · ESCALA CORRECTA
+   El campo de batalla abarca ~2,4 km reales sobre las 460 unidades del
+   mundo → 1 unidad ≈ 5 m, la MISMA escala que ya usa el resto del juego
+   (telémetro MPU=5, alcances, armas). Antes abarcaba 7,3 km: el tanque
+   "medía" 64 m sobre una foto de 9,5 m/píxel, y por eso no parecía real.
+   La elevación y la imagen se descargan por ÁREA GEOGRÁFICA EXACTA y se
+   recortan para que ambas cubran justo el mismo rectángulo.
+   --------------------------------------------------------------------- */
+const REAL_SPAN_DEF=2400;                       // metros de lado del campo real
+function mppAt(lat,z){ return 156543.03392*Math.cos(lat*Math.PI/180)/Math.pow(2,z); }
+function tileX2lon(x,z){ return x/Math.pow(2,z)*360-180; }
+function tileY2lat(y,z){ const n=Math.PI-2*Math.PI*y/Math.pow(2,z); return 180/Math.PI*Math.atan(0.5*(Math.exp(n)-Math.exp(-n))); }
+async function fetchTiles(z, urlFn, bb, outSize, smooth){
+  const TS=256;
+  const xa=Math.floor(bb.x0), xb=Math.ceil(bb.x1), ya=Math.floor(bb.y0), yb=Math.ceil(bb.y1);
+  const nx=Math.max(1,xb-xa), ny=Math.max(1,yb-ya);
+  const big=document.createElement('canvas'); big.width=nx*TS; big.height=ny*TS;
+  const bc=big.getContext('2d',{willReadFrequently:true});
+  let ok=0;
+  await Promise.all(Array.from({length:nx*ny},(_,i)=>{
+    const tx=i%nx, ty=(i/nx)|0;
+    return loadImg(urlFn(z, xa+tx, ya+ty)).then(im=>{ bc.drawImage(im,tx*TS,ty*TS,TS,TS); ok++; }).catch(()=>{});
+  }));
+  const out=document.createElement('canvas'); out.width=out.height=outSize;
+  const oc=out.getContext('2d',{willReadFrequently:true});
+  oc.imageSmoothingEnabled=!!smooth;             // la elevación NUNCA se interpola (corrompe la altura)
+  oc.drawImage(big, (bb.x0-xa)*TS, (bb.y0-ya)*TS, (bb.x1-bb.x0)*TS, (bb.y1-bb.y0)*TS, 0,0,outSize,outSize);
+  return { canvas:out, ctx:oc, ok, total:nx*ny };
+}
 async function buildRealWorld(map){
   REAL=null; clearTerrain();
-  const z=map.zoom, T=map.tiles||3, TS=256, G=T*TS;
-  const cx=Math.floor(lon2tileX(map.lon,z)), cy=Math.floor(lat2tileY(map.lat,z));
-  const x0=cx-((T-1)>>1), y0=cy-((T-1)>>1);
-  const ec=document.createElement('canvas'); ec.width=ec.height=G; const ectx=ec.getContext('2d',{willReadFrequently:true});
-  const ic=document.createElement('canvas'); ic.width=ic.height=G; const ictx=ic.getContext('2d');
-  let imgOK=true; const jobs=[];
-  for(let ty=0;ty<T;ty++) for(let tx=0;tx<T;tx++){
-    const X=x0+tx, Y=y0+ty;
-    jobs.push(loadImg('https://s3.amazonaws.com/elevation-tiles-prod/terrarium/'+z+'/'+X+'/'+Y+'.png')
-      .then(im=>ectx.drawImage(im,tx*TS,ty*TS,TS,TS)));
-    jobs.push(loadImg('https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/'+z+'/'+Y+'/'+X)
-      .then(im=>ictx.drawImage(im,tx*TS,ty*TS,TS,TS)).catch(()=>{ imgOK=false; }));
-  }
-  await Promise.all(jobs.map(p=>p.catch(e=>{ /* la elevación es obligatoria */ if(String(e.message)==='tesela'){} return null; })));
+  const spanM = map.spanM || REAL_SPAN_DEF;
+  const ZE=15;                                    // elevación: máximo zoom que existe en Terrarium
+  const ZT=map.texZoom || (IS_TOUCH?16:17);       // satélite: más nítido en computador
+  const bbAt=(z)=>{ const h=(spanM/mppAt(map.lat,z))/256/2;
+    const fx=lon2tileX(map.lon,z), fy=lat2tileY(map.lat,z);
+    return {x0:fx-h, x1:fx+h, y0:fy-h, y1:fy+h}; };
+  const bbE=bbAt(ZE), bbT=bbAt(ZT);
+  const G=512;
+  showLoading('Descargando terreno real', map.name+' · relieve');
+  const E=await fetchTiles(ZE, (z,x,y)=>'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/'+z+'/'+x+'/'+y+'.png', bbE, G, false);
+  if(!E.ok) throw new Error('sin datos de elevación');
+  showLoading('Descargando imagen satelital', map.name+' · '+(ZT>=17?'alta definición':'satélite'));
+  const TX=await fetchTiles(ZT, (z,x,y)=>'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/'+z+'/'+y+'/'+x, bbT, ZT>=17?2048:1024, true);
+  const imgOK=TX.ok>0, ic=TX.canvas;
   // decodifica elevación
-  let ed; try{ ed=ectx.getImageData(0,0,G,G).data; }catch(e){ throw new Error('sin datos de elevación (CORS)'); }
+  let ed; try{ ed=E.ctx.getImageData(0,0,G,G).data; }catch(e){ throw new Error('sin datos de elevación (CORS)'); }
   const heightsM=new Float32Array(G*G); let minE=1e9,maxE=-1e9, valid=0;
   for(let i=0;i<G*G;i++){ const r=ed[i*4],g=ed[i*4+1],b=ed[i*4+2],al=ed[i*4+3];
     let e=(r*256+g+b/256)-32768; if(al===0){ e=minE<1e9?minE:0; } else valid++;
     heightsM[i]=e; if(e<minE)minE=e; if(e>maxE)maxE=e; }
   if(valid<G*G*0.3) throw new Error('la zona no tiene elevación disponible');
-  // escala real -> unidades de juego (mantiene proporción, con tope jugable)
-  const mpp=156543.03392*Math.cos(map.lat*Math.PI/180)/Math.pow(2,z);
-  const spanM=T*TS*mpp, hScale=WORLD/spanM;
-  let vScale=hScale*(map.vexag||1.2);
-  const reliefM=Math.max(1,maxE-minE), reliefU=reliefM*vScale;
-  if(reliefU>180) vScale*=180/reliefU; else if(reliefU<30) vScale*=30/reliefU;
+  // ESCALA REAL: horizontal y vertical en la misma proporción (sin falsear el relieve)
+  const hScale=WORLD/spanM;                       // ≈0.19 u/m  →  1 unidad ≈ 5,2 m
+  let vScale=hScale*(map.vexag||1.0);
+  const reliefU=Math.max(1,maxE-minE)*vScale;
+  if(reliefU>400) vScale*=400/reliefU;             // tope solo para no romper el juego en el Himalaya
   const heights=new Float32Array(G*G);
   for(let i=0;i<G*G;i++) heights[i]=(heightsM[i]-minE)*vScale;
-  REAL={ G, heights, seaY:(0-minE)*vScale, spanM, map, minE, maxE };
+  const bbLL={ w:tileX2lon(bbT.x0,ZT), e:tileX2lon(bbT.x1,ZT), n:tileY2lat(bbT.y0,ZT), s:tileY2lat(bbT.y1,ZT) };
+  REAL={ G, heights, seaY:(0-minE)*vScale, spanM, map, minE, maxE, hScale, vScale, bb:bbT, Z:ZT, bbLL, mPerU:spanM/WORLD };
   // material: textura satelital (o rampa por altura si falla)
   let mat;
   if(imgOK){ const tex=new THREE.CanvasTexture(ic); tex.colorSpace=THREE.SRGBColorSpace;
@@ -1308,6 +1338,199 @@ async function buildRealWorld(map){
   worldBase={ skyTop:map.skyTop||0x3a72b0, fog:map.fog||0xbcd0e0, fogN:0.0011, amb:0x4a4436 };
   setWater(REAL.seaY, minE<-5);   // agua solo si hay zonas bajo el nivel del mar
   applyEnvironment();
+  // 🏙️ CIUDAD REAL: edificios, ríos y arbolado de OpenStreetMap
+  try{
+    showLoading('Levantando la ciudad', map.name+' · edificios y ríos (OpenStreetMap)');
+    await buildOSM();
+  }catch(e){ console.warn('OSM no disponible:', e&&e.message); }
+}
+
+/* =====================================================================
+   🏙️ CIUDAD REAL (OpenStreetMap · Overpass API, sin llave, CORS abierto)
+   Trae la forma REAL de cada edificio, los ríos, lagos, parques y bosques
+   del lugar elegido y los levanta en 3D. Si Overpass está ocupado o la
+   zona no tiene datos, el mapa sigue funcionando solo con el terreno.
+   ===================================================================== */
+function llToGame(lat,lon){
+  const R=REAL, fx=lon2tileX(lon,R.Z), fy=lat2tileY(lat,R.Z);
+  return { x:(fx-R.bb.x0)/(R.bb.x1-R.bb.x0)*WORLD-HALF,
+           z:(fy-R.bb.y0)/(R.bb.y1-R.bb.y0)*WORLD-HALF };
+}
+/* Overpass es un servicio público y a veces limita peticiones: se consultan
+   los espejos EN PARALELO y gana el primero que responda. Además se cachea
+   la zona en memoria para que reintentar o volver sea instantáneo. */
+const OSM_CACHE=new Map();
+async function overpass(q, key){
+  if(key && OSM_CACHE.has(key)) return OSM_CACHE.get(key);
+  const eps=['https://overpass-api.de/api/interpreter',
+             'https://overpass.kumi.systems/api/interpreter',
+             'https://overpass.osm.ch/api/interpreter'];
+  let huboVacia=false;
+  const pedir=(ep)=>new Promise((res,rej)=>{
+    const c=new AbortController(), t=setTimeout(()=>{ c.abort(); rej(new Error('timeout')); }, 22000);
+    fetch(ep,{ method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:'data='+encodeURIComponent(q), signal:c.signal })
+      .then(r=>{ clearTimeout(t); if(!r.ok) throw new Error('http '+r.status); return r.json(); })
+      // ⚠ una respuesta VACÍA no puede ganar la carrera: si un espejo saturado
+      // contesta "sin elementos" antes que el bueno, perderíamos la ciudad entera
+      .then(j=>{ if(j && j.elements && j.elements.length) res(j);
+                 else { huboVacia=true; rej(new Error('vacío')); } })
+      .catch(e=>{ clearTimeout(t); rej(e); });
+  });
+  try{
+    const j=await Promise.any(eps.map(pedir));
+    if(key) OSM_CACHE.set(key, j);
+    return j;
+  }catch(e){ return huboVacia ? {elements:[], vacio:true} : null; }
+}
+function areaPoly(p){ let a=0; for(let i=0,j=p.length-1;i<p.length;j=i++) a+=(p[j].x+p[i].x)*(p[j].z-p[i].z); return Math.abs(a/2); }
+function dentroPoly(x,z,p){ let d=false;
+  for(let i=0,j=p.length-1;i<p.length;j=i++){
+    if(((p[i].z>z)!==(p[j].z>z)) && (x < (p[j].x-p[i].x)*(z-p[i].z)/(p[j].z-p[i].z)+p[i].x)) d=!d; }
+  return d; }
+function alturaEdificio(t, areaM2){
+  const h=parseFloat(t.height); if(isFinite(h)&&h>2) return h;
+  const l=parseFloat(t['building:levels']); if(isFinite(l)&&l>0) return l*3.2+1.2;
+  const k=t.building||'yes';
+  if(/^(house|bungalow|hut|shed|garage|garages|cabin|roof)$/.test(k)) return 5;
+  if(/^(apartments|residential|dormitory|hotel)$/.test(k)) return 15;
+  if(/^(commercial|office|retail|civic|government|university)$/.test(k)) return 18;
+  if(/^(industrial|warehouse|hangar|farm)$/.test(k)) return 9;
+  if(/^(church|cathedral|temple|mosque)$/.test(k)) return 20;
+  return areaM2>4000?22 : areaM2>1200?13 : areaM2>400?8 : 5;   // estimación por tamaño
+}
+let BGU=null;
+async function getBGU(){ if(BGU!==null) return BGU;
+  try{ BGU=await import('three/addons/utils/BufferGeometryUtils.js'); }catch(e){ BGU=false; } return BGU; }
+
+async function buildOSM(){
+  if(!REAL) return;
+  const b=REAL.bbLL;
+  const box=b.s.toFixed(5)+','+b.w.toFixed(5)+','+b.n.toFixed(5)+','+b.e.toFixed(5);
+  const q='[out:json][timeout:25];('
+    +'way["building"]('+box+');'
+    +'way["natural"="water"]('+box+');'
+    +'way["waterway"~"^(river|stream|canal)$"]('+box+');'
+    +'way["leisure"="park"]('+box+');'
+    +'way["landuse"~"^(forest|grass|meadow|recreation_ground)$"]('+box+');'
+    +'way["natural"="wood"]('+box+');'
+    +');out geom;';
+  const j=await overpass(q, box);
+  if(!j){ feed('⚠ OpenStreetMap ocupado — reintenta la misión para traer la ciudad','bad'); return; }
+  if(j.vacio){ feed('Esta zona no tiene edificios mapeados en OpenStreetMap'); REAL.osm={edificios:0,agua:0,arboles:0}; return; }
+  const ways=(j.elements||[]).filter(e=>e.geometry && e.geometry.length>2);
+  const M2U=REAL.vScale, LIM=HALF-4;
+  const geosB=[], aguaPolys=[], treePts=[];
+  let nB=0, nA=0, nV=0;
+  const cBase=new THREE.Color();
+  for(const w of ways){
+    const t=w.tags||{};
+    const pts=[]; let dentro=false;
+    for(const g of w.geometry){ const p=llToGame(g.lat,g.lon);
+      if(Math.abs(p.x)<LIM && Math.abs(p.z)<LIM) dentro=true;
+      pts.push({x:clamp(p.x,-LIM,LIM), z:clamp(p.z,-LIM,LIM)}); }
+    if(!dentro) continue;
+    // ---------- EDIFICIOS ----------
+    if(t.building && nB<1500){
+      if(pts.length<4) continue;
+      const cx=pts.reduce((s,p)=>s+p.x,0)/pts.length, cz=pts.reduce((s,p)=>s+p.z,0)/pts.length;
+      if(Math.hypot(cx,cz)<22) continue;                        // deja libre la zona de despliegue
+      const areaU=areaPoly(pts); if(areaU<0.6) continue;
+      const areaM2=areaU*REAL.mPerU*REAL.mPerU;
+      const hU=Math.max(1.2, alturaEdificio(t,areaM2)*M2U);
+      const sh=new THREE.Shape();
+      sh.moveTo(pts[0].x, -pts[0].z);
+      for(let i=1;i<pts.length;i++) sh.lineTo(pts[i].x, -pts[i].z);
+      let g;
+      try{ g=new THREE.ExtrudeGeometry(sh,{depth:hU, bevelEnabled:false, curveSegments:1}); }catch(e){ continue; }
+      g.rotateX(-Math.PI/2);
+      let baseY=1e9; for(const p of pts) baseY=Math.min(baseY, terrainHeight(p.x,p.z));
+      g.translate(0, baseY-0.4, 0);
+      // tono de hormigón con variación por edificio
+      const v=0.72+0.28*((nB*0.37)%1);
+      cBase.setRGB(0.62*v, 0.63*v, 0.66*v);
+      const n=g.attributes.position.count, col=new Float32Array(n*3);
+      for(let i=0;i<n;i++){ col[i*3]=cBase.r; col[i*3+1]=cBase.g; col[i*3+2]=cBase.b; }
+      g.setAttribute('color', new THREE.BufferAttribute(col,3));
+      g.deleteAttribute('uv'); g.deleteAttribute('normal'); g.computeVertexNormals();
+      geosB.push(g);
+      colliders.push({ x:cx, z:cz, r:Math.max(1.2,Math.sqrt(areaU/Math.PI)*0.85), h:hU });
+      nB++;
+    }
+    // ---------- AGUA (lagos, ríos) ----------
+    else if(t.natural==='water' || t.water){ aguaPolys.push(pts); nA++; }
+    else if(t.waterway){
+      const anchoM=parseFloat(t.width)|| (t.waterway==='river'?22:8);
+      const a=Math.max(0.6, anchoM*REAL.hScale)/2;
+      for(let i=0;i<pts.length-1;i++){
+        const p0=pts[i], p1=pts[i+1];
+        const dx=p1.x-p0.x, dz=p1.z-p0.z, L=Math.hypot(dx,dz)||1;
+        const nx=-dz/L*a, nz=dx/L*a;
+        aguaPolys.push([{x:p0.x+nx,z:p0.z+nz},{x:p1.x+nx,z:p1.z+nz},{x:p1.x-nx,z:p1.z-nz},{x:p0.x-nx,z:p0.z-nz}]);
+      }
+      nA++;
+    }
+    // ---------- PARQUES / BOSQUES → arbolado ----------
+    else {
+      const denso = (t.natural==='wood'||t.landuse==='forest');
+      let minX=1e9,maxX=-1e9,minZ=1e9,maxZ=-1e9;
+      for(const p of pts){ minX=Math.min(minX,p.x);maxX=Math.max(maxX,p.x);minZ=Math.min(minZ,p.z);maxZ=Math.max(maxZ,p.z); }
+      const areaU=areaPoly(pts);
+      const cuantos=Math.min(denso?90:26, Math.floor(areaU/(denso?26:70)));
+      for(let i=0;i<cuantos && treePts.length<1200;i++){
+        const x=minX+Math.random()*(maxX-minX), z=minZ+Math.random()*(maxZ-minZ);
+        if(Math.hypot(x,z)<20) continue;
+        if(dentroPoly(x,z,pts)) treePts.push({x,z});
+      }
+    }
+  }
+  // ---- edificios: se fusionan en UNA malla (rendimiento) ----
+  if(geosB.length){
+    const U=await getBGU();
+    const matB=new THREE.MeshStandardMaterial({ vertexColors:true, roughness:0.88, metalness:0.05 });
+    if(U && U.mergeGeometries){
+      const merged=U.mergeGeometries(geosB,false);
+      if(merged){ const m=new THREE.Mesh(merged,matB); m.castShadow=true; m.receiveShadow=true; propGroup.add(m); }
+      geosB.forEach(g=>g.dispose());
+    } else {
+      for(const g of geosB){ const m=new THREE.Mesh(g,matB); m.castShadow=true; m.receiveShadow=true; propGroup.add(m); }
+    }
+  }
+  // ---- agua ----
+  if(aguaPolys.length){
+    const matW=new THREE.MeshStandardMaterial({ color:0x2d6d94, roughness:0.18, metalness:0.4, transparent:true, opacity:0.9 });
+    const geos=[];
+    for(const p of aguaPolys){
+      const sh=new THREE.Shape(); sh.moveTo(p[0].x,-p[0].z);
+      for(let i=1;i<p.length;i++) sh.lineTo(p[i].x,-p[i].z);
+      let g; try{ g=new THREE.ShapeGeometry(sh); }catch(e){ continue; }
+      g.rotateX(-Math.PI/2);
+      let y=1e9; for(const q2 of p) y=Math.min(y, terrainHeight(q2.x,q2.z));
+      g.translate(0, y+0.35, 0); g.deleteAttribute('uv'); geos.push(g);
+    }
+    if(geos.length){ const U=await getBGU();
+      if(U && U.mergeGeometries){ const mg=U.mergeGeometries(geos,false);
+        if(mg) propGroup.add(new THREE.Mesh(mg,matW)); geos.forEach(g=>g.dispose()); }
+      else geos.forEach(g=>propGroup.add(new THREE.Mesh(g,matW)));
+    }
+  }
+  // ---- arbolado (instanciado) ----
+  if(treePts.length){
+    const trG=new THREE.CylinderGeometry(0.06,0.09,0.9,5), lfG=new THREE.ConeGeometry(0.5,1.7,7);
+    const trM=new THREE.MeshStandardMaterial({color:0x5b4636,roughness:1,flatShading:true});
+    const lfM=new THREE.MeshStandardMaterial({color:0x2f6b45,roughness:1,flatShading:true});
+    const tI=new THREE.InstancedMesh(trG,trM,treePts.length), lI=new THREE.InstancedMesh(lfG,lfM,treePts.length);
+    tI.castShadow=lI.castShadow=true;
+    const d=new THREE.Object3D();
+    treePts.forEach((p,i)=>{ const y=terrainHeight(p.x,p.z), s=0.8+Math.random()*0.6;
+      d.position.set(p.x,y+0.45*s,p.z); d.scale.setScalar(s); d.rotation.y=Math.random()*TAU; d.updateMatrix(); tI.setMatrixAt(i,d.matrix);
+      d.position.set(p.x,y+1.6*s,p.z); d.updateMatrix(); lI.setMatrixAt(i,d.matrix);
+      colliders.push({x:p.x,z:p.z,r:0.5*s,h:2.4*s}); });
+    tI.instanceMatrix.needsUpdate=true; lI.instanceMatrix.needsUpdate=true;
+    propGroup.add(tI); propGroup.add(lI); nV=treePts.length;
+  }
+  REAL.osm={ edificios:nB, agua:nA, arboles:nV };
+  feed('🏙️ '+nB+' edificios reales · '+nA+' cuerpos de agua · '+nV+' árboles','good');
 }
 function showLoading(title,sub){ const b=$('boot'); b.style.display='grid';
   const l=b.querySelector('.l'), s=b.querySelector('.sub'); if(l)l.textContent=title||'Cargando…'; if(s)s.textContent=sub||''; }
@@ -1644,7 +1867,7 @@ function damageEnemy(e, dmg){
    ===================================================================== */
 const IA=(function(){
   const _eye=new THREE.Vector3(), _tp=new THREE.Vector3(), _lk=new THREE.Vector3();
-  const _tg={rojo:[],azul:[]};
+  const _tg={rojo:[],azul:[]}, _seen=new Set();
   const CERT=['sospecha','CONTACTO','IDENTIFICADO'];
   let uidSeq=0;
   const uid=o=>o.__uid||(o.__uid='u'+(++uidSeq));
@@ -1659,12 +1882,21 @@ const IA=(function(){
     }
     const dx=b.x-a.x, dz=b.z-a.z, L2=dx*dx+dz*dz;
     if(L2>1e-6){
-      for(const c of colliders){
-        let t=((c.x-a.x)*dx+(c.z-a.z)*dz)/L2; if(t<=0||t>=1) continue;
-        const px=a.x+dx*t, pz=a.z+dz*t;
-        if(Math.hypot(px-c.x,pz-c.z) < c.r){
-          const py=lerp(a.y,b.y,t);
-          if(py < terrainHeight(c.x,c.z)+(c.h||4)) return true;    // lo tapa un obstáculo
+      // solo los obstáculos de las celdas que atraviesa el rayo (rejilla espacial)
+      const L=Math.sqrt(L2), muestras=Math.min(60, Math.ceil(L/(CELL*0.5))+1);
+      _seen.clear();
+      for(let s=0;s<=muestras;s++){
+        const t=s/muestras;
+        const list=bucketAt(a.x+dx*t, a.z+dz*t); if(!list) continue;
+        for(const i of list){
+          if(_seen.has(i)) continue; _seen.add(i);
+          const c=colliders[i];
+          const tt=((c.x-a.x)*dx+(c.z-a.z)*dz)/L2; if(tt<=0||tt>=1) continue;
+          const px=a.x+dx*tt, pz=a.z+dz*tt;
+          if(Math.hypot(px-c.x,pz-c.z) < c.r){
+            const py=lerp(a.y,b.y,tt);
+            if(py < terrainHeight(c.x,c.z)+(c.h||4)) return true;    // lo tapa un obstáculo
+          }
         }
       }
     }
@@ -1994,10 +2226,42 @@ function updateAllies(dt){
 /* =====================================================================
    COLISIONES vs props
    ===================================================================== */
+/* ---------------------------------------------------------------------
+   Índice espacial de obstáculos (rejilla). Con una ciudad real hay >1500
+   obstáculos: recorrerlos todos en cada colisión y en cada línea de vista
+   hundía el rendimiento. La rejilla deja ~10 candidatos por consulta.
+   --------------------------------------------------------------------- */
+let CGRID=null;
+const CELL=24;
+function ensureGrid(){
+  if(CGRID && CGRID.count===colliders.length) return CGRID;
+  const n=Math.ceil(WORLD/CELL)+1, buckets=new Array(n*n).fill(null);
+  for(let i=0;i<colliders.length;i++){
+    const c=colliders[i];
+    const x0=clamp(Math.floor((c.x-c.r+HALF)/CELL),0,n-1), x1=clamp(Math.floor((c.x+c.r+HALF)/CELL),0,n-1);
+    const z0=clamp(Math.floor((c.z-c.r+HALF)/CELL),0,n-1), z1=clamp(Math.floor((c.z+c.r+HALF)/CELL),0,n-1);
+    for(let zz=z0;zz<=z1;zz++) for(let xx=x0;xx<=x1;xx++){
+      const k=zz*n+xx; (buckets[k]||(buckets[k]=[])).push(i); }
+  }
+  CGRID={n, buckets, count:colliders.length};
+  return CGRID;
+}
+function bucketAt(x,z){
+  const G=ensureGrid(), n=G.n;
+  const cx=Math.floor((x+HALF)/CELL), cz=Math.floor((z+HALF)/CELL);
+  if(cx<0||cz<0||cx>=n||cz>=n) return null;
+  return G.buckets[cz*n+cx];
+}
 function resolveColliders(pos, r){
-  for(const c of colliders){
-    const dx=pos.x-c.x, dz=pos.z-c.z, d=Math.hypot(dx,dz), min=c.r+r;
-    if(d<min && d>0.001){ const push=(min-d); pos.x+=dx/d*push; pos.z+=dz/d*push; }
+  const G=ensureGrid(), n=G.n;
+  const cx=Math.floor((pos.x+HALF)/CELL), cz=Math.floor((pos.z+HALF)/CELL);
+  for(let dz=-1;dz<=1;dz++) for(let dx=-1;dx<=1;dx++){
+    const xx=cx+dx, zz=cz+dz; if(xx<0||zz<0||xx>=n||zz>=n) continue;
+    const list=G.buckets[zz*n+xx]; if(!list) continue;
+    for(const i of list){ const c=colliders[i];
+      const ddx=pos.x-c.x, ddz=pos.z-c.z, d=Math.hypot(ddx,ddz), min=c.r+r;
+      if(d<min && d>0.001){ const push=(min-d); pos.x+=ddx/d*push; pos.z+=ddz/d*push; }
+    }
   }
 }
 
@@ -3242,7 +3506,7 @@ function wireUI(){
   $('czGo').onclick=()=>{ const lat=parseFloat($('czLat').value), lon=parseFloat($('czLon').value);
     if(isNaN(lat)||isNaN(lon)||lat<-85||lat>85||lon<-180||lon>180){ alert('Coordenadas inválidas.\nEjemplo (Bogotá): 4.60, -74.08'); return; }
     startRealMission({ id:'custom_'+lat.toFixed(2)+'_'+lon.toFixed(2), name:'Tu zona', pais:'📍 '+lat.toFixed(3)+', '+lon.toFixed(3),
-      lat, lon, zoom:14, tiles:3, vexag:1.4,
+      lat, lon, vexag:1.0,
       enemies:[{t:'tank',n:4},{t:'airdrone',n:2}], objs:[{type:'destroy',tag:'enemy',n:6,text:'Limpia tu zona (6)'}] }); };
   // pad
   const padHold=(id,flag)=>{ const el=$(id); el.addEventListener('pointerdown',e=>{pad[flag]=true; e.preventDefault();}); ['pointerup','pointercancel','pointerleave'].forEach(ev=>el.addEventListener(ev,()=>pad[flag]=false)); };
@@ -3288,7 +3552,10 @@ let menuAng=0;
 if(location.search.indexOf('dbg')>=0) window.DRONES={
   start:(i)=>startMission(i||0),
   startReal:(id)=>startRealMission(REAL_MAPS.find(m=>m.id===id)||REAL_MAPS[0]),
-  realInfo:()=>REAL?{G:REAL.G,minE:Math.round(REAL.minE),maxE:Math.round(REAL.maxE),seaY:+REAL.seaY.toFixed(1),spanKm:+(REAL.spanM/1000).toFixed(1),h00:+realHeightAt(0,0).toFixed(1),hasTex:!!(terrainMesh&&terrainMesh.material.map)}:'no-real',
+  realInfo:()=>REAL?{G:REAL.G,minE:Math.round(REAL.minE),maxE:Math.round(REAL.maxE),seaY:+REAL.seaY.toFixed(1),
+    spanKm:+(REAL.spanM/1000).toFixed(2), mPorUnidad:+REAL.mPerU.toFixed(2), zoomTex:REAL.Z,
+    h00:+realHeightAt(0,0).toFixed(1), hasTex:!!(terrainMesh&&terrainMesh.material.map),
+    osm:REAL.osm||null, colliders:colliders.length}:'no-real',
   sim:(dt)=>{ const d=dt||0.016; if(!playing)return 'no-playing'; simulate(d); renderScene(); return 'ok'; },
   fireTest:()=>{ mouseFire=true; },
   snapshot:()=>{ try{ const w=320,h=180; renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix();
@@ -3319,6 +3586,8 @@ if(location.search.indexOf('dbg')>=0) window.DRONES={
     gaze.baseYaw=0; gaze.basePitch=0; gaze.yaw=headYaw||0; gaze.pitch=headPitch||0; return true; },
   viewYaw:()=>+player.view.yaw.toFixed(3),
   postfx:()=>({bloom:useComposer, phys:physReady}),
+  bbLL:()=>REAL?REAL.bbLL:null,
+  osmRun:async()=>{ try{ await buildOSM(); return REAL&&REAL.osm?REAL.osm:'terminó sin datos'; }catch(e){ return 'THROW '+(e&&e.message)+' | '+(e&&e.stack||'').slice(0,200); } },
   ia:()=>IA.resumen(),
   iaCfg:(k,v)=>{ if(v!==undefined) CONFIG_IA[k]=v; return {enabled:CONFIG_IA.enabled,debug:CONFIG_IA.debug,dificultad:CONFIG_IA.dificultad}; },
   los:(ax,ay,az,bx,by,bz)=>IA.losBlocked({x:ax,y:ay,z:az},{x:bx,y:by,z:bz}),
