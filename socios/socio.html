@@ -2,158 +2,233 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
 <title>Joan te presta · Mi cuenta de socio</title>
 <meta name="theme-color" content="#0f3d2e">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Mi cuenta">
+<link rel="manifest" href="socio.webmanifest">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%230f3d2e'/%3E%3Ctext x='90' y='122' font-size='96' text-anchor='middle' fill='%23f2c14e' font-family='system-ui'%3EJ%3C/text%3E%3C/svg%3E">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f3d2e'/%3E%3Ctext x='32' y='45' font-size='36' text-anchor='middle' fill='%23f2c14e' font-family='system-ui'%3EJ%3C/text%3E%3C/svg%3E">
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{
-  --verde:#0f3d2e; --verde2:#17604a; --oro:#f2c14e; --tinta:#12211c; --gris:#6b7c76;
-  --linea:#e3ebe7; --fondo:#f6f8f7; --tarjeta:#fff; --alerta:#b4441f; --ok:#1d7a4f;
+  --verde:#0f3d2e; --verde2:#17604a; --verde3:#1f7d5f; --oro:#f2c14e;
+  --tinta:#12211c; --gris:#6b7c76; --linea:#e4ebe8; --fondo:#f5f8f6; --tarjeta:#fff;
+  --sombra:0 1px 2px rgba(16,40,32,.05),0 8px 24px rgba(16,40,32,.06);
+  --alerta:#b4441f; --ok:#1d7a4f;
   --bronce:#b06f3a; --plata:#7f8c9b; --nivel-oro:#c99700; --platino:#5f74d1;
 }
 @media (prefers-color-scheme:dark){
-  :root{--tinta:#eaf2ee;--gris:#93a7a0;--linea:#243630;--fondo:#0c1512;--tarjeta:#131f1b}
+  :root{--tinta:#eaf2ee;--gris:#93a7a0;--linea:#22332e;--fondo:#0a1310;--tarjeta:#111d19;
+        --sombra:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25)}
 }
-html,body{margin:0;padding:0}
-body{
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
-  background:var(--fondo); color:var(--tinta); line-height:1.45;
-  padding:0 0 env(safe-area-inset-bottom);
-  -webkit-font-smoothing:antialiased;
-}
-.wrap{max-width:520px;margin:0 auto;padding:0 16px 40px}
-h1,h2,h3{margin:0;font-weight:700;letter-spacing:-.02em}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
+  background:var(--fondo);color:var(--tinta);line-height:1.45;-webkit-font-smoothing:antialiased;
+  padding-bottom:calc(72px + env(safe-area-inset-bottom))}
+h1,h2,h3,h4{margin:0;font-weight:700;letter-spacing:-.02em}
+.wrap{max-width:540px;margin:0 auto;padding:0 16px}
 .muted{color:var(--gris)}
 .oculto{display:none!important}
+.num{font-variant-numeric:tabular-nums}
 
-/* ---- cabecera ---- */
-header{background:var(--verde);color:#fff;padding:calc(env(safe-area-inset-top) + 18px) 16px 22px}
-header .wrap{padding:0}
-.marca{display:flex;align-items:center;gap:10px;font-size:14px;opacity:.85}
-.marca .pin{width:26px;height:26px;border-radius:8px;background:var(--oro);color:var(--verde);
-  display:grid;place-items:center;font-weight:800;font-size:15px}
-.saludo{margin-top:14px;font-size:22px;font-weight:700}
-.nivel-chip{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:5px 12px;
-  border-radius:999px;font-size:13px;font-weight:700;background:rgba(255,255,255,.14)}
+/* ---------------- cabecera ---------------- */
+.cab{background:linear-gradient(165deg,var(--verde2),var(--verde));color:#fff;
+  padding:calc(env(safe-area-inset-top) + 16px) 0 20px}
+.marca{display:flex;align-items:center;gap:9px;font-size:13px;opacity:.8}
+.marca .pin{width:24px;height:24px;border-radius:7px;background:var(--oro);color:var(--verde);
+  display:grid;place-items:center;font-weight:800;font-size:14px}
+.cab h1{font-size:21px;margin-top:12px}
+.chip-nivel{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:5px 12px;
+  border-radius:999px;font-size:13px;font-weight:700;background:rgba(255,255,255,.15)}
 
-/* ---- tarjetas ---- */
-.card{background:var(--tarjeta);border:1px solid var(--linea);border-radius:18px;
-  padding:18px;margin-top:14px}
-.card.destacada{border-color:transparent;background:linear-gradient(160deg,var(--verde2),var(--verde));color:#fff}
-.card.destacada .muted{color:rgba(255,255,255,.72)}
-.etq{font-size:12px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;color:var(--gris)}
-.card.destacada .etq{color:rgba(255,255,255,.72)}
-.cifra{font-size:34px;font-weight:800;letter-spacing:-.03em;margin-top:4px;line-height:1.1}
-.cifra.sm{font-size:24px}
-.fila{display:flex;justify-content:space-between;align-items:baseline;gap:12px;
-  padding:11px 0;border-bottom:1px solid var(--linea)}
+/* ---------------- tarjetas ---------------- */
+.card{background:var(--tarjeta);border-radius:18px;padding:18px;margin-top:14px;box-shadow:var(--sombra)}
+.card.aire{padding:20px}
+.hero{background:linear-gradient(160deg,var(--verde3),var(--verde));color:#fff}
+.hero .muted{color:rgba(255,255,255,.75)}
+.etq{font-size:11.5px;text-transform:uppercase;letter-spacing:.09em;font-weight:800;color:var(--gris)}
+.hero .etq{color:rgba(255,255,255,.7)}
+.cifra{font-size:36px;font-weight:800;letter-spacing:-.035em;line-height:1.05;margin-top:5px}
+.cifra.sm{font-size:26px}
+.cifra.xs{font-size:20px}
+.fila{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:11px 0;
+  border-bottom:1px solid var(--linea)}
 .fila:last-child{border-bottom:0}
 .fila .k{color:var(--gris);font-size:14px}
 .fila .v{font-weight:700;text-align:right}
-.dos{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.hero .fila{border-color:rgba(255,255,255,.15)}
+.hero .fila .k{color:rgba(255,255,255,.75)}
+.sep{height:1px;background:var(--linea);margin:16px 0}
+h3.tit{font-size:17px;margin-bottom:2px}
+.sub{font-size:13.5px;color:var(--gris);margin:4px 0 0}
 
-/* ---- barra de progreso ---- */
+/* ---------------- barras ---------------- */
 .barra{height:9px;border-radius:99px;background:var(--linea);overflow:hidden;margin-top:12px}
-.card.destacada .barra{background:rgba(255,255,255,.2)}
-.barra i{display:block;height:100%;border-radius:99px;background:var(--oro);transition:width .6s}
+.hero .barra{background:rgba(255,255,255,.22)}
+.barra i{display:block;height:100%;border-radius:99px;background:var(--oro);
+  transition:width .7s cubic-bezier(.2,.8,.2,1)}
+.barra.verde i{background:var(--verde3)}
 
-/* ---- botones / formulario ---- */
-.btn{display:block;width:100%;padding:15px;border:0;border-radius:14px;font-size:16px;
-  font-weight:700;font-family:inherit;cursor:pointer;background:var(--verde);color:#fff}
-.btn:active{transform:scale(.99)}
-.btn.sec{background:transparent;color:var(--verde);border:1.5px solid var(--linea)}
+/* ---------------- botones / campos ---------------- */
+.btn{display:block;width:100%;padding:15px;border:0;border-radius:14px;font-size:16px;font-weight:700;
+  font-family:inherit;cursor:pointer;background:var(--verde);color:#fff;text-align:center;
+  text-decoration:none;transition:transform .12s}
+.btn:active{transform:scale(.985)}
+.btn.sec{background:transparent;color:var(--verde2);border:1.5px solid var(--linea)}
+.btn.oro{background:var(--oro);color:var(--verde)}
+.btn.sm{padding:11px;font-size:14px;border-radius:12px}
 @media (prefers-color-scheme:dark){.btn.sec{color:var(--oro)}}
-label{display:block;font-size:14px;font-weight:600;margin:16px 0 6px}
-input{width:100%;padding:14px;border:1.5px solid var(--linea);border-radius:13px;font-size:17px;
+label{display:block;font-size:13.5px;font-weight:600;margin:14px 0 6px}
+input[type=text],input[type=number],input[type=email],select,textarea{
+  width:100%;padding:14px;border:1.5px solid var(--linea);border-radius:13px;font-size:16px;
   font-family:inherit;background:var(--tarjeta);color:var(--tinta)}
-input:focus{outline:0;border-color:var(--verde2)}
+input:focus,select:focus,textarea:focus{outline:0;border-color:var(--verde3)}
+input[type=range]{width:100%;accent-color:var(--verde3);height:28px}
 
-/* ---- estados ---- */
-.aviso{border-radius:14px;padding:14px;font-size:14px;margin-top:14px}
-.aviso.calmo{background:#e8f4ee;color:#14513a}
+/* ---------------- avisos ---------------- */
+.aviso{border-radius:14px;padding:14px;font-size:14px;margin-top:14px;line-height:1.5}
+.aviso.calmo{background:#e7f4ed;color:#12503a}
 .aviso.ojo{background:#fdf0e6;color:#8a3a15}
 .aviso.demo{background:#eef0fb;color:#31408a}
+.aviso.oro{background:#fdf6e3;color:#7a5b0b}
 @media (prefers-color-scheme:dark){
-  .aviso.calmo{background:#12332a;color:#8fe3bd}
+  .aviso.calmo{background:#10322a;color:#8fe3bd}
   .aviso.ojo{background:#3a2213;color:#f0b58c}
-  .aviso.demo{background:#1a2040;color:#aab6f0}
+  .aviso.demo{background:#181f3d;color:#aab6f0}
+  .aviso.oro{background:#332a12;color:#f0d493}
 }
-.pill{display:inline-block;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:700}
-.pill.aldia{background:#e8f4ee;color:#14513a}
+.pill{display:inline-block;padding:4px 11px;border-radius:99px;font-size:12px;font-weight:700}
+.pill.aldia{background:#e7f4ed;color:#12503a}
 .pill.mora{background:#fdf0e6;color:#8a3a15}
 .pill.pagado{background:var(--linea);color:var(--gris)}
+@media (prefers-color-scheme:dark){.pill.aldia{background:#10322a;color:#8fe3bd}.pill.mora{background:#3a2213;color:#f0b58c}}
 
-/* ---- historial ---- */
-.credito{border:1px solid var(--linea);border-radius:14px;padding:14px;margin-top:10px}
+/* ---------------- calculadora ---------------- */
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.chip{padding:8px 13px;border-radius:99px;border:1.5px solid var(--linea);background:transparent;
+  color:var(--tinta);font-size:13px;font-weight:700;font-family:inherit;cursor:pointer}
+.chip.on{background:var(--verde);color:#fff;border-color:var(--verde)}
+.compara{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.caja{border-radius:14px;padding:14px;border:1.5px solid var(--linea)}
+.caja.mala{border-color:transparent;background:#fdf0e6}
+.caja.buena{border-color:var(--verde3);background:#e7f4ed}
+@media (prefers-color-scheme:dark){.caja.mala{background:#3a2213}.caja.buena{background:#10322a}}
+.caja .t{font-size:11.5px;text-transform:uppercase;letter-spacing:.07em;font-weight:800;opacity:.7}
+.caja .n{font-size:19px;font-weight:800;margin-top:4px;letter-spacing:-.02em}
+.caja .d{font-size:12.5px;opacity:.8;margin-top:2px}
+
+/* ---------------- crecimiento ---------------- */
+.crece{display:flex;align-items:flex-end;gap:5px;height:110px;margin-top:14px}
+.crece div{flex:1;background:linear-gradient(180deg,var(--verde3),var(--verde));border-radius:6px 6px 3px 3px;
+  min-height:5px;position:relative;transition:height .6s cubic-bezier(.2,.8,.2,1)}
+.crece div span{position:absolute;top:-17px;left:0;right:0;text-align:center;font-size:9.5px;
+  color:var(--gris);font-weight:700}
+.crece-pie{display:flex;gap:5px;margin-top:6px}
+.crece-pie span{flex:1;text-align:center;font-size:10px;color:var(--gris)}
+
+/* ---------------- niveles ---------------- */
+.nivel{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--linea)}
+.nivel:last-child{border-bottom:0}
+.nivel .em{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-size:19px;
+  background:var(--linea);flex:none}
+.nivel.aqui .em{background:var(--oro)}
+.nivel .txt{flex:1;min-width:0}
+.nivel .nm{font-weight:700;font-size:14.5px}
+.nivel .nm b{text-transform:capitalize;font-weight:700}
+.nivel .rq{font-size:12px;color:var(--gris)}
+.nivel .cp{font-weight:800;text-align:right;font-size:15px;letter-spacing:-.02em}
+
+/* ---------------- perfil ---------------- */
+.dato{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid var(--linea)}
+.dato:last-child{border-bottom:0}
+.dato .tick{width:26px;height:26px;border-radius:50%;flex:none;display:grid;place-items:center;
+  font-size:13px;background:var(--linea);color:var(--gris);font-weight:800}
+.dato.ok .tick{background:var(--verde3);color:#fff}
+.dato.pend .tick{background:var(--oro);color:var(--verde)}
+.dato .txt{flex:1;min-width:0}
+.dato .nm{font-size:14px;font-weight:600}
+.dato .ay{font-size:12px;color:var(--gris)}
+.dato .vl{font-weight:800;font-size:13.5px;color:var(--gris);white-space:nowrap}
+.dato.ok .vl{color:var(--verde3)}
+
+/* ---------------- historial ---------------- */
+.credito{border:1.5px solid var(--linea);border-radius:14px;padding:14px;margin-top:10px}
 .credito .top{display:flex;justify-content:space-between;align-items:center;gap:10px}
-.credito .cod{font-size:12px;font-family:ui-monospace,monospace;color:var(--gris)}
+.credito .cod{font-size:11.5px;font-family:ui-monospace,monospace;color:var(--gris)}
+.credito .gan{margin-top:9px;padding-top:9px;border-top:1px dashed var(--linea);font-size:13px;
+  display:flex;justify-content:space-between}
+.credito .gan b{color:var(--verde3)}
 
-/* ---- insignias ---- */
-.insignias{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:10px;margin-top:12px}
-.ins{text-align:center;padding:12px 6px;border:1px solid var(--linea);border-radius:14px;font-size:11px;
+/* ---------------- insignias ---------------- */
+.insignias{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:10px;margin-top:12px}
+.ins{text-align:center;padding:13px 6px;border:1.5px solid var(--linea);border-radius:14px;font-size:11px;
   line-height:1.3;color:var(--gris)}
-.ins .em{font-size:26px;display:block;filter:grayscale(1);opacity:.35}
-.ins.gana{border-color:var(--oro);color:var(--tinta);font-weight:600}
+.ins .em{font-size:26px;display:block;filter:grayscale(1);opacity:.3;margin-bottom:3px}
+.ins.gana{border-color:var(--oro);color:var(--tinta);font-weight:700}
 .ins.gana .em{filter:none;opacity:1}
 
-.pie{text-align:center;font-size:12px;color:var(--gris);margin-top:26px;line-height:1.6}
-.cargando{text-align:center;padding:60px 0;color:var(--gris)}
+/* ---------------- nav inferior ---------------- */
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;
+  background:var(--tarjeta);border-top:1px solid var(--linea);
+  padding-bottom:env(safe-area-inset-bottom);
+  backdrop-filter:saturate(180%) blur(12px)}
+.nav button{flex:1;border:0;background:transparent;font-family:inherit;cursor:pointer;
+  padding:9px 2px 8px;color:var(--gris);font-size:10.5px;font-weight:700;line-height:1.3}
+.nav button .i{display:block;font-size:20px;margin-bottom:1px;filter:grayscale(1);opacity:.55}
+.nav button.on{color:var(--verde3)}
+.nav button.on .i{filter:none;opacity:1}
+@media (prefers-color-scheme:dark){.nav button.on{color:var(--oro)}}
+
+.panel{animation:sube .32s cubic-bezier(.2,.8,.2,1)}
+@keyframes sube{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.pie{text-align:center;font-size:12px;color:var(--gris);margin:24px 0 10px;line-height:1.6}
+.cargando{text-align:center;padding:70px 0;color:var(--gris)}
 </style>
 </head>
 <body>
 
-<!-- ================= ENTRAR ================= -->
-<div id="pantallaEntrar">
-  <header>
-    <div class="wrap">
-      <div class="marca"><span class="pin">J</span> Joan te presta</div>
-      <div class="saludo">Mi cuenta de socio</div>
-    </div>
-  </header>
+<!-- ======================= ENTRAR ======================= -->
+<div id="pEntrar">
+  <div class="cab"><div class="wrap">
+    <div class="marca"><span class="pin">J</span> Joan te presta</div>
+    <h1>Mi cuenta de socio</h1>
+  </div></div>
   <div class="wrap">
-    <div class="card">
-      <div class="etq">Entrá con tus datos</div>
-      <p class="muted" style="font-size:14px;margin:8px 0 0">
-        Los mismos que le diste a Joan cuando abriste tu crédito.
-      </p>
+    <div class="card aire">
+      <h3 class="tit">Entrá con tus datos</h3>
+      <p class="sub">Los mismos que le diste a Joan cuando abriste tu crédito.</p>
       <label for="inCedula">Tu cédula</label>
-      <input id="inCedula" type="text" inputmode="numeric" autocomplete="off"
-             placeholder="Ej: 52111222" enterkeyhint="next">
+      <input id="inCedula" type="text" inputmode="numeric" autocomplete="off" placeholder="Ej: 52111222">
       <label for="inTel">Últimos 4 números de tu celular</label>
-      <input id="inTel" type="text" inputmode="numeric" autocomplete="off"
-             maxlength="4" placeholder="Ej: 2233" enterkeyhint="go">
+      <input id="inTel" type="text" inputmode="numeric" autocomplete="off" maxlength="4" placeholder="Ej: 2233">
       <button class="btn" style="margin-top:20px" id="btnEntrar">Ver mi cuenta</button>
-      <div id="errorEntrar" class="aviso ojo oculto"></div>
+      <div id="errEntrar" class="aviso ojo oculto"></div>
       <div id="avisoDemo" class="aviso demo oculto"></div>
     </div>
-    <div class="pie">
-      ¿No te reconoce? Escribile a Joan y lo revisa.<br>
-      Tus datos solo los ves vos con tu cédula y tu celular.
-    </div>
+    <div class="pie">Tus datos solo los ves vos, con tu cédula y tu celular.<br>
+      ¿No te reconoce? Escribile a Joan y lo revisa.</div>
   </div>
 </div>
 
-<!-- ================= CARGANDO ================= -->
-<div id="pantallaCargando" class="oculto">
-  <div class="cargando">Buscando tu historial…</div>
-</div>
+<div id="pCargando" class="oculto"><div class="cargando">Buscando tu historial…</div></div>
 
-<!-- ================= CUENTA ================= -->
-<div id="pantallaCuenta" class="oculto">
-  <header>
-    <div class="wrap">
-      <div class="marca"><span class="pin">J</span> Joan te presta</div>
-      <div class="saludo" id="uNombre">—</div>
-      <div class="nivel-chip" id="uNivel">—</div>
-    </div>
-  </header>
-  <div class="wrap" id="cuerpo"></div>
+<!-- ======================= CUENTA ======================= -->
+<div id="pCuenta" class="oculto">
+  <div class="cab"><div class="wrap">
+    <div class="marca"><span class="pin">J</span> Joan te presta</div>
+    <h1 id="uNombre">—</h1>
+    <div class="chip-nivel" id="uNivel">—</div>
+  </div></div>
+  <div class="wrap"><div id="cuerpo"></div></div>
+  <nav class="nav" id="nav">
+    <button data-t="inicio" class="on"><span class="i">🏠</span>Inicio</button>
+    <button data-t="calc"><span class="i">🧮</span>Calculadora</button>
+    <button data-t="garantia"><span class="i">🛡️</span>Mi garantía</button>
+    <button data-t="historial"><span class="i">📜</span>Historial</button>
+  </nav>
 </div>
 
 <script src="motor.js"></script>
@@ -161,93 +236,93 @@ input:focus{outline:0;border-color:var(--verde2)}
 'use strict';
 
 /* =========================================================================
-   Configuración de la nube. Se puede dejar vacía: la app arranca en modo
-   demostración. Para conectarla de verdad, abrí esta página con ?cfg y pegá
-   la URL y la llave anon del proyecto de Supabase (ver supabase.sql).
+   Conexión con la nube. Vacía = modo de prueba. Se configura abriendo la
+   página con ?cfg (ver supabase.sql).
    ========================================================================= */
 var CFG_POR_DEFECTO = { url: '', anon: '' };
-
 var CFG = (function () {
-  try {
-    var g = JSON.parse(localStorage.getItem('socio_cfg') || 'null');
-    if (g && g.url && g.anon) return g;
-  } catch (e) {}
+  try { var g = JSON.parse(localStorage.getItem('socio_cfg') || 'null');
+        if (g && g.url && g.anon) return g; } catch (e) {}
   return CFG_POR_DEFECTO;
 })();
 
 var M = window.MotorReglas;
-var COP = function (n) { return '$' + Math.round(n || 0).toLocaleString('es-CO'); };
 var $ = function (id) { return document.getElementById(id); };
+var COP = function (n) { return '$' + Math.round(n || 0).toLocaleString('es-CO'); };
+var COPc = function (n) {                       // corto, para gráficos
+  n = Math.round(n || 0);
+  if (n >= 1000000) return '$' + (n / 1000000).toFixed(n % 1000000 ? 1 : 0) + 'M';
+  if (n >= 1000) return '$' + Math.round(n / 1000) + 'k';
+  return '$' + n;
+};
 var esc = function (s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, function (m) {
-    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
-  });
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]; });
 };
-var NIVEL_COLOR = { bronce: 'var(--bronce)', plata: 'var(--plata)', oro: 'var(--nivel-oro)', platino: 'var(--platino)' };
 var NIVEL_EMOJI = { bronce: '🥉', plata: '🥈', oro: '🥇', platino: '💎' };
+var NIVEL_COLOR = { bronce: 'var(--bronce)', plata: 'var(--plata)', oro: 'var(--nivel-oro)', platino: 'var(--platino)' };
 
-function hoyISO() {
-  var d = new Date();
-  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-}
-function fmtFecha(iso) {
-  if (!iso) return '—';
-  var p = String(iso).slice(0, 10).split('-');
-  var mes = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-  return Number(p[2]) + ' ' + mes[Number(p[1]) - 1] + ' ' + p[0];
-}
-
-/* ============================ SOCIOS DE PRUEBA ============================
-   Mientras no haya base conectada, la app trae dos socios inventados para poder
-   probar el ingreso igual que lo hará un cliente de verdad. Las fechas se
-   calculan contra el día de hoy, así el ejemplo nunca queda viejo. */
+function hoyISO() { return fechaRel(0); }
 function fechaRel(dias) {
   var x = new Date(); x.setDate(x.getDate() + dias);
   return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0');
 }
+function fmtFecha(iso) {
+  if (!iso) return '—';
+  var p = String(iso).slice(0, 10).split('-');
+  var mes = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  return Number(p[2]) + ' ' + mes[Number(p[1]) - 1] + ' ' + p[0];
+}
+function fila(k, v) { return '<div class="fila"><span class="k">' + esc(k) + '</span><span class="v">' + esc(v) + '</span></div>'; }
 
+/* ===================== SOCIOS DE PRUEBA ===================== */
 var DEMOS = (function () {
-  // Ana: 8 créditos cerrados (7 puntuales, el más viejo tarde) y uno abierto con atraso.
   var cred = [{ codigo: 'CR-0009', capital: 600000, costo: 30000, desembolso: fechaRel(-23),
-                corte: fechaRel(-9), pagado: false, abonado: 0, prorrogas: 0 }];
+                corte: fechaRel(-9), pagado: false, abonado: 0, prorrogas: 0, garantia: 0 }];
   var cobrado = 0, puntuales = 0;
   for (var i = 1; i <= 8; i++) {
     var cap = 100000 + i * 25000, costo = Math.round(cap * (i > 4 ? 0.20 : 0.12));
-    var tarde = (i === 8), prorroga = (i === 6) ? 35000 : 0;
+    var tarde = (i === 8), pro = (i === 6) ? 35000 : 0;
     cred.push({ codigo: 'CR-' + String(9 - i).padStart(4, '0'), capital: cap, costo: costo,
       desembolso: fechaRel(-30 * i - 14), corte: fechaRel(-30 * i),
       pagado: true, fecha_pagado: fechaRel(-30 * i + (tarde ? 6 : -1)),
-      abonado: cap + costo + prorroga, prorrogas: prorroga ? 1 : 0 });
-    cobrado += costo + prorroga;
-    if (!tarde) puntuales++;
+      abonado: cap + costo + pro, prorrogas: pro ? 1 : 0,
+      garantia: M ? M.acumularGarantia(costo + pro) : 0 });
+    cobrado += costo + pro; if (!tarde) puntuales++;
   }
-  var acum = Math.round(cobrado * 0.90);   // la misma regla del motor
+  var acum = Math.round(cobrado * 0.90);
+  var datosAna = { nombre: 'Ana Ruiz', cedula: '52111222', celular: '3001112233', whatsapp: true,
+    ciudad: 'Bogotá Kennedy', direccion: 'Cra 78 #38-12', foto_cedula_frente: 'si', foto_cedula_reverso: 'si' };
 
   return [
     { cedula: '52111222', tel4: '2233', nombre: 'Ana Ruiz',
       datos: {
-        socio: { codigo: 'CL-0007', nivel_kyc: 2 },
-        garantia: { total: acum + 200000, acumulada: acum, cupon: 200000, nivel: 'plata',
-          pagados_a_tiempo: puntuales, racha: 7, meses_sin_mora: 7, creditos_total: 9 },
+        socio: { codigo: 'CL-0007' },
+        garantia: { total: acum + 75000 + 10000, acumulada: acum, cupon: 75000, referidos: 10000,
+          nivel: 'plata', pagados_a_tiempo: puntuales, racha: 7, meses_sin_mora: 7, creditos_total: 9 },
+        perfil: { datos: datosAna },
+        referidos: { total: 3, pagaron: 2, lista: [{ nombre: 'Luis', pago: true }, { nombre: 'Sandra', pago: true }, { nombre: 'Pedro', pago: false }] },
         creditos: cred,
         resumen: { total_prestado: 2300000, primer_credito: fechaRel(-254) }
       } },
     { cedula: '79333444', tel4: '5566', nombre: 'Luis Gómez',
       datos: {
-        socio: { codigo: 'CL-0008', nivel_kyc: 1 },
-        garantia: { total: 136000, acumulada: 36000, cupon: 100000, nivel: 'bronce',
+        socio: { codigo: 'CL-0008' },
+        garantia: { total: 76000, acumulada: 36000, cupon: 40000, referidos: 0, nivel: 'bronce',
           pagados_a_tiempo: 1, racha: 1, meses_sin_mora: 1, creditos_total: 2 },
+        perfil: { datos: { nombre: 'Luis Gómez', cedula: '79333444', celular: '3004445566', whatsapp: true } },
+        referidos: { total: 0, pagaron: 0, lista: [] },
         creditos: [
           { codigo: 'CR-0011', capital: 250000, costo: 50000, desembolso: fechaRel(-6),
-            corte: fechaRel(7), pagado: false, abonado: 0, prorrogas: 0 },
+            corte: fechaRel(7), pagado: false, abonado: 0, prorrogas: 0, garantia: 0 },
           { codigo: 'CR-0010', capital: 200000, costo: 40000, desembolso: fechaRel(-40),
-            corte: fechaRel(-26), pagado: true, fecha_pagado: fechaRel(-26), abonado: 240000, prorrogas: 0 }
+            corte: fechaRel(-26), pagado: true, fecha_pagado: fechaRel(-26), abonado: 240000,
+            prorrogas: 0, garantia: 36000 }
         ],
         resumen: { total_prestado: 450000, primer_credito: fechaRel(-40) }
       } }
   ];
 })();
-
 function buscarDemo(cedula, tel4) {
   for (var i = 0; i < DEMOS.length; i++) {
     if (DEMOS[i].cedula === cedula && DEMOS[i].tel4 === tel4) {
@@ -257,11 +332,7 @@ function buscarDemo(cedula, tel4) {
   return null;
 }
 
-/* ===================== HISTORIAL QUE VIENE EN EL ENLACE ===================
-   Joan manda por WhatsApp un enlace con los datos del socio adentro, después
-   del #. Esa parte el navegador NO se la manda a ningún servidor: se lee acá
-   mismo. Sin cuenta, sin base de datos y sin necesidad de internet una vez
-   abierta la página. */
+/* ============ HISTORIAL QUE VIENE DENTRO DEL ENLACE ============ */
 function desdeEnlace() {
   var m = /[#&]d=([A-Za-z0-9\-_]+)/.exec(location.hash || '');
   if (!m) return null;
@@ -275,284 +346,573 @@ function desdeEnlace() {
   } catch (e) { return null; }
 }
 
-/* ============================== ENTRAR =================================== */
+/* ============================ ESTADO ============================ */
+var S = null;          // socio en pantalla, ya calculado
+var TAB = 'inicio';
+var MONTO = 300000;    // monto de la calculadora
+var NUEVOS = {};       // datos que el socio va llenando y todavía no tiene Joan
+
 function mostrar(cual) {
-  ['pantallaEntrar', 'pantallaCargando', 'pantallaCuenta'].forEach(function (p) {
-    $(p).classList.toggle('oculto', p !== cual);
-  });
+  ['pEntrar', 'pCargando', 'pCuenta'].forEach(function (p) { $(p).classList.toggle('oculto', p !== cual); });
   window.scrollTo(0, 0);
 }
 
+/* ============================ ENTRAR ============================ */
 function entrar() {
   var ced = ($('inCedula').value || '').replace(/\D/g, '');
   var tel = ($('inTel').value || '').replace(/\D/g, '').slice(-4);
-  var err = $('errorEntrar');
-  err.classList.add('oculto');
+  $('errEntrar').classList.add('oculto');
+  if (ced.length < 5) return fallo('Escribí tu número de cédula completo.');
+  if (tel.length < 4) return fallo('Necesito los últimos 4 números de tu celular.');
+  mostrar('pCargando');
 
-  if (ced.length < 5) { return fallo('Escribí tu número de cédula completo.'); }
-  if (tel.length < 4) { return fallo('Necesito los últimos 4 números de tu celular.'); }
-
-  mostrar('pantallaCargando');
-
-  if (!CFG.url || !CFG.anon) {           // modo de prueba, sin base conectada
+  if (!CFG.url || !CFG.anon) {
     return setTimeout(function () {
       var d = buscarDemo(ced, tel);
-      if (d) return pintar(d, true);
+      if (d) return abrir(d, true);
       fallo('En el modo de prueba solo hay dos socios de ejemplo. Probá con la cédula 52111222 y el celular 2233 (Ana Ruiz), o 79333444 y 5566 (Luis Gómez).');
-    }, 450);
+    }, 400);
   }
-
   fetch(CFG.url.replace(/\/+$/, '') + '/rest/v1/rpc/historial_socio', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', apikey: CFG.anon, Authorization: 'Bearer ' + CFG.anon },
     body: JSON.stringify({ p_cedula: ced, p_tel4: tel })
-  })
-    .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('http ' + r.status)); })
+  }).then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('http ' + r.status)); })
     .then(function (j) {
-      if (!j) { mostrar('pantallaEntrar'); return fallo('No encontré esa cédula con ese celular. Revisá los números, y si siguen sin salir escribile a Joan.'); }
-      pintar(j, false);
-    })
-    .catch(function () {
-      mostrar('pantallaEntrar');
-      fallo('No pude conectarme. Revisá que tengas internet y volvé a intentar.');
-    });
+      if (!j) return fallo('No encontré esa cédula con ese celular. Revisá los números, y si siguen sin salir escribile a Joan.');
+      abrir(j, false);
+    }).catch(function () { fallo('No pude conectarme. Revisá que tengas internet y volvé a intentar.'); });
 
-  function fallo(msg) { err.textContent = msg; err.classList.remove('oculto'); mostrar('pantallaEntrar'); }
+  function fallo(msg) { $('errEntrar').textContent = msg; $('errEntrar').classList.remove('oculto'); mostrar('pEntrar'); }
 }
 
-/* ======================== ARMAR LA VISTA DEL SOCIO ======================= */
-function pintar(resp, esDemo) {
+/* ==================== PREPARAR AL SOCIO ==================== */
+function abrir(resp, esDemo) {
   var d = resp.datos || {};
   var g = d.garantia || {};
   var creditos = (d.creditos || []).slice();
 
-  var garantiaTotal = Number(g.total || 0);
-  var nivel = M.evaluarNivel(
-    Number(g.pagados_a_tiempo || 0), Number(g.racha || 0), Number(g.meses_sin_mora || 0),
-    g.nivel || 'bronce'                       // el nivel ya alcanzado hace de piso
-  );
-  var cupo = M.calcularCupo(garantiaTotal, nivel);
-  var activo = creditos.filter(function (c) { return !c.pagado; })[0] || null;
+  var nivel = M.evaluarNivel(Number(g.pagados_a_tiempo || 0), Number(g.racha || 0),
+                             Number(g.meses_sin_mora || 0), g.nivel || 'bronce');
+  S = {
+    nombre: resp.nombre || 'Socio',
+    esDemo: !!esDemo,
+    deEnlace: !!resp.deEnlace,
+    actualizado: resp.actualizado_en,
+    g: g,
+    garantia: Number(g.total || 0),
+    nivel: nivel,
+    cupo: M.calcularCupo(Number(g.total || 0), nivel),
+    creditos: creditos,
+    activo: creditos.filter(function (c) { return !c.pagado; })[0] || null,
+    pagados: creditos.filter(function (c) { return c.pagado; }),
+    perfil: (d.perfil && d.perfil.datos) || {},
+    referidos: d.referidos || { total: 0, pagaron: 0, lista: [] },
+    resumen: d.resumen || {}
+  };
+  NUEVOS = {};
+  MONTO = Math.max(50000, Math.min(S.cupo || 300000, 500000));
 
-  $('uNombre').textContent = (resp.nombre || 'Socio').split(' ').slice(0, 2).join(' ');
+  $('uNombre').textContent = S.nombre.split(' ').slice(0, 2).join(' ');
   var chip = $('uNivel');
-  chip.innerHTML = NIVEL_EMOJI[nivel] + ' Socio ' + nivel.charAt(0).toUpperCase() + nivel.slice(1);
+  chip.innerHTML = NIVEL_EMOJI[nivel] + ' Socio ' + nivel.charAt(0).toUpperCase() + nivel.slice(1) +
+                   ' · ' + COP(S.garantia);
   chip.style.background = NIVEL_COLOR[nivel];
+  irA('inicio');
+  mostrar('pCuenta');
+}
 
+function irA(tab) {
+  TAB = tab;
+  var b = $('nav').querySelectorAll('button');
+  for (var i = 0; i < b.length; i++) b[i].classList.toggle('on', b[i].dataset.t === tab);
+  $('cuerpo').innerHTML = '<div class="panel">' +
+    (tab === 'inicio' ? vistaInicio() :
+     tab === 'calc' ? vistaCalculadora() :
+     tab === 'garantia' ? vistaGarantia() : vistaHistorial()) + '</div>';
+  if (tab === 'calc') sincronizarCalc();
+  window.scrollTo(0, 0);
+}
+
+/* ============================ INICIO ============================ */
+function vistaInicio() {
   var h = '';
+  if (S.esDemo) h += '<div class="aviso demo"><b>Estás viendo un ejemplo.</b> Todavía no está ' +
+                     'conectada la base, así que estos números son de muestra.</div>';
 
-  if (esDemo) {
-    h += '<div class="aviso demo"><b>Estás viendo un ejemplo.</b> Todavía no conecté la base de datos, ' +
-         'así que estos números son inventados para mostrar cómo se va a ver.</div>';
-  }
-
-  /* ---- cupo disponible ---- */
-  var tasaSiPide = garantiaTotal > 0 ? M.calcularTasa(garantiaTotal, Math.max(cupo, 1)) : 0.20;
-  h += '<div class="card destacada">' +
+  h += '<div class="card hero aire">' +
        '<div class="etq">Podés pedir hasta</div>' +
-       '<div class="cifra">' + COP(cupo) + '</div>' +
-       '<div class="muted" style="font-size:14px;margin-top:6px">' +
-         'Con una tasa del ' + Math.round(tasaSiPide * 100) + '% por quincena' +
-       '</div>' + progresoTasa(garantiaTotal, cupo) + '</div>';
-
-  /* ---- crédito activo ---- */
-  if (activo) h += tarjetaCreditoActivo(activo);
-  else h += '<div class="card"><div class="etq">Tu crédito</div>' +
-            '<p style="margin:8px 0 0">No tenés ningún crédito abierto ahora mismo.</p>' +
-            '<p class="muted" style="font-size:14px;margin:6px 0 0">Cuando quieras otro, escribile a Joan.</p></div>';
-
-  /* ---- garantía ---- */
-  h += '<div class="card">' +
-       '<div class="etq">Tu garantía acumulada</div>' +
-       '<div class="cifra sm">' + COP(garantiaTotal) + '</div>' +
-       '<p class="muted" style="font-size:13px;margin:8px 0 14px">' +
-         'Es lo que has construido pagando. No es plata que se retire: es tu historial, y es lo que ' +
-         'te baja la tasa y te sube el cupo.</p>' +
-       fila('Ganada con tus pagos', COP(g.acumulada || 0)) +
-       fila('Que te puso Joan de arranque', COP(g.cupon || 0)) +
-       fila('Créditos que has tomado', String(g.creditos_total || creditos.length)) +
-       fila('Pagos puntuales seguidos', String(g.racha || 0)) +
-       (d.resumen && d.resumen.primer_credito ? fila('Sos socio desde', fmtFecha(d.resumen.primer_credito)) : '') +
+       '<div class="cifra">' + COP(S.cupo) + '</div>' +
+       '<div class="muted" style="font-size:14px;margin-top:5px">' +
+       'Con una tasa del ' + pct(M.calcularTasa(S.garantia, Math.max(S.cupo, 1))) + ' por quincena</div>' +
+       barraHaciaTasa(S.garantia, Math.max(S.cupo, 1)) +
+       '<button class="btn oro sm" style="margin-top:16px" onclick="irA(\'calc\')">🧮 Calcular un crédito</button>' +
        '</div>';
 
-  /* ---- el mensaje que importa ---- */
-  h += '<div class="aviso calmo">' +
-       '<b>Aunque te atrases, seguís siendo socio.</b><br>' +
+  h += S.activo ? tarjetaActivo(S.activo) :
+       '<div class="card"><div class="etq">Tu crédito</div>' +
+       '<p style="margin:8px 0 0">No tenés ningún crédito abierto ahora mismo.</p>' +
+       '<p class="sub">Tu cupo te está esperando para cuando lo necesites.</p></div>';
+
+  h += '<div class="card"><div class="etq">Tu garantía</div>' +
+       '<div class="cifra sm">' + COP(S.garantia) + '</div>' +
+       '<p class="sub">Es tu historial hecho número. No se retira: sirve para que te presten más y más barato.</p>' +
+       desgloseGarantia() +
+       '<button class="btn sec sm" style="margin-top:14px" onclick="irA(\'garantia\')">Ver cómo subirla</button>' +
+       '</div>';
+
+  h += '<div class="aviso calmo"><b>Aunque te atrases, seguís siendo socio.</b><br>' +
        'Entrar en mora no te baja de nivel, no te borra la garantía y no te cierra la puerta. ' +
-       'Lo que pagues, aunque sea tarde, sigue sumando. Joan te sigue prestando.' +
-       '</div>';
+       'Lo que pagues, aunque sea tarde, sigue sumando. Joan te sigue prestando.</div>';
 
-  /* ---- insignias ---- */
-  h += '<div class="card"><div class="etq">Lo que has logrado</div>' + insignias(g, creditos, nivel) + '</div>';
+  h += '<div class="card"><div class="etq">Para cuando lo necesites</div>' +
+       '<p style="margin:8px 0 0;font-size:14.5px">Dejá esta app instalada en tu celular. ' +
+       'El día que se dañe la nevera, se enferme alguien o no llegue el sueldo, ya sabés cuánto ' +
+       'tenés disponible y en cuánto te sale, sin llamar a preguntar.</p>' +
+       '<p class="sub">En el celular: tocá compartir y después “Agregar a inicio”.</p></div>';
 
-  /* ---- historial ---- */
-  var pagados = creditos.filter(function (c) { return c.pagado; });
-  h += '<div class="card"><div class="etq">Tu historial</div>';
-  if (!pagados.length) h += '<p class="muted" style="margin:10px 0 0">Todavía no cerrás ningún crédito. El primero es el que arranca todo.</p>';
-  else pagados.forEach(function (c) { h += lineaHistorial(c); });
-  h += '</div>';
-
-  if (resp.deEnlace) {
-    h += '<div class="pie">Estos son tus números al ' + fmtFecha(resp.actualizado_en || hoyISO()) + '.<br>' +
-         'Cuando pagues o pidas otro crédito, pedile a Joan que te mande el enlace de nuevo.</div>';
-  } else if (resp.actualizado_en) {
-    h += '<div class="pie">Datos al ' + fmtFecha(resp.actualizado_en) + '.<br>Si ves algo raro, escribile a Joan.</div>';
-  } else {
-    h += '<div class="pie">Si ves algo raro en tus números, escribile a Joan.</div>';
-  }
-  if (!resp.deEnlace) h += '<button class="btn sec" style="margin-top:18px" onclick="salir()">Salir</button>';
-
-  $('cuerpo').innerHTML = h;
-  mostrar('pantallaCuenta');
+  return h + pie();
 }
 
-function fila(k, v) {
-  return '<div class="fila"><span class="k">' + esc(k) + '</span><span class="v">' + esc(v) + '</span></div>';
+function pct(t) { return (t * 100).toFixed(t * 100 % 1 ? 1 : 0) + '%'; }
+
+function desgloseGarantia() {
+  var g = S.g;
+  return fila('Ganada pagando', COP(g.acumulada || 0)) +
+         fila('Que te presta Joan por tus datos', COP(g.cupon || 0)) +
+         (g.referidos ? fila('Por la gente que trajiste', COP(g.referidos)) : '');
 }
 
-/* Barra "te faltan $X para bajar de tasa" (pantalla 2 del documento). */
-function progresoTasa(garantia, cupo) {
-  var base = Math.max(cupo, 1);
-  var cobertura = garantia / base;
-  var metas = [
-    { cob: 0.5, tasa: 12 }, { cob: 1, tasa: 5 }, { cob: 2, tasa: 3 }
-  ];
-  var meta = null;
-  for (var i = 0; i < metas.length; i++) if (cobertura < metas[i].cob) { meta = metas[i]; break; }
-  if (!meta) {
-    return '<div class="barra"><i style="width:100%"></i></div>' +
-           '<div class="muted" style="font-size:13px;margin-top:8px">Estás en la mejor tasa que hay. 💎</div>';
-  }
-  var falta = Math.max(0, Math.ceil(meta.cob * base - garantia));
-  var desde = meta.cob === 0.5 ? 0 : (meta.cob === 1 ? 0.5 : 1);
-  var pct = Math.max(4, Math.min(100, ((cobertura - desde) / (meta.cob - desde)) * 100));
-  return '<div class="barra"><i style="width:' + pct.toFixed(0) + '%"></i></div>' +
-         '<div class="muted" style="font-size:13px;margin-top:8px">' +
-         'Te faltan <b style="color:#fff">' + COP(falta) + '</b> de garantía para bajar al ' + meta.tasa + '%.</div>';
+function barraHaciaTasa(garantia, base) {
+  var e = M.siguienteEscalon(Math.max(base, 1), garantia);
+  if (!e) return '<div class="barra"><i style="width:100%"></i></div>' +
+    '<div class="muted" style="font-size:13px;margin-top:8px">Estás en la mejor tasa que hay. 💎</div>';
+  var desde = e.tasa === 0.12 ? 0 : (e.tasa === 0.05 ? 0.5 : 1);
+  var hasta = e.tasa === 0.12 ? 0.5 : (e.tasa === 0.05 ? 1 : 2);
+  var cob = garantia / Math.max(base, 1);
+  var p = Math.max(4, Math.min(100, (cob - desde) / (hasta - desde) * 100));
+  return '<div class="barra"><i style="width:' + p.toFixed(0) + '%"></i></div>' +
+    '<div class="muted" style="font-size:13px;margin-top:8px">Te faltan <b style="color:inherit;opacity:1">' +
+    COP(e.falta) + '</b> de garantía para bajar al ' + pct(e.tasa) + '.</div>';
 }
 
-function tarjetaCreditoActivo(c) {
-  var corte = c.corte;
-  var dias = M.diasDeMora(corte, hoyISO());   // negativo = todavía falta
+function tarjetaActivo(c) {
+  var dias = M.diasDeMora(c.corte, hoyISO());
   var enMora = dias > 0;
   var total = Number(c.capital || 0) + Number(c.costo || 0);
-  var h = '<div class="card"><div class="top" style="display:flex;justify-content:space-between;align-items:center">' +
-          '<div class="etq">Tu crédito de ahora</div>' +
-          '<span class="pill ' + (enMora ? 'mora' : 'aldia') + '">' +
-          (enMora ? dias + ' día' + (dias !== 1 ? 's' : '') + ' de atraso' : (dias === 0 ? 'Vence hoy' : 'Al día')) +
-          '</span></div>';
-
+  var h = '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center">' +
+    '<div class="etq">Tu crédito de ahora</div><span class="pill ' + (enMora ? 'mora' : 'aldia') + '">' +
+    (enMora ? dias + ' día' + (dias !== 1 ? 's' : '') + ' de atraso' : (dias === 0 ? 'Vence hoy' : 'Al día')) +
+    '</span></div>';
   if (enMora) {
-    var recargo = M.recargoPorMora(c.capital, dias);
-    h += '<div class="cifra sm" style="margin-top:10px">' + COP(total + recargo) + '</div>' +
-         '<div class="muted" style="font-size:13px">Total para saldar hoy</div>' +
-         fila('Capital', COP(c.capital)) +
-         fila('Costo del crédito', COP(c.costo)) +
-         fila('Recargo por los ' + dias + ' días', COP(recargo)) +
-         '<div class="aviso calmo" style="font-size:13px">Este recargo también te suma garantía. ' +
-         'Pagá lo que puedas cuando puedas: cada abono cuenta y no perdés tu nivel.</div>';
+    var r = M.recargoPorMora(c.capital, dias);
+    h += '<div class="cifra sm" style="margin-top:9px">' + COP(total + r) + '</div>' +
+      '<div class="muted" style="font-size:13px">Total para saldar hoy</div>' +
+      fila('Capital', COP(c.capital)) + fila('Costo del crédito', COP(c.costo)) +
+      fila('Recargo por los ' + dias + ' días', COP(r)) +
+      '<div class="aviso calmo" style="font-size:13px">Este recargo también te suma garantía. ' +
+      'Pagá lo que puedas cuando puedas: cada abono cuenta y no perdés tu nivel.</div>';
   } else {
-    h += '<div class="cifra sm" style="margin-top:10px">' + COP(total) + '</div>' +
-         '<div class="muted" style="font-size:13px">Total para saldar</div>' +
-         fila('Capital', COP(c.capital)) +
-         fila('Costo del crédito', COP(c.costo)) +
-         fila('Fecha de pago', fmtFecha(corte)) +
-         (dias < 0 ? fila('Te quedan', Math.abs(dias) + ' día' + (dias !== -1 ? 's' : '')) : '');
+    h += '<div class="cifra sm" style="margin-top:9px">' + COP(total) + '</div>' +
+      '<div class="muted" style="font-size:13px">Total para saldar</div>' +
+      fila('Capital', COP(c.capital)) + fila('Costo del crédito', COP(c.costo)) +
+      fila('Fecha de pago', fmtFecha(c.corte)) +
+      (dias < 0 ? fila('Te quedan', Math.abs(dias) + ' día' + (dias !== -1 ? 's' : '')) : '');
   }
   if (c.prorrogas) h += fila('Prórrogas usadas', String(c.prorrogas));
   return h + '</div>';
 }
 
-function lineaHistorial(c) {
-  var puntual = c.fecha_pagado && c.corte && c.fecha_pagado <= c.corte;
-  return '<div class="credito"><div class="top">' +
-         '<div><b>' + COP(c.capital) + '</b><div class="cod">' + esc(c.codigo || '') + '</div></div>' +
-         '<span class="pill pagado">' + (puntual ? 'Pagado a tiempo' : 'Pagado') + '</span></div>' +
-         '<div class="muted" style="font-size:13px;margin-top:8px">' +
-         fmtFecha(c.desembolso) + ' → ' + fmtFecha(c.fecha_pagado || c.corte) +
-         (c.prorrogas ? ' · ' + c.prorrogas + ' prórroga' + (c.prorrogas !== 1 ? 's' : '') : '') +
-         '</div></div>';
+/* ========================= CALCULADORA ========================= */
+function vistaCalculadora() {
+  var tope = Math.max(S.cupo, 500000);
+  return '<div class="card aire">' +
+    '<h3 class="tit">¿Cuánto necesitás?</h3>' +
+    '<p class="sub">Movelo y mirá en cuánto te sale, antes de pedir nada.</p>' +
+    '<div class="cifra" id="calcMonto" style="margin-top:14px">' + COP(MONTO) + '</div>' +
+    '<div class="muted" id="calcAviso" style="font-size:13px;min-height:19px"></div>' +
+    '<input type="range" id="calcRange" min="50000" max="' + tope + '" step="50000" value="' + MONTO + '" ' +
+      'oninput="setMonto(this.value)" style="margin-top:10px">' +
+    '<div class="chips">' +
+      [100000, 300000, 500000, 1000000, 5000000, 20000000].map(function (v) {
+        return '<button class="chip" onclick="setMonto(' + v + ',true)">' + COPc(v) + '</button>';
+      }).join('') +
+    '</div></div>' +
+    '<div id="calcSalida"></div>';
 }
 
-function insignias(g, creditos, nivel) {
-  var pagados = creditos.filter(function (c) { return c.pagado; });
-  var puntuales = pagados.filter(function (c) { return c.fecha_pagado && c.corte && c.fecha_pagado <= c.corte; });
+function setMonto(v, saltar) {
+  MONTO = Math.max(50000, Math.min(Number(v) || 0, M.CUPO_MAXIMO));
+  var r = $('calcRange');
+  if (r) {
+    if (saltar && MONTO > Number(r.max)) r.max = MONTO;
+    r.value = Math.min(MONTO, Number(r.max));
+  }
+  sincronizarCalc();
+}
+
+function sincronizarCalc() {
+  var s = M.simularCredito(MONTO, S.garantia, { fechaDesembolso: hoyISO() });
+  $('calcMonto').textContent = COP(MONTO);
+  $('calcAviso').innerHTML = MONTO > S.cupo
+    ? 'Es más que tu cupo de ' + COP(S.cupo) + '. Se lo podés pedir a Joan y él decide.'
+    : 'Dentro de tu cupo de ' + COP(S.cupo) + '. ✓';
+  $('calcSalida').innerHTML = salidaCalc(s);
+}
+
+function salidaCalc(s) {
+  var h = '<div class="card">' +
+    '<div class="etq">Lo que pagarías</div>' +
+    '<div class="cifra sm">' + COP(s.total_a_pagar) + '</div>' +
+    '<div class="muted" style="font-size:13px">en la quincena del ' + fmtFecha(s.fecha_corte) + '</div>' +
+    fila('Te llevás', COP(s.capital)) +
+    fila('Costo (' + pct(s.tasa) + ')', COP(s.costo)) +
+    fila('Total a devolver', COP(s.total_a_pagar)) + '</div>';
+
+  /* --- Comparación: con tu garantía vs. sin nada --- */
+  h += '<div class="card"><h3 class="tit">Lo que te ahorra tu historial</h3>' +
+    '<p class="sub">La misma plata, con y sin la garantía que llevás construida.</p>' +
+    '<div class="compara">' +
+      '<div class="caja mala"><div class="t">Sin garantía</div>' +
+        '<div class="n">' + COP(s.sin_garantia.total_a_pagar) + '</div>' +
+        '<div class="d">costo ' + COP(s.sin_garantia.costo) + ' · ' + pct(s.sin_garantia.tasa) + '</div></div>' +
+      '<div class="caja buena"><div class="t">Con tu garantía</div>' +
+        '<div class="n">' + COP(s.total_a_pagar) + '</div>' +
+        '<div class="d">costo ' + COP(s.costo) + ' · ' + pct(s.tasa) + '</div></div>' +
+    '</div>' +
+    (s.ahorro > 0
+      ? '<div class="aviso oro" style="margin-top:12px">Te ahorrás <b>' + COP(s.ahorro) +
+        '</b> en este crédito solo por lo que ya has pagado.</div>'
+      : '<div class="aviso ojo" style="margin-top:12px">Todavía no tenés garantía suficiente para bajar de tasa en este monto. ' +
+        'Abajo te digo cuánto te falta.</div>') +
+    '</div>';
+
+  /* --- Cobertura --- */
+  var cob = Math.min(100, Math.round(s.cobertura * 100));
+  h += '<div class="card"><div class="etq">Tu garantía frente a lo que pedís</div>' +
+    '<div class="cifra xs" style="margin-top:5px">' + COP(s.garantia_disponible) + ' de ' + COP(s.capital) + '</div>' +
+    '<div class="barra verde"><i style="width:' + cob + '%"></i></div>' +
+    '<div class="muted" style="font-size:13px;margin-top:8px">' +
+    (s.cubierto
+      ? '✓ Tu garantía <b>cubre todo el crédito</b>. Por eso pagás la tasa más baja que hay.'
+      : 'Tu garantía cubre el <b>' + cob + '%</b> de lo que querés pedir.') + '</div>' +
+    (s.siguiente_escalon
+      ? '<div class="aviso calmo" style="font-size:13.5px">Con <b>' + COP(s.siguiente_escalon.falta) +
+        '</b> más de garantía, este mismo crédito te bajaría al <b>' + pct(s.siguiente_escalon.tasa) +
+        '</b> y pagarías ' + COP(s.capital + Math.round(s.capital * s.siguiente_escalon.tasa)) + '.</div>'
+      : '<div class="aviso oro" style="font-size:13.5px">Ya estás en la mejor tasa posible para este monto. 💎</div>') +
+    '</div>';
+
+  /* --- Lo que este crédito te deja --- */
+  h += '<div class="card"><h3 class="tit">Y este crédito te deja garantía</h3>' +
+    '<p class="sub">Pagarlo no es solo saldar: te deja plata guardada en tu historial.</p>' +
+    fila('Garantía que te deja', '+' + COP(s.garantia_que_deja)) +
+    fila('Quedarías con', COP(s.garantia_despues)) +
+    fila('Y tu cupo pasaría a', COP(M.calcularCupo(s.garantia_despues, S.nivel))) +
+    '</div>';
+
+  /* --- Cómo crece si repite --- */
+  var pasos = M.proyectarCrecimiento(S.garantia, MONTO, 6, S.nivel);
+  // Las barras se escalan entre el punto de partida y el final: si fueran desde
+  // cero se verían todas casi iguales y no se notaría el avance. Los números de
+  // encima son los de verdad.
+  var minG = S.garantia, maxG = pasos[pasos.length - 1].garantia;
+  var rango = Math.max(1, maxG - minG);
+  h += '<div class="card"><h3 class="tit">Si lo repetís, así crece</h3>' +
+    '<p class="sub">Tu garantía después de cada crédito de ' + COP(MONTO) + ' pagado.</p>' +
+    '<div class="crece">' + pasos.map(function (p) {
+      return '<div style="height:' + (18 + (p.garantia - minG) / rango * 82).toFixed(0) + '%">' +
+             '<span>' + COPc(p.garantia) + '</span></div>';
+    }).join('') + '</div>' +
+    '<div class="crece-pie">' + pasos.map(function (p) { return '<span>' + p.credito + '°</span>'; }).join('') + '</div>' +
+    '<div class="muted" style="font-size:13px;margin-top:12px">Al sexto crédito tu tasa sería del <b>' +
+      pct(pasos[pasos.length - 1].tasa) + '</b> y podrías pedir hasta <b>' + COP(pasos[pasos.length - 1].cupo) + '</b>.</div>' +
+    '</div>';
+
+  return h + pie();
+}
+
+/* ========================== MI GARANTÍA ========================== */
+function vistaGarantia() {
+  var h = '<div class="card hero aire"><div class="etq">Tu garantía hoy</div>' +
+    '<div class="cifra">' + COP(S.garantia) + '</div>' + desgloseGarantia() + '</div>';
+
+  /* --- Perfil: cada dato suma --- */
+  var datos = {};
+  Object.keys(S.perfil).forEach(function (k) { datos[k] = S.perfil[k]; });
+  var conNuevos = {};
+  Object.keys(datos).forEach(function (k) { conNuevos[k] = datos[k]; });
+  Object.keys(NUEVOS).forEach(function (k) { conNuevos[k] = NUEVOS[k]; });
+
+  var yaTiene = M.garantiaPorDatos(datos);
+  var conLoNuevo = M.garantiaPorDatos(conNuevos);
+  var enCamino = conLoNuevo.total - yaTiene.total;
+
+  h += '<div class="card aire"><h3 class="tit">Completá tu perfil, subí tu garantía</h3>' +
+    '<p class="sub">Joan te presta garantía por cada dato que le des. Con todo completo son ' +
+    COP(M.CUPON_KYC_MAXIMO) + ', y eso es cupo desde el primer día.</p>' +
+    '<div class="cifra sm" style="margin-top:12px">' + COP(yaTiene.total) +
+      '<span class="muted" style="font-size:16px;font-weight:600"> de ' + COP(M.CUPON_KYC_MAXIMO) + '</span></div>' +
+    '<div class="barra"><i style="width:' + Math.max(2, yaTiene.porcentaje) + '%"></i></div>' +
+    '<div class="muted" style="font-size:13px;margin-top:8px">' + yaTiene.porcentaje + '% del perfil' +
+      (enCamino > 0 ? ' · <b style="color:var(--verde3)">+' + COP(enCamino) + ' en camino</b>' : '') + '</div>';
+
+  h += '<div style="margin-top:16px">' + M.DATOS_KYC.map(function (d) {
+    var tiene = !!(datos[d.id] && String(datos[d.id]).trim() !== '');
+    var pend = !tiene && !!NUEVOS[d.id];
+    return '<div class="dato ' + (tiene ? 'ok' : (pend ? 'pend' : '')) + '">' +
+      '<span class="tick">' + (tiene ? '✓' : (pend ? '•' : '')) + '</span>' +
+      '<span class="txt"><span class="nm">' + esc(d.etiqueta) + '</span>' +
+      '<span class="ay">' + esc(pend ? 'Listo para mandarle a Joan' : d.ayuda) + '</span></span>' +
+      '<span class="vl">' + (tiene ? '✓ ' : '+') + COPc(d.valor) + '</span></div>';
+  }).join('') + '</div>';
+
+  if (yaTiene.faltantes.length) {
+    h += '<button class="btn oro" style="margin-top:16px" onclick="abrirPerfil()">Completar mis datos · ganar ' +
+      COP(M.CUPON_KYC_MAXIMO - yaTiene.total) + '</button>';
+  } else {
+    h += '<div class="aviso calmo" style="margin-top:14px">Tenés el perfil completo. Ya te ganaste los ' +
+      COP(M.CUPON_KYC_MAXIMO) + ' de garantía prestada. 👏</div>';
+  }
+  h += '</div>';
+
+  /* --- Referidos --- */
+  var r = S.referidos;
+  h += '<div class="card aire"><h3 class="tit">Traé gente, ganá garantía</h3>' +
+    '<p class="sub">Cada persona que traigas te suma ' + COP(M.GARANTIA_POR_REFERIDO) +
+    ', desde que esa persona pague su crédito. Si no paga, no suma.</p>' +
+    fila('Gente que has traído', String(r.total || 0)) +
+    fila('Ya pagaron', String(r.pagaron || 0)) +
+    fila('Garantía que te dieron', COP((r.pagaron || 0) * M.GARANTIA_POR_REFERIDO)) +
+    ((r.total || 0) > (r.pagaron || 0)
+      ? '<div class="aviso oro" style="font-size:13.5px">Te faltan ' + ((r.total || 0) - (r.pagaron || 0)) +
+        ' por pagar. Cuando lo hagan, se te suman ' + COP(((r.total || 0) - (r.pagaron || 0)) * M.GARANTIA_POR_REFERIDO) + '.</div>'
+      : '') +
+    (r.lista && r.lista.length
+      ? '<div style="margin-top:12px">' + r.lista.map(function (x) {
+          return '<div class="dato ' + (x.pago ? 'ok' : '') + '"><span class="tick">' + (x.pago ? '✓' : '·') + '</span>' +
+            '<span class="txt"><span class="nm">' + esc(x.nombre) + '</span>' +
+            '<span class="ay">' + (x.pago ? 'Ya pagó · te sumó ' + COP(M.GARANTIA_POR_REFERIDO) : 'Todavía no ha pagado') + '</span></span></div>';
+        }).join('') + '</div>' : '') +
+    '<button class="btn sec sm" style="margin-top:14px" onclick="invitar()">Invitar a alguien</button>' +
+    '</div>';
+
+  /* --- Niveles --- */
+  h += '<div class="card aire"><h3 class="tit">Cuánto podrías pedir si subís de nivel</h3>' +
+    '<p class="sub">Con la misma garantía que tenés hoy. Subir de nivel es pagar a tiempo, nada más.</p>' +
+    '<div style="margin-top:12px">' + M.proyeccionNiveles(S.garantia, S.nivel).map(function (n) {
+      return '<div class="nivel ' + (n.actual ? 'aqui' : '') + '">' +
+        '<span class="em">' + NIVEL_EMOJI[n.nivel] + '</span>' +
+        '<span class="txt"><span class="nm"><b>' + n.nivel + '</b>' + (n.actual ? ' · acá estás' : '') + '</span>' +
+        '<span class="rq">' + requisitoTexto(n) + '</span></span>' +
+        '<span class="cp">' + COP(n.cupo) + '</span></div>';
+    }).join('') + '</div>' +
+    '<div class="aviso calmo" style="font-size:13.5px">La plataforma presta hasta <b>' + COP(M.CUPO_MAXIMO) +
+    '</b>. Para llegar ahí necesitarías ' + COP(M.garantiaNecesariaPara(M.CUPO_MAXIMO, 'platino')) +
+    ' de garantía siendo Platino. Se llega pagando, crédito tras crédito.</div>' +
+    '</div>';
+
+  return h + pie();
+}
+
+function requisitoTexto(n) {
+  if (n.nivel === 'bronce') return 'Desde que entrás';
+  var r = n.requisitos, p = [];
+  if (r.pagos_a_tiempo) p.push(r.pagos_a_tiempo + ' pagos puntuales');
+  if (r.racha) p.push('racha de ' + r.racha);
+  if (r.meses_sin_mora) p.push(r.meses_sin_mora + ' meses sin mora');
+  return p.join(' · ') + ' · ' + n.prorrogas + ' prórroga' + (n.prorrogas !== 1 ? 's' : '');
+}
+
+/* ========================== HISTORIAL ========================== */
+function vistaHistorial() {
+  var totalGarantia = S.creditos.reduce(function (t, c) { return t + Number(c.garantia || 0); }, 0);
+  var h = '<div class="card hero aire"><div class="etq">Lo que llevás construido</div>' +
+    '<div class="cifra sm">' + COP(totalGarantia) + '</div>' +
+    '<div class="muted" style="font-size:14px;margin-top:4px">de garantía ganada en ' +
+      S.creditos.length + ' crédito' + (S.creditos.length !== 1 ? 's' : '') + '</div>' +
+    (S.resumen.primer_credito ? fila('Sos socio desde', fmtFecha(S.resumen.primer_credito)) : '') +
+    fila('Pagos puntuales seguidos', String(S.g.racha || 0)) + '</div>';
+
+  h += '<div class="card"><h3 class="tit">Crédito por crédito</h3>' +
+    '<p class="sub">Cuánta garantía te dejó cada uno.</p>';
+  if (!S.creditos.length) h += '<p class="muted" style="margin-top:12px">Todavía no tenés créditos.</p>';
+  else S.creditos.forEach(function (c) {
+    var puntual = c.fecha_pagado && c.corte && c.fecha_pagado <= c.corte;
+    h += '<div class="credito"><div class="top">' +
+      '<div><b>' + COP(c.capital) + '</b><div class="cod">' + esc(c.codigo || '') + '</div></div>' +
+      '<span class="pill ' + (c.pagado ? 'pagado' : 'aldia') + '">' +
+        (c.pagado ? (puntual ? 'Pagado a tiempo' : 'Pagado') : 'En curso') + '</span></div>' +
+      '<div class="muted" style="font-size:13px;margin-top:7px">' +
+        fmtFecha(c.desembolso) + ' → ' + fmtFecha(c.fecha_pagado || c.corte) +
+        (c.prorrogas ? ' · ' + c.prorrogas + ' prórroga' + (c.prorrogas !== 1 ? 's' : '') : '') + '</div>' +
+      '<div class="gan"><span class="muted">Garantía que te dejó</span>' +
+        (c.garantia ? '<b>+' + COP(c.garantia) + '</b>' : '<span class="muted">al pagarlo</span>') + '</div>' +
+      '</div>';
+  });
+  h += '</div>';
+
+  h += '<div class="card"><h3 class="tit">Lo que has logrado</h3>' + insignias() + '</div>';
+  return h + pie();
+}
+
+function insignias() {
+  var puntuales = S.pagados.filter(function (c) { return c.fecha_pagado && c.corte && c.fecha_pagado <= c.corte; });
   var orden = ['bronce', 'plata', 'oro', 'platino'];
   var lista = [
-    { em: '🌱', t: 'Primer crédito', ok: creditos.length >= 1 },
+    { em: '🌱', t: 'Primer crédito', ok: S.creditos.length >= 1 },
     { em: '✅', t: 'Primer pago puntual', ok: puntuales.length >= 1 },
-    { em: '🔥', t: 'Racha de 3', ok: Number(g.racha || 0) >= 3 },
-    { em: '⚡', t: 'Racha de 10', ok: Number(g.racha || 0) >= 10 },
-    { em: '🥇', t: 'Llegaste a Oro', ok: orden.indexOf(nivel) >= 2 },
-    { em: '🤝', t: '5 créditos', ok: pagados.length >= 5 }
+    { em: '🔥', t: 'Racha de 3', ok: Number(S.g.racha || 0) >= 3 },
+    { em: '⚡', t: 'Racha de 10', ok: Number(S.g.racha || 0) >= 10 },
+    { em: '🥇', t: 'Llegaste a Oro', ok: orden.indexOf(S.nivel) >= 2 },
+    { em: '🤝', t: 'Trajiste a alguien', ok: (S.referidos.pagaron || 0) >= 1 },
+    { em: '📋', t: 'Perfil completo', ok: M.garantiaPorDatos(S.perfil).total >= M.CUPON_KYC_MAXIMO },
+    { em: '💪', t: '5 créditos pagados', ok: S.pagados.length >= 5 }
   ];
   return '<div class="insignias">' + lista.map(function (i) {
     return '<div class="ins ' + (i.ok ? 'gana' : '') + '"><span class="em">' + i.em + '</span>' + esc(i.t) + '</div>';
   }).join('') + '</div>';
 }
 
-function salir() {
-  $('inCedula').value = ''; $('inTel').value = '';
-  mostrar('pantallaEntrar');
+/* ==================== COMPLETAR EL PERFIL ==================== */
+function abrirPerfil() {
+  var faltan = M.garantiaPorDatos(S.perfil).faltantes;
+  var h = '<div class="card aire"><h3 class="tit">Completá lo que te falta</h3>' +
+    '<p class="sub">Escribí lo que puedas. Al final se lo mandás a Joan por WhatsApp y él lo carga; ' +
+    'ahí tu garantía sube de verdad.</p>' +
+    faltan.map(function (d) {
+      if (d.tipo === 'foto' || d.tipo === 'mapa') {
+        return '<div class="dato"><span class="tick">📷</span><span class="txt">' +
+          '<span class="nm">' + esc(d.etiqueta) + '</span>' +
+          '<span class="ay">Esto se lo mandás por WhatsApp como foto</span></span>' +
+          '<span class="vl">+' + COPc(d.valor) + '</span></div>';
+      }
+      if (d.tipo === 'si') {
+        return '<label>' + esc(d.etiqueta) + ' <span class="muted">+' + COP(d.valor) + '</span></label>' +
+          '<select data-kyc="' + d.id + '" onchange="tocarDato(this)">' +
+          '<option value="">Elegí…</option><option value="si">Sí</option></select>';
+      }
+      return '<label>' + esc(d.etiqueta) + ' <span class="muted">+' + COP(d.valor) + '</span></label>' +
+        '<input type="text" data-kyc="' + d.id + '" placeholder="' + esc(d.ayuda) + '" ' +
+        'inputmode="' + (d.tipo === 'numero' ? 'numeric' : 'text') + '" oninput="tocarDato(this)">';
+    }).join('') +
+    '<div class="aviso oro" id="perfilSuma" style="margin-top:16px">Todavía no has escrito nada.</div>' +
+    '<button class="btn" style="margin-top:8px" onclick="mandarPerfil()">Mandarle mis datos a Joan</button>' +
+    '<button class="btn sec sm" style="margin-top:10px" onclick="irA(\'garantia\')">Volver</button>' +
+    '</div>';
+  $('cuerpo').innerHTML = '<div class="panel">' + h + '</div>';
+  window.scrollTo(0, 0);
 }
 
-/* ========================= CONFIGURACIÓN (?cfg) ========================== */
+function tocarDato(el) {
+  var id = el.dataset.kyc, v = (el.value || '').trim();
+  if (v) NUEVOS[id] = v; else delete NUEVOS[id];
+  var suma = 0;
+  M.DATOS_KYC.forEach(function (d) { if (NUEVOS[d.id]) suma += d.valor; });
+  $('perfilSuma').innerHTML = suma
+    ? 'Con lo que llevás escrito, tu garantía sube <b>' + COP(suma) + '</b> en cuanto Joan lo cargue.'
+    : 'Todavía no has escrito nada.';
+}
+
+function mandarPerfil() {
+  var ids = Object.keys(NUEVOS);
+  if (!ids.length) return alert('Escribí al menos un dato para poder mandárselo.');
+  var etq = {};
+  M.DATOS_KYC.forEach(function (d) { etq[d.id] = d.etiqueta; });
+  var suma = ids.reduce(function (t, id) {
+    var d = M.DATOS_KYC.filter(function (x) { return x.id === id; })[0];
+    return t + (d ? d.valor : 0);
+  }, 0);
+  var texto = 'Hola Joan, soy ' + S.nombre + '. Te mando mis datos para completar mi perfil:\n\n' +
+    ids.map(function (id) { return '• ' + (etq[id] || id) + ': ' + NUEVOS[id]; }).join('\n') +
+    '\n\nCon esto mi garantía sube ' + COP(suma) + '.';
+  var url = 'https://wa.me/?text=' + encodeURIComponent(texto);
+  window.open(url, '_blank', 'noopener');
+}
+
+function invitar() {
+  var texto = 'Te recomiendo a Joan te presta. Yo ya soy socio: uno va pagando y le van bajando ' +
+    'la tasa y subiendo el cupo, y si te atrasás no te cierran la puerta. Decile que vas de mi parte, ' +
+    'que a los dos nos sirve.';
+  window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank', 'noopener');
+}
+
+/* ============================ PIE ============================ */
+function pie() {
+  if (S.deEnlace) {
+    return '<div class="pie">Estos son tus números al ' + fmtFecha(S.actualizado || hoyISO()) + '.<br>' +
+      'Cuando pagues o pidas otro crédito, pedile a Joan el enlace de nuevo.</div>';
+  }
+  return '<div class="pie">' + (S.actualizado ? 'Datos al ' + fmtFecha(S.actualizado) + '.<br>' : '') +
+    'Si ves algo raro en tus números, escribile a Joan.' +
+    (S.esDemo || S.deEnlace ? '' : '<br><a href="#" onclick="salir();return false" style="color:inherit">Salir</a>') +
+    '</div>';
+}
+
+function salir() {
+  S = null; NUEVOS = {};
+  $('inCedula').value = ''; $('inTel').value = '';
+  mostrar('pEntrar');
+}
+
+/* ======================= CONFIGURACIÓN ======================= */
 function pantallaConfig() {
   document.body.innerHTML =
-    '<header><div class="wrap"><div class="marca"><span class="pin">J</span> Joan te presta</div>' +
-    '<div class="saludo">Conectar la base</div></div></header>' +
-    '<div class="wrap"><div class="card">' +
-    '<p class="muted" style="font-size:14px;margin:0">Pegá los dos datos de Supabase ' +
-    '(Settings → API). Quedan guardados solo en este teléfono.</p>' +
-    '<label>Project URL</label><input id="cfgUrl" placeholder="https://xxxx.supabase.co" value="' + esc(CFG.url) + '">' +
-    '<label>Llave anon public</label><input id="cfgAnon" placeholder="eyJ..." value="' + esc(CFG.anon) + '">' +
+    '<div class="cab"><div class="wrap"><div class="marca"><span class="pin">J</span> Joan te presta</div>' +
+    '<h1>Conectar la base</h1></div></div>' +
+    '<div class="wrap"><div class="card aire">' +
+    '<p class="sub" style="margin:0">Pegá los dos datos de Supabase (Settings → API). ' +
+    'Quedan guardados solo en este teléfono.</p>' +
+    '<label>Project URL</label><input type="text" id="cfgUrl" placeholder="https://xxxx.supabase.co" value="' + esc(CFG.url) + '">' +
+    '<label>Llave anon public</label><input type="text" id="cfgAnon" placeholder="eyJ..." value="' + esc(CFG.anon) + '">' +
     '<button class="btn" style="margin-top:20px" id="cfgGuardar">Guardar</button>' +
-    '<button class="btn sec" style="margin-top:10px" id="cfgBorrar">Volver al modo ejemplo</button>' +
-    '<div id="cfgMsg" class="aviso calmo oculto"></div>' +
-    '</div></div>';
+    '<button class="btn sec sm" style="margin-top:10px" id="cfgBorrar">Volver al modo de prueba</button>' +
+    '<div id="cfgMsg" class="aviso calmo oculto"></div></div></div>';
   $('cfgGuardar').onclick = function () {
     var u = $('cfgUrl').value.trim(), a = $('cfgAnon').value.trim();
-    if (!u || !a) { return alert('Faltan datos.'); }
+    if (!u || !a) return alert('Faltan datos.');
     localStorage.setItem('socio_cfg', JSON.stringify({ url: u, anon: a }));
-    var m = $('cfgMsg'); m.textContent = 'Guardado. Abrí la página sin ?cfg para probarla.'; m.classList.remove('oculto');
+    $('cfgMsg').textContent = 'Guardado. Abrí la página sin ?cfg para probarla.';
+    $('cfgMsg').classList.remove('oculto');
   };
   $('cfgBorrar').onclick = function () {
     localStorage.removeItem('socio_cfg');
-    var m = $('cfgMsg'); m.textContent = 'Listo, vuelve a mostrar el ejemplo.'; m.classList.remove('oculto');
+    $('cfgMsg').textContent = 'Listo, vuelve al modo de prueba.';
+    $('cfgMsg').classList.remove('oculto');
   };
 }
 
-/* ================================ ARRANQUE ============================== */
+/* ========================== ARRANQUE ========================== */
 (function () {
-  if (location.search.indexOf('cfg') >= 0) { pantallaConfig(); return; }
+  if (location.search.indexOf('cfg') >= 0) return pantallaConfig();
   if (!M) {
     document.body.innerHTML = '<div class="wrap"><div class="aviso ojo" style="margin-top:40px">' +
-      'No pude cargar el motor de reglas (motor.js). Tiene que estar en la misma carpeta que esta página.' +
-      '</div></div>';
+      'No pude cargar el motor de reglas (motor.js). Tiene que estar en la misma carpeta que esta página.</div></div>';
     return;
   }
-  // Si Joan le manda un enlace nuevo con la página ya abierta, el navegador no
-  // recarga: solo cambia el #. Sin esto seguiría viendo los números viejos.
+  $('nav').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (b && S) irA(b.dataset.t);
+  });
+  // Si llega un enlace nuevo con la página ya abierta, el navegador no recarga.
   window.addEventListener('hashchange', function () {
-    var nuevo = desdeEnlace();
-    if (nuevo) pintar(nuevo, false);
+    var nuevo = desdeEnlace(); if (nuevo) abrir(nuevo, false);
   });
 
   var delEnlace = desdeEnlace();
-  if (delEnlace) { pintar(delEnlace, false); return; }   // Joan ya le mandó todo adentro
+  if (delEnlace) return abrir(delEnlace, false);
+
   if (!CFG.url || !CFG.anon) {
-    var a = $('avisoDemo');
-    a.innerHTML = '<b>Modo de prueba.</b> Todavía no está conectada la base, así que hay dos ' +
-                  'socios de ejemplo para que veas cómo queda:' +
-                  '<div style="margin-top:8px"><b>Ana Ruiz</b> — cédula <b>52111222</b>, celular <b>2233</b><br>' +
-                  '<span class="muted">9 créditos, Socio Plata, uno atrasado</span></div>' +
-                  '<div style="margin-top:6px"><b>Luis Gómez</b> — cédula <b>79333444</b>, celular <b>5566</b><br>' +
-                  '<span class="muted">2 créditos, Socio Bronce, al día</span></div>';
-    a.classList.remove('oculto');
+    $('avisoDemo').innerHTML = '<b>Modo de prueba.</b> Todavía no está conectada la base, así que hay ' +
+      'dos socios de ejemplo:' +
+      '<div style="margin-top:8px"><b>Ana Ruiz</b> — cédula <b>52111222</b>, celular <b>2233</b><br>' +
+      '<span class="muted">9 créditos, Socio Plata, uno atrasado</span></div>' +
+      '<div style="margin-top:6px"><b>Luis Gómez</b> — cédula <b>79333444</b>, celular <b>5566</b><br>' +
+      '<span class="muted">2 créditos, Socio Bronce, al día</span></div>';
+    $('avisoDemo').classList.remove('oculto');
   }
   $('btnEntrar').addEventListener('click', entrar);
-  $('inTel').addEventListener('keydown', function (e) { if (e.key === 'Enter') entrar(); });
   $('inCedula').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('inTel').focus(); });
+  $('inTel').addEventListener('keydown', function (e) { if (e.key === 'Enter') entrar(); });
 })();
 </script>
 </body>

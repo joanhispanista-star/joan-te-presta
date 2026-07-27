@@ -72,6 +72,17 @@
  *     de pago. Pagar el mismo día del corte es puntual: 0 días, 0 recargo.
  * D11. §9 solapa M2 (46–90) con castigo (90+). Acá M2 llega hasta 89 y desde
  *     el día 90 es castigo.
+ * D12. (27-jul-2026) El §3 queda reemplazado: el cupón ya no es una tabla de
+ *     tres niveles de KYC sino un puntaje DATO POR DATO (DATOS_KYC) que suma
+ *     200.000 exactos al completarlo todo. El reparto por dato es criterio
+ *     nuestro: pesa más lo que más baja el riesgo (selfie 35.000, fotos de la
+ *     cédula 20.000 cada una, referencia 20.000) y menos lo barato de falsear.
+ *     Si Joan quiere mover un valor, tiene que compensarlo en otro: hay una
+ *     prueba que exige que los 15 sumen 200.000 clavados.
+ * D13. Techo de la plataforma: CUPO_MAXIMO = 20 millones. calcularCupo nunca
+ *     devuelve más, por alta que sea la garantía.
+ * D14. Un referido suma 5.000 SOLO cuando ya pagó un crédito. Sin tope: traer
+ *     gente que paga es exactamente lo que queremos premiar.
  * ==========================================================================*/
 
 (function (raiz, fabrica) {
@@ -92,6 +103,32 @@
     { cobertura_min: 0.50, tasa: 0.12 },
     { cobertura_min: 0.00, tasa: 0.20 }
   ];
+
+  /* §3 REEMPLAZADO (27-jul-2026): el cupón ya no es una tabla de tres escalones.
+     La plataforma presta garantía DATO POR DATO: cada cosa que el socio entrega
+     le sube el cupón, y completando todo llega a 200.000 exactos. Así el que
+     quiere crédito tiene un motivo concreto para darnos información. */
+  var DATOS_KYC = [
+    { id: 'nombre', etiqueta: 'Tu nombre completo', ayuda: 'Como aparece en la cédula', tipo: 'texto', valor: 10000 },
+    { id: 'cedula', etiqueta: 'Número de cédula', ayuda: 'Solo los números', tipo: 'numero', valor: 15000 },
+    { id: 'celular', etiqueta: 'Tu celular', ayuda: 'Al que te podamos escribir', tipo: 'numero', valor: 10000 },
+    { id: 'whatsapp', etiqueta: 'Ese celular tiene WhatsApp', ayuda: 'Para avisarte de tus pagos', tipo: 'si', valor: 5000 },
+    { id: 'correo', etiqueta: 'Tu correo', ayuda: 'Opcional pero suma', tipo: 'texto', valor: 5000 },
+    { id: 'ciudad', etiqueta: 'Ciudad y barrio', ayuda: 'Dónde vivís', tipo: 'texto', valor: 10000 },
+    { id: 'direccion', etiqueta: 'Dirección de tu casa', ayuda: 'Calle, carrera y número', tipo: 'texto', valor: 10000 },
+    { id: 'vivienda', etiqueta: 'Tipo de vivienda', ayuda: 'Propia, arriendo, familiar…', tipo: 'texto', valor: 10000 },
+    { id: 'pago', etiqueta: 'Tu Nequi o llave', ayuda: 'Por donde recibís la plata', tipo: 'texto', valor: 10000 },
+    { id: 'celular2', etiqueta: 'Un segundo teléfono', ayuda: 'De la casa o del trabajo', tipo: 'numero', valor: 5000 },
+    { id: 'referencia', etiqueta: 'Una referencia', ayuda: 'Nombre y teléfono de alguien que te conozca', tipo: 'texto', valor: 20000 },
+    { id: 'ubicacion', etiqueta: 'Tu ubicación en el mapa', ayuda: 'Se toma una sola vez', tipo: 'mapa', valor: 15000 },
+    { id: 'foto_cedula_frente', etiqueta: 'Cédula por delante', ayuda: 'Una foto que se lea bien', tipo: 'foto', valor: 20000 },
+    { id: 'foto_cedula_reverso', etiqueta: 'Cédula por detrás', ayuda: 'La otra cara', tipo: 'foto', valor: 20000 },
+    { id: 'foto_selfie', etiqueta: 'Selfie con tu cédula', ayuda: 'Vos sosteniéndola al lado de tu cara', tipo: 'foto', valor: 35000 }
+  ];
+  var CUPON_KYC_MAXIMO = 200000;   // suma exacta de los 15 datos de arriba
+
+  var GARANTIA_POR_REFERIDO = 5000; // pero solo cuando el referido paga puntual
+  var CUPO_MAXIMO = 20000000;       // techo de la plataforma: 20 millones
 
   // §5 — factor de cupo y prórrogas por nivel
   var FACTOR_CUPO = { bronce: 1.0, plata: 1.25, oro: 1.5, platino: 2.0 };
@@ -387,12 +424,115 @@
 
   /**
    * §5 — Cupo máximo solicitable = garantia_total × factor_nivel.
-   * Redondea hacia abajo (D8).
+   * Redondea hacia abajo (D8) y no pasa del techo de la plataforma (D12).
    */
   function calcularCupo(garantiaTotal, nivelSocio) {
     var g = numeroNoNegativo(garantiaTotal, 'garantiaTotal');
     var nivel = normalizarNivel(nivelSocio);
-    return Math.floor(g * FACTOR_CUPO[nivel]);
+    return Math.min(Math.floor(g * FACTOR_CUPO[nivel]), CUPO_MAXIMO);
+  }
+
+  /** Garantía que hace falta para poder pedir `cupo` estando en `nivel`. */
+  function garantiaNecesariaPara(cupo, nivelSocio) {
+    var c = numeroNoNegativo(cupo, 'cupo');
+    var nivel = normalizarNivel(nivelSocio);
+    return Math.ceil(Math.min(c, CUPO_MAXIMO) / FACTOR_CUPO[nivel]);
+  }
+
+  /**
+   * Cuánto podría pedir el socio en cada nivel con la garantía que tiene hoy.
+   * Es lo que deja ver que subir de nivel vale la pena sin tener que subir.
+   */
+  function proyeccionNiveles(garantiaTotal, nivelActual) {
+    var g = numeroNoNegativo(garantiaTotal, 'garantiaTotal');
+    var actual = nivelActual == null ? null : normalizarNivel(nivelActual, 'nivelActual');
+    return NIVELES.map(function (n) {
+      return {
+        nivel: n,
+        factor: FACTOR_CUPO[n],
+        cupo: calcularCupo(g, n),
+        prorrogas: Math.min(PRORROGAS_POR_NIVEL[n], TOPE_DURO_PRORROGAS),
+        requisitos: REQUISITOS_NIVEL[n],
+        actual: n === actual,
+        alcanzado: actual != null && NIVELES.indexOf(n) <= NIVELES.indexOf(actual)
+      };
+    });
+  }
+
+  /* ------------------------------------------- §3 garantía por tus datos */
+
+  function hayDato(v) {
+    if (v == null || v === false) return false;
+    if (typeof v === 'string') return v.trim() !== '';
+    if (typeof v === 'object') return Object.keys(v).length > 0;
+    return true;
+  }
+
+  /**
+   * §3 (nueva versión) — Cupón que la plataforma le presta al socio según la
+   * información que ya entregó. Completando los 15 datos llega a 200.000.
+   *
+   * @param {object} datos  claves de DATOS_KYC con lo que el socio haya dado
+   * @returns {{total:number, maximo:number, porcentaje:number,
+   *            completos:Array, faltantes:Array, siguiente:object|null}}
+   */
+  function garantiaPorDatos(datos) {
+    datos = datos || {};
+    if (typeof datos !== 'object') throw new TypeError('datos: se esperaba un objeto');
+    var total = 0, completos = [], faltantes = [];
+    DATOS_KYC.forEach(function (d) {
+      var item = { id: d.id, etiqueta: d.etiqueta, ayuda: d.ayuda, tipo: d.tipo, valor: d.valor };
+      if (hayDato(datos[d.id])) { total += d.valor; completos.push(item); }
+      else faltantes.push(item);
+    });
+    // El que más garantía suelta va primero: es el que conviene pedirle.
+    var orden = faltantes.slice().sort(function (a, b) { return b.valor - a.valor; });
+    return {
+      total: total,
+      maximo: CUPON_KYC_MAXIMO,
+      porcentaje: Math.round(total / CUPON_KYC_MAXIMO * 100),
+      completos: completos,
+      faltantes: faltantes,
+      siguiente: orden.length ? orden[0] : null
+    };
+  }
+
+  /**
+   * Garantía por referidos: 5.000 por cada uno, pero SOLO cuando ese referido
+   * ya pagó un crédito. Traer gente que no paga no suma.
+   *
+   * @param {Array} referidos  [{nombre, pago_puntual|pago}]  o un número de
+   *        referidos que ya pagaron.
+   */
+  function garantiaPorReferidos(referidos) {
+    if (esNumero(referidos)) {
+      return enteroNoNegativo(referidos, 'referidos') * GARANTIA_POR_REFERIDO;
+    }
+    if (!Array.isArray(referidos)) {
+      if (referidos == null) return 0;
+      throw new TypeError('referidos: se esperaba una lista o un número, llegó ' + describir(referidos));
+    }
+    var cuentan = referidos.filter(function (r) {
+      return !!(r && (r.pago_puntual === true || r.pago === true));
+    });
+    return cuentan.length * GARANTIA_POR_REFERIDO;
+  }
+
+  /**
+   * Garantía total del socio, con sus tres fuentes a la vista. Es lo que la
+   * app le muestra desglosado para que entienda de dónde le sale cada peso.
+   */
+  function garantiaTotal(entrada) {
+    entrada = entrada || {};
+    var porDatos = garantiaPorDatos(entrada.datos).total;
+    var porReferidos = garantiaPorReferidos(entrada.referidos);
+    var acumulada = numeroNoNegativo(entrada.acumulada == null ? 0 : entrada.acumulada, 'acumulada');
+    return {
+      cupon: porDatos,
+      referidos: porReferidos,
+      acumulada: acumulada,
+      total: porDatos + porReferidos + acumulada
+    };
   }
 
   /* ------------------------------------------------------- §4 garantía */
@@ -588,6 +728,83 @@
     };
   }
 
+  /* ------------------------------------------------ simulador de crédito */
+
+  /** Qué garantía le faltaría para bajar al siguiente escalón de tasa. */
+  function siguienteEscalon(capital, garantiaDisponible) {
+    var c = numeroPositivo(capital, 'capital');
+    var g = numeroNoNegativo(garantiaDisponible, 'garantiaDisponible');
+    var metas = [{ cob: 0.5, tasa: 0.12 }, { cob: 1, tasa: 0.05 }, { cob: 2, tasa: 0.03 }];
+    for (var i = 0; i < metas.length; i++) {
+      var necesaria = metas[i].cob * c;
+      if (g < necesaria) {
+        return {
+          tasa: metas[i].tasa,
+          garantia_necesaria: Math.ceil(necesaria),
+          falta: Math.ceil(necesaria - g)
+        };
+      }
+    }
+    return null; // ya está en la mejor tasa
+  }
+
+  /**
+   * Simula un crédito: qué paga, qué tasa le toca por su cobertura, cuánto se
+   * ahorra frente a no tener garantía, y cuánta garantía le deja el crédito.
+   * Es el cálculo que hay detrás de la calculadora de la app.
+   */
+  function simularCredito(capital, garantiaDisponible, opciones) {
+    opciones = opciones || {};
+    var c = numeroPositivo(capital, 'capital');
+    var g = numeroNoNegativo(garantiaDisponible, 'garantiaDisponible');
+
+    var tasa = calcularTasa(g, c);
+    var costo = Math.round(c * tasa);
+    var deja = acumularGarantia(costo);
+
+    var tasaSin = calcularTasa(0, c);
+    var costoSin = Math.round(c * tasaSin);
+
+    return {
+      capital: c,
+      tasa: tasa,
+      costo: costo,
+      total_a_pagar: c + costo,
+      cobertura: g / c,
+      cubierto: g >= c,                    // la garantía ya solventa el crédito
+      garantia_disponible: g,
+      garantia_que_deja: deja,
+      garantia_despues: g + deja,
+      sin_garantia: { tasa: tasaSin, costo: costoSin, total_a_pagar: c + costoSin },
+      ahorro: costoSin - costo,            // lo que le ahorra su historial, en pesos
+      siguiente_escalon: siguienteEscalon(c, g),
+      fecha_corte: opciones.fechaDesembolso ? calcularFechaCorte(opciones.fechaDesembolso) : null
+    };
+  }
+
+  /**
+   * Cómo crece la garantía si el socio repite un crédito del mismo tamaño.
+   * Sirve para mostrarle el camino en vez de pedirle que se lo imagine.
+   */
+  function proyectarCrecimiento(garantiaInicial, capital, vueltas, nivelSocio) {
+    var g = numeroNoNegativo(garantiaInicial, 'garantiaInicial');
+    var c = numeroPositivo(capital, 'capital');
+    var n = enteroNoNegativo(vueltas == null ? 6 : vueltas, 'vueltas');
+    var nivel = normalizarNivel(nivelSocio || 'bronce');
+    var pasos = [];
+    for (var i = 1; i <= n; i++) {
+      var tasa = calcularTasa(g, c);
+      var costo = Math.round(c * tasa);
+      var gana = acumularGarantia(costo);
+      g += gana;
+      pasos.push({
+        credito: i, tasa: tasa, costo: costo,
+        garantia_ganada: gana, garantia: g, cupo: calcularCupo(g, nivel)
+      });
+    }
+    return pasos;
+  }
+
   /* ------------------------------------------------------- §8 prórrogas */
 
   /**
@@ -750,6 +967,18 @@
     puedeSolicitar: puedeSolicitar,
     evaluarCastigo: evaluarCastigo,
 
+    // §3 nuevo: garantía que se gana entregando datos, y por referidos
+    garantiaPorDatos: garantiaPorDatos,
+    garantiaPorReferidos: garantiaPorReferidos,
+    garantiaTotal: garantiaTotal,
+
+    // Calculadora y proyecciones
+    simularCredito: simularCredito,
+    siguienteEscalon: siguienteEscalon,
+    proyectarCrecimiento: proyectarCrecimiento,
+    proyeccionNiveles: proyeccionNiveles,
+    garantiaNecesariaPara: garantiaNecesariaPara,
+
     // Auxiliares que usan las anteriores (y que la UI va a necesitar)
     detalleFechaCorte: detalleFechaCorte,
     cortesSiguientes: cortesSiguientes,
@@ -773,6 +1002,10 @@
     // Constantes de negocio, para que la UI no las repita a mano
     NIVELES: NIVELES,
     ESCALONES_TASA: ESCALONES_TASA,
+    DATOS_KYC: DATOS_KYC,
+    CUPON_KYC_MAXIMO: CUPON_KYC_MAXIMO,
+    GARANTIA_POR_REFERIDO: GARANTIA_POR_REFERIDO,
+    CUPO_MAXIMO: CUPO_MAXIMO,
     FACTOR_CUPO: FACTOR_CUPO,
     PRORROGAS_POR_NIVEL: PRORROGAS_POR_NIVEL,
     TOPE_DURO_PRORROGAS: TOPE_DURO_PRORROGAS,

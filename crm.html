@@ -737,6 +737,12 @@ function editarCliente(id){
     <div class="sub-h">Referencia</div>
     <div class="two"><div class="field"><label>Nombre</label><input id="fRefN" value="${escHTML(ref.nombre||'')}"></div>
       <div class="field"><label>Teléfono</label><input id="fRefT" inputmode="numeric" value="${ref.telefono||''}"></div></div>
+    <div class="sub-h">¿Quién lo trajo?</div>
+    <div class="field"><label>Referido por <span class="muted">(opcional)</span></label>
+      <select id="fRefPor"><option value="">— Nadie / llegó solo —</option>${
+        DB.socios.filter(x=>x.id!==id).sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||''))
+          .map(x=>`<option value="${x.id}" ${((s&&s.referidoPor)===x.id)?'selected':''}>${escHTML(x.nombre)} · ${codCliente(x)}</option>`).join('')}</select>
+      <div class="help">Al que lo trajo se le suman ${COP(MotorReglas.GARANTIA_POR_REFERIDO)} de garantía, pero solo cuando este cliente pague su primer crédito.</div></div>
     <div class="sub-h">Verificación de identidad</div>
     <div class="up-row">${upBox('frente','🪪','Cédula (frente)')}${upBox('reverso','🪪','Cédula (reverso)')}${upBox('selfie','🤳','Selfie con cédula','user')}</div>
     <div class="help" style="margin-top:6px">En el celular, al tocar una foto puedes <b>tomarla con la cámara</b> o elegir una de la galería.</div>
@@ -751,7 +757,7 @@ function guardarCliente(id){
   const nombre=gv('fNombre'); if(!nombre){ alert('Falta el nombre.'); return; }
   const datos={ nombre, telefono:gv('fTel'), telefono2:gv('fTel2'), cedula:gv('fCedula'), whatsappIgual:gv('fWaIgual')!=='no', whatsappNumero:gv('fWaNum'),
     email:gv('fEmail'), llave:gv('fLlave'), nequi:gv('fNequi'), direccion:gv('fDir'), ciudad:gv('fCiudad'), barrio:gv('fBarrio'),
-    tipoVivienda:gv('fTipo'), numeroVivienda:gv('fNumViv'), referencia:{nombre:gv('fRefN'),telefono:gv('fRefT')}, notaRiesgo:gv('fNotaRiesgo'),
+    tipoVivienda:gv('fTipo'), numeroVivienda:gv('fNumViv'), referencia:{nombre:gv('fRefN'),telefono:gv('fRefT')}, notaRiesgo:gv('fNotaRiesgo'), referidoPor:gv('fRefPor')||null,
     cedulaFrenteFoto:_fotosTmp.frente, cedulaReversoFoto:_fotosTmp.reverso, selfieFoto:_fotosTmp.selfie, ubicacion:_ubicTmp };
   if(id){ Object.assign(DB.socios.find(x=>x.id===id),datos); } else { DB.socios.push(Object.assign({id:'C'+Date.now(),numero:nextNumCliente(),gestiones:[],fechaRegistro:new Date().toISOString()},datos)); }
   _fotosTmp={frente:null,reverso:null,selfie:null}; _ubicTmp=null; guardar(); cerrarModal(); render(); irA('clientes');
@@ -874,7 +880,6 @@ function pintarCfg(){ document.getElementById('cfgNeg').value=DB.config.negocio;
    Convierte el historial de siempre en garantía acumulada, para que el cliente
    viejo no arranque en cero, y lo sube para que lo vea en su celular. */
 const SB_KEY='joan_socios_sb';
-const CUPON_KYC={0:0,1:100000,2:200000,3:300000};
 const URL_APP_DEF='https://joanhispanista-star.github.io/joan-te-presta/socios/socio.html';
 function sbCfg(){ try{ return JSON.parse(localStorage.getItem(SB_KEY)||'{}'); }catch(e){ return {}; } }
 function guardarSupabase(){
@@ -882,12 +887,31 @@ function guardarSupabase(){
   localStorage.setItem(SB_KEY,JSON.stringify(c)); pintarCfg();
   alert('Conexión guardada en este computador. No viaja a ninguna parte.');
 }
-function nivelKycDe(s){
-  if(!s.cedula) return 0;
-  const r=s.referencia||{};
-  return (r.nombre&&r.telefono)?2:1;   // el 3 lo aprueba Joan a mano (§3 del documento)
-}
 function esPuntual(p){ return !!(p.pagado&&p.fechaPagado&&p.cicloPago&&p.fechaPagado<=p.cicloPago); }
+
+/* Los datos del cliente, en las claves que entiende el motor (DATOS_KYC).
+   De acá sale el cupón: cada dato cargado le presta más garantía. */
+function datosKycDe(s){
+  const r=s.referencia||{};
+  return {
+    nombre:s.nombre, cedula:s.cedula, celular:s.telefono,
+    whatsapp:!!(s.whatsappIgual||s.whatsappNumero),
+    correo:s.email, ciudad:[s.ciudad,s.barrio].filter(Boolean).join(' '),
+    direccion:s.direccion, vivienda:[s.tipoVivienda,s.numeroVivienda].filter(Boolean).join(' '),
+    pago:s.nequi||s.llave, celular2:s.telefono2,
+    referencia:(r.nombre&&r.telefono)?(r.nombre+' '+r.telefono):'',
+    ubicacion:s.ubicacion,
+    foto_cedula_frente:s.cedulaFrenteFoto, foto_cedula_reverso:s.cedulaReversoFoto,
+    foto_selfie:s.selfieFoto
+  };
+}
+/* Referidos: los que este cliente trajo. Solo suman los que ya pagaron. */
+function referidosDe(s){
+  return DB.socios.filter(x=>x.referidoPor===s.id).map(x=>({
+    nombre:x.nombre,
+    pago_puntual:DB.prestamos.some(p=>p.socioId===x.id&&p.pagado)
+  }));
+}
 
 function migrarSocio(s){
   const ps=DB.prestamos.filter(p=>p.socioId===s.id)
@@ -895,7 +919,9 @@ function migrarSocio(s){
   const pagados=ps.filter(p=>p.pagado);
   // La garantía reconoce TODO lo que el socio ya pagó de costo, puntual o tarde.
   const acumulada=Math.round(ps.reduce((t,p)=>t+gananciaCobrada(p),0)*0.90);
-  const kyc=nivelKycDe(s), cupon=CUPON_KYC[kyc]||0;
+  const datos=datosKycDe(s), refs=referidosDe(s);
+  const g=MotorReglas.garantiaTotal({datos,referidos:refs,acumulada});
+  const kyc=MotorReglas.garantiaPorDatos(datos);
   const aTiempo=pagados.filter(esPuntual).length;
   let racha=0; for(let i=pagados.length-1;i>=0;i--){ if(esPuntual(pagados[i]))racha++; else break; }
   const tarde=pagados.filter(p=>!esPuntual(p)).map(p=>p.fechaPagado).filter(Boolean).sort();
@@ -903,14 +929,23 @@ function migrarSocio(s){
   const meses=Math.max(0,Math.floor(diasEntre(desde,hoyISO())/30));
   const nivel=MotorReglas.evaluarNivel(aTiempo,racha,meses,s.nivelSocio||'bronce');
   return {
-    socio:{codigo:codCliente(s),nivel_kyc:kyc},
-    garantia:{ total:acumulada+cupon, acumulada, cupon, nivel,
+    socio:{codigo:codCliente(s)},
+    garantia:{ total:g.total, acumulada:g.acumulada, cupon:g.cupon, referidos:g.referidos, nivel,
       pagados_a_tiempo:aTiempo, racha, meses_sin_mora:meses, creditos_total:ps.length },
+    // Solo QUÉ dato tiene cargado, nunca su contenido: al cliente le alcanza
+    // con ver el chulito, y así no viajan fotos, coordenadas ni teléfonos.
+    perfil:{ datos:kyc.completos.reduce((o,d)=>{o[d.id]=true;return o;},{}),
+      porcentaje:kyc.porcentaje,
+      faltan:kyc.faltantes.map(d=>({id:d.id,etiqueta:d.etiqueta,valor:d.valor})) },
+    referidos:{ total:refs.length, pagaron:refs.filter(r=>r.pago_puntual).length,
+      lista:refs.map(r=>({nombre:(r.nombre||'').split(' ')[0],pago:r.pago_puntual})) },
     creditos:ps.slice().reverse().map(p=>({
       codigo:codCredito(p), capital:capitalActual(p), costo:Math.round(K(p)),
       desembolso:p.fechaDesembolso, corte:p.cicloActual,
       pagado:!!p.pagado, fecha_pagado:p.fechaPagado||null,
       abonado:Math.round(gananciaCobrada(p)+capitalRecuperadoDe(p)),
+      // Cuánta garantía le dejó este crédito: el 90% de lo que ya pagó de costo.
+      garantia:MotorReglas.acumularGarantia(gananciaCobrada(p)),
       prorrogas:(p.prorrogas||[]).length })),
     resumen:{ total_prestado:ps.reduce((t,p)=>t+p.capital,0),
       primer_credito:ps.length?ps[0].fechaDesembolso:null }
@@ -946,7 +981,9 @@ function aB64Url(str){
 }
 function enlaceHistorial(s){
   const d=migrarSocio(s);
-  d.creditos=d.creditos.slice(0,24);   // los 24 más recientes, para no alargar el enlace
+  // Los 15 más recientes y sin los campos que la app no muestra: el enlace
+  // viaja por WhatsApp y uno larguísimo asusta.
+  d.creditos=d.creditos.slice(0,15).map(c=>{ const {abonado,...resto}=c; return resto; });
   return urlApp()+'#d='+aB64Url(JSON.stringify({n:s.nombre||'Socio',d:d,f:hoyISO()}));
 }
 function mandarHistorial(id){
@@ -955,17 +992,21 @@ function mandarHistorial(id){
     return alert(s.nombre+' todavía no tiene créditos registrados, así que no hay historial para mandarle.');
   const enlace=enlaceHistorial(s);
   const msg=aplicarVars(DB.plantillas.historial||PLANTILLAS_DEF.historial.m,null,s,enlace);
-  const g=migrarSocio(s).garantia;
+  const m=migrarSocio(s), g=m.garantia;
   openModal('Su historial · '+s.nombre,`
     <div class="info-row"><span class="k">Garantía que va a ver</span><b>${COP(g.total)}</b></div>
-    <div class="info-row"><span class="k">Nivel</span><b>${escHTML(g.nivel)}</b></div>
-    <div class="info-row"><span class="k">Créditos en el enlace</span><b>${Math.min(g.creditos_total,24)}</b></div>
+    <div class="info-row"><span class="k">· prestada por sus datos</span><span class="vv">${COP(g.cupon)} <span class="muted">(${m.perfil.porcentaje}% del perfil)</span></span></div>
+    <div class="info-row"><span class="k">· ganada pagando</span><span class="vv">${COP(g.acumulada)}</span></div>
+    <div class="info-row"><span class="k">· por referidos</span><span class="vv">${COP(g.referidos)} <span class="muted">(${m.referidos.pagaron} de ${m.referidos.total} ya pagaron)</span></span></div>
+    <div class="info-row"><span class="k">Nivel y cupo</span><b>${escHTML(g.nivel)} · ${COP(MotorReglas.calcularCupo(g.total,g.nivel))}</b></div>
+    ${m.perfil.faltan.length?`<div class="alerta info" style="margin-top:10px">Le faltan ${m.perfil.faltan.length} dato(s) por cargar. Completarlos le sumaría <b>${COP(m.perfil.faltan.reduce((t,f)=>t+f.valor,0))}</b> más de garantía.</div>`:''}
     <div class="sub-h">Mensaje que le llega</div>
     <div class="alerta info" style="white-space:pre-wrap">${escHTML(msg)}</div>
     <div class="two" style="margin-top:16px">
       <a class="btn btn-wa" target="_blank" rel="noopener" href="${waLink(waNum(s),msg)}">💬 Mandar por WhatsApp</a>
-      <button class="btn btn-ghost" onclick="copiarEnlace('${s.id}')">📋 Copiar el enlace</button>
+      <a class="btn btn-negro" target="_blank" rel="noopener" href="${enlace}">👁 Ver como lo ve él</a>
     </div>
+    <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:10px" onclick="copiarEnlace('${s.id}')">📋 Copiar el enlace</button>
     <div class="muted" style="font-size:12px;margin-top:12px">Sus datos viajan dentro del enlace, no quedan en ningún servidor. Es una foto de hoy: cuando pague o pida otro crédito, mandale el enlace de nuevo y verá los números al día.</div>
     <div class="muted" style="font-size:12px;margin-top:6px">El mensaje se edita en Plantillas → “Su historial de socio”.</div>`);
 }

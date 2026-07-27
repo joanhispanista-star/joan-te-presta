@@ -1,0 +1,20 @@
+{
+  "name": "Joan te presta · Mi cuenta de socio",
+  "short_name": "Mi cuenta",
+  "description": "Mirá tu cupo, tu garantía y tu historial, y calculá un crédito antes de pedirlo.",
+  "start_url": "socio.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f3d2e",
+  "theme_color": "#0f3d2e",
+  "lang": "es-CO",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%230f3d2e'/%3E%3Ctext x='256' y='350' font-size='272' text-anchor='middle' fill='%23f2c14e' font-family='system-ui'%3EJ%3C/text%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
