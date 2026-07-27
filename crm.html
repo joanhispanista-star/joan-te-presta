@@ -277,6 +277,20 @@
           <button class="btn btn-ghost btn-sm" onclick="exportar()">⬇ Respaldo (JSON)</button>
           <label class="btn btn-ghost btn-sm" style="cursor:pointer">⬆ Importar respaldo<input type="file" accept="application/json" style="display:none" onchange="importar(event)"></label>
         </div>
+
+        <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--linea)">
+          <h3 style="margin:0 0 4px">📲 Compartir con mis clientes</h3>
+          <div class="help" style="margin-bottom:14px">Sube el historial de tus clientes a la nube para que cada uno lo vea en su celular en <b>socios/socio.html</b>. Solo suben nombre, cédula, celular y sus créditos — nunca fotos ni ubicación.</div>
+          <div class="field"><label>Project URL de Supabase</label><input id="cfgSbUrl" placeholder="https://xxxx.supabase.co"></div>
+          <div class="field"><label>Llave anon public</label><input id="cfgSbAnon" placeholder="eyJ..."></div>
+          <div class="field"><label>Tu clave de sincronización</label><input id="cfgSbClave" type="password" placeholder="la que pusiste en supabase.sql"><div class="help">Se guarda solo en este computador. Nunca viaja dentro de la página del cliente.</div></div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn btn-rojo btn-sm" onclick="guardarSupabase()">Guardar conexión</button>
+            <button class="btn btn-negro btn-sm" onclick="sincronizarSocios()">☁ Subir historiales</button>
+            <button class="btn btn-ghost btn-sm" onclick="verMigracion()">👁 Ver qué se va a subir</button>
+          </div>
+          <div id="sbEstado" class="help" style="margin-top:12px"></div>
+        </div>
       </div></div>
     </section>
 
@@ -285,6 +299,7 @@
 
 <div class="modal" id="modal"><div class="modal-card"><div class="modal-h"><h3 id="mTitle"></h3><button class="x" onclick="cerrarModal()" aria-label="Cerrar" title="Cerrar (Esc)">×</button></div><div class="modal-b" id="mBody"></div></div></div>
 
+<script src="socios/motor.js"></script>
 <script>
 const KEY='joan_socios_v1';
 const MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
@@ -302,7 +317,7 @@ const PLANTILLAS_DEF={
 let DB=cargar();
 function cargar(){
   let d={}; try{ d=JSON.parse(localStorage.getItem(KEY)||'{}'); }catch(e){}
-  d.socios=d.socios||d.clientes||[]; d.prestamos=d.prestamos||[];
+  d.socios=d.socios||d.clientes||[]; d.prestamos=d.prestamos||[]; d.papelera=d.papelera||[];
   d.plantillas=Object.assign({},...Object.keys(PLANTILLAS_DEF).map(k=>({[k]:PLANTILLAS_DEF[k].m})),d.plantillas||{});
   d.config=Object.assign({costoBasePct:20,tasaUsuraEA:0,pin:'1234',negocio:'Joan'},d.config||{});
   d.contadores=Object.assign({cliente:0,credito:0},d.contadores||{});
@@ -446,7 +461,7 @@ function renderCola(){
 function renderCred(){
   const arr=[...DB.prestamos].sort((a,b)=>{const o={mora:0,hoy:1,proximo:2,'al-dia':3,pagado:4};return o[estadoPrestamo(a)]-o[estadoPrestamo(b)]||new Date(a.cicloActual)-new Date(b.cicloActual);});
   const c=document.getElementById('tblCred'),usura=DB.config.tasaUsuraEA;
-  if(!arr.length){ c.innerHTML=`<div class="empty"><div class="ic">💵</div><p>Sin créditos todavía.<br><span class="muted">Toca “＋ Nuevo crédito” para registrar el primero.</span></p></div>`; return; }
+  if(!arr.length){ c.innerHTML=`<div class="empty"><div class="ic">💵</div><p>Sin créditos todavía.<br><span class="muted">Toca “＋ Nuevo crédito” para registrar el primero.</span></p></div>`+papeleraHTML(); return; }
   const sumCap=arr.reduce((s,p)=>s+capitalActual(p),0),sumAPagar=arr.reduce((s,p)=>s+(p.pagado?0:totalCiclo(p)),0),sumGan=arr.reduce((s,p)=>s+gananciaCobrada(p),0);
   c.innerHTML=`<table><thead><tr><th>N°</th><th>Cliente</th><th>Capital</th><th>A pagar</th><th>Ganancia</th><th>Desemb. → Quincena</th><th>E.A.</th><th>Estado</th><th></th></tr></thead><tbody>${
     arr.map(p=>{ const est=estadoPrestamo(p),dias=diasEntre(p.fechaDesembolso,p.cicloActual),ea=eaEquivalente(p.costoPct,dias),sobre=usura>0&&ea>usura,npr=(p.prorrogas||[]).length,s=DB.socios.find(x=>x.id===p.socioId);
@@ -457,8 +472,57 @@ function renderCred(){
       <td>${fmtFecha(p.fechaDesembolso)} <span class="muted">→</span> ${fmtFecha(p.cicloActual)}<div class="muted">${dias} días</div></td>
       <td class="${sobre?'ea-bad':'ea-ok'}">${fmtEA(ea)}${sobre?' <span class="warn-ico" title="Supera la usura de referencia">⚠️</span>':''}</td>
       <td><span class="chip ${est}">${ESTADO_TXT[est]}</span></td>
-      <td style="text-align:right"><button class="btn btn-ghost btn-sm" onclick="verCredito('${p.id}')">Ver</button>${p.pagado?'':` <button class="btn btn-negro btn-sm" onclick="abrirPago('${p.id}')">Pago</button>`}</td></tr>`;}).join('')}</tbody>
-      <tfoot><tr><td colspan="2">Total (${arr.length} créditos)</td><td class="num">${COP(sumCap)}</td><td class="num">${COP(sumAPagar)}</td><td class="num">${COP(sumGan)}</td><td colspan="4"></td></tr></tfoot></table>`;
+      <td style="text-align:right"><button class="btn btn-ghost btn-sm" onclick="verCredito('${p.id}')">Ver</button>${p.pagado?'':` <button class="btn btn-negro btn-sm" onclick="abrirPago('${p.id}')">Pago</button>`} <button class="btn btn-ghost btn-sm" onclick="borrarCredito('${p.id}')" title="Borrar este crédito (va a la papelera)">🗑</button></td></tr>`;}).join('')}</tbody>
+      <tfoot><tr><td colspan="2">Total (${arr.length} créditos)</td><td class="num">${COP(sumCap)}</td><td class="num">${COP(sumAPagar)}</td><td class="num">${COP(sumGan)}</td><td colspan="4"></td></tr></tfoot></table>`+papeleraHTML();
+}
+
+/* ===== PAPELERA DE CRÉDITOS =====
+   Para los créditos que quedaron mal guardados o con datos errados. Borrar es
+   reversible a propósito: sale de todos los totales, del calendario y de la
+   cola de cobro, pero se puede devolver. El borrado definitivo va aparte. */
+function papeleraHTML(){
+  const pap=DB.papelera||[];
+  if(!pap.length) return '';
+  return `<div class="sub-h" style="margin-top:24px">🗑 Papelera · ${pap.length} crédito${pap.length!==1?'s':''} borrado${pap.length!==1?'s':''}</div>
+  <div class="muted" style="margin:-6px 0 10px">No cuentan en ningún total, ni en el calendario, ni en la cola de cobro. Podés devolverlos cuando quieras.</div>
+  <table><thead><tr><th>N°</th><th>Cliente</th><th>Capital</th><th>Borrado</th><th></th></tr></thead><tbody>${
+    pap.map(p=>`<tr><td class="mono muted">${codCredito(p)}</td>
+      <td><b>${escHTML(p.socioNombre)}</b><div class="muted">costo ${p.costoPct}% · desembolso ${fmtFecha(p.fechaDesembolso)}</div></td>
+      <td class="num">${COP(p.capital)}</td>
+      <td>${p.borradoEn?fmtFecha(p.borradoEn):'—'}</td>
+      <td style="text-align:right"><button class="btn btn-ghost btn-sm" onclick="restaurarCredito('${p.id}')">↩ Devolver</button> <button class="btn btn-ghost btn-sm" onclick="eliminarDefinitivo('${p.id}')" title="Borrar para siempre">✕</button></td></tr>`).join('')}</tbody></table>
+  <button class="btn btn-ghost btn-sm" style="margin-top:12px" onclick="vaciarPapelera()">Vaciar la papelera</button>`;
+}
+function borrarCredito(id){
+  const p=DB.prestamos.find(x=>x.id===id); if(!p)return;
+  const npr=(p.prorrogas||[]).length, com=(p.comprobantes||[]).length;
+  if(!confirm('¿Borrar el crédito '+codCredito(p)+'?\n\n'
+    +'• Cliente: '+p.socioNombre+'\n'
+    +'• Capital: '+COP(p.capital)+'\n'
+    +'• Estado: '+ESTADO_TXT[estadoPrestamo(p)]+'\n'
+    +(npr?'• Prórrogas registradas: '+npr+'\n':'')
+    +(com?'• Comprobantes adjuntos: '+com+'\n':'')
+    +'\nSale de todos los totales y del calendario, pero queda en la papelera por si lo necesitás de vuelta.'))return;
+  p.borradoEn=hoyISO();
+  DB.papelera=DB.papelera||[]; DB.papelera.unshift(p);
+  DB.prestamos=DB.prestamos.filter(x=>x.id!==id);
+  guardar(); cerrarModal(); render();
+}
+function restaurarCredito(id){
+  const i=(DB.papelera||[]).findIndex(x=>x.id===id); if(i<0)return;
+  const p=DB.papelera[i]; delete p.borradoEn;
+  DB.prestamos.push(p); DB.papelera.splice(i,1);
+  guardar(); render();
+}
+function eliminarDefinitivo(id){
+  const p=(DB.papelera||[]).find(x=>x.id===id); if(!p)return;
+  if(!confirm('Borrar para SIEMPRE el crédito '+codCredito(p)+' de '+p.socioNombre+'.\n\nEsto ya no se puede deshacer.'))return;
+  DB.papelera=DB.papelera.filter(x=>x.id!==id); guardar(); render();
+}
+function vaciarPapelera(){
+  const n=(DB.papelera||[]).length; if(!n)return;
+  if(!confirm('Vaciar la papelera borra para SIEMPRE '+n+' crédito'+(n!==1?'s':'')+'.\n\nEsto no se puede deshacer. Si tenés dudas, exportá primero un respaldo desde Ajustes.'))return;
+  DB.papelera=[]; guardar(); render();
 }
 
 function renderClientes(){
@@ -765,7 +829,9 @@ function verCredito(id){
     <div class="info-row"><span class="k">${p.pagado?'Pagado el':'Vence (quincena)'}</span><b>${p.pagado?fmtFecha(p.fechaPagado):fmtFecha(p.cicloActual)}</b></div>
     ${pr?`<div class="sub-h">Prórrogas</div>${pr}`:''}
     <div class="sub-h">Comprobantes de pago</div>${gal}
-    <div class="two" style="margin-top:18px">${p.pagado?'<span></span>':`<button class="btn btn-rojo" onclick="abrirPago('${p.id}')">Registrar cobro / prórroga</button>`}<button class="btn btn-ghost" onclick="verCliente('${s.id}')">Ver cliente</button></div>`);
+    <div class="two" style="margin-top:18px">${p.pagado?'<span></span>':`<button class="btn btn-rojo" onclick="abrirPago('${p.id}')">Registrar cobro / prórroga</button>`}<button class="btn btn-ghost" onclick="verCliente('${s.id}')">Ver cliente</button></div>
+    <button class="btn btn-ghost btn-sm" style="margin-top:12px;width:100%" onclick="borrarCredito('${p.id}')">🗑 Borrar este crédito · quedó mal guardado</button>
+    <div class="muted" style="text-align:center;margin-top:6px;font-size:12px">Va a la papelera, no se pierde.</div>`);
 }
 
 /* ===== PAGO / PRÓRROGA / COMPROBANTE ===== */
@@ -798,7 +864,90 @@ function abonarCapital(id){ const p=DB.prestamos.find(x=>x.id===id),m=Number(doc
   p.abonosCapital=p.abonosCapital||[]; p.abonosCapital.push({fecha:hoyISO(),monto:m}); addComp(p,'abono',m); guardar(); abrirPago(id); render(); }
 
 /* ===== CONFIG ===== */
-function pintarCfg(){ document.getElementById('cfgNeg').value=DB.config.negocio; document.getElementById('cfgCosto').value=DB.config.costoBasePct; document.getElementById('cfgUsura').value=DB.config.tasaUsuraEA||''; document.getElementById('cfgPin').value=DB.config.pin; }
+function pintarCfg(){ document.getElementById('cfgNeg').value=DB.config.negocio; document.getElementById('cfgCosto').value=DB.config.costoBasePct; document.getElementById('cfgUsura').value=DB.config.tasaUsuraEA||''; document.getElementById('cfgPin').value=DB.config.pin;
+  const c=sbCfg(); document.getElementById('cfgSbUrl').value=c.url||''; document.getElementById('cfgSbAnon').value=c.anon||''; document.getElementById('cfgSbClave').value=c.clave||'';
+  document.getElementById('sbEstado').textContent=(c.url&&c.anon&&c.clave)?'Conexión lista. Subí los historiales cuando quieras.':'Todavía sin conectar. Corré socios/supabase.sql y pegá acá los tres datos.'; }
+
+/* ===== MIGRACIÓN AL MODELO DE SOCIOS + SUBIDA A LA NUBE =====
+   Convierte el historial de siempre en garantía acumulada, para que el cliente
+   viejo no arranque en cero, y lo sube para que lo vea en su celular. */
+const SB_KEY='joan_socios_sb';
+const CUPON_KYC={0:0,1:100000,2:200000,3:300000};
+function sbCfg(){ try{ return JSON.parse(localStorage.getItem(SB_KEY)||'{}'); }catch(e){ return {}; } }
+function guardarSupabase(){
+  const c={url:gv('cfgSbUrl').replace(/\/+$/,''),anon:gv('cfgSbAnon'),clave:document.getElementById('cfgSbClave').value};
+  localStorage.setItem(SB_KEY,JSON.stringify(c)); pintarCfg();
+  alert('Conexión guardada en este computador. No viaja a ninguna parte.');
+}
+function nivelKycDe(s){
+  if(!s.cedula) return 0;
+  const r=s.referencia||{};
+  return (r.nombre&&r.telefono)?2:1;   // el 3 lo aprueba Joan a mano (§3 del documento)
+}
+function esPuntual(p){ return !!(p.pagado&&p.fechaPagado&&p.cicloPago&&p.fechaPagado<=p.cicloPago); }
+
+function migrarSocio(s){
+  const ps=DB.prestamos.filter(p=>p.socioId===s.id)
+    .sort((a,b)=>String(a.fechaDesembolso).localeCompare(String(b.fechaDesembolso)));
+  const pagados=ps.filter(p=>p.pagado);
+  // La garantía reconoce TODO lo que el socio ya pagó de costo, puntual o tarde.
+  const acumulada=Math.round(ps.reduce((t,p)=>t+gananciaCobrada(p),0)*0.90);
+  const kyc=nivelKycDe(s), cupon=CUPON_KYC[kyc]||0;
+  const aTiempo=pagados.filter(esPuntual).length;
+  let racha=0; for(let i=pagados.length-1;i>=0;i--){ if(esPuntual(pagados[i]))racha++; else break; }
+  const tarde=pagados.filter(p=>!esPuntual(p)).map(p=>p.fechaPagado).filter(Boolean).sort();
+  const desde=tarde.length?tarde[tarde.length-1]:(ps[0]?ps[0].fechaDesembolso:hoyISO());
+  const meses=Math.max(0,Math.floor(diasEntre(desde,hoyISO())/30));
+  const nivel=MotorReglas.evaluarNivel(aTiempo,racha,meses,s.nivelSocio||'bronce');
+  return {
+    socio:{codigo:codCliente(s),nivel_kyc:kyc},
+    garantia:{ total:acumulada+cupon, acumulada, cupon, nivel,
+      pagados_a_tiempo:aTiempo, racha, meses_sin_mora:meses, creditos_total:ps.length },
+    creditos:ps.slice().reverse().map(p=>({
+      codigo:codCredito(p), capital:capitalActual(p), costo:Math.round(K(p)),
+      desembolso:p.fechaDesembolso, corte:p.cicloActual,
+      pagado:!!p.pagado, fecha_pagado:p.fechaPagado||null,
+      abonado:Math.round(gananciaCobrada(p)+capitalRecuperadoDe(p)),
+      prorrogas:(p.prorrogas||[]).length })),
+    resumen:{ total_prestado:ps.reduce((t,p)=>t+p.capital,0),
+      primer_credito:ps.length?ps[0].fechaDesembolso:null }
+  };
+}
+function loteMigracion(){
+  const dig=v=>String(v||'').replace(/\D/g,'');
+  return DB.socios.map(s=>({ cedula:dig(s.cedula), telefono:dig(waNum(s)||s.telefono),
+      nombre:s.nombre||'Socio', datos:migrarSocio(s) }))
+    .filter(x=>x.cedula&&x.telefono.length>=4);
+}
+function verMigracion(){
+  const lote=loteMigracion(), sin=DB.socios.length-lote.length;
+  if(!lote.length) return alert('Ningún cliente tiene cédula y celular cargados, que es lo que necesita para entrar a la app. Completá esos dos datos primero.');
+  openModal('Se van a subir '+lote.length+' cliente(s)',
+    (sin?`<div class="alerta info">${sin} cliente(s) quedan por fuera: les falta la cédula o el celular. Completalos y volvé a subir.</div>`:'')
+    +`<div class="muted" style="margin-bottom:10px">Solo esto. Ni fotos, ni ubicación, ni referencias.</div>`
+    +lote.slice(0,40).map(x=>{ const g=x.datos.garantia;
+      return `<div class="info-row"><span class="k">${escHTML(x.nombre)}<div class="muted">CC ${escHTML(x.cedula)} · cel …${escHTML(x.telefono.slice(-4))}</div></span>
+      <span class="vv"><b>${COP(g.total)}</b> de garantía<div class="muted">${g.nivel} · ${g.creditos_total} crédito(s) · ${g.pagados_a_tiempo} puntual(es)</div></span></div>`; }).join('')
+    +(lote.length>40?`<div class="muted" style="margin-top:10px">…y ${lote.length-40} más.</div>`:''));
+}
+function sincronizarSocios(){
+  const c=sbCfg();
+  if(!c.url||!c.anon||!c.clave) return alert('Primero pegá la URL, la llave anon y tu clave, y dale a "Guardar conexión".');
+  const lote=loteMigracion();
+  if(!lote.length) return alert('No hay clientes con cédula y celular para subir.');
+  if(!confirm('Subir el historial de '+lote.length+' cliente(s) a la nube.\n\nCada uno lo va a poder ver entrando con su cédula y los últimos 4 de su celular. ¿Continuar?'))return;
+  const est=document.getElementById('sbEstado'); est.textContent='Subiendo…';
+  fetch(c.url+'/rest/v1/rpc/sincronizar_socios',{ method:'POST',
+    headers:{'Content-Type':'application/json',apikey:c.anon,Authorization:'Bearer '+c.anon},
+    body:JSON.stringify({p_clave:c.clave,p_lote:lote}) })
+  .then(r=>r.text().then(t=>({ok:r.ok,status:r.status,t})))
+  .then(r=>{
+    if(!r.ok){ est.textContent='No se pudo subir ('+r.status+'). '+(r.t.indexOf('clave')>=0?'La clave de sincronización no coincide con la de supabase.sql.':r.t.slice(0,180)); return; }
+    est.textContent='Listo: '+r.t.replace(/"/g,'')+' cliente(s) actualizados el '+fmtFecha(hoyISO())+'.';
+    alert('Historiales subidos. Ya pueden entrar desde socios/socio.html con su cédula y los últimos 4 de su celular.');
+  })
+  .catch(()=>{ est.textContent='No hubo conexión. Revisá el internet y volvé a intentar.'; });
+}
 function guardarCfg(){ DB.config.negocio=gv('cfgNeg')||'Joan'; DB.config.costoBasePct=Number(gv('cfgCosto'))||20; DB.config.tasaUsuraEA=Number(gv('cfgUsura'))||0; DB.config.pin=gv('cfgPin')||'1234'; guardar(); render(); alert('Ajustes guardados.'); }
 function exportar(){ const b=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'}),a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='respaldo-joan-te-presta.json'; a.click(); }
 function importar(e){ const f=e.target.files[0]; if(!f)return; const inp=e.target; const r=new FileReader();
