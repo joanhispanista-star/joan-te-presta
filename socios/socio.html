@@ -489,6 +489,13 @@ function pantallaConfig() {
       '</div></div>';
     return;
   }
+  // Si Joan le manda un enlace nuevo con la página ya abierta, el navegador no
+  // recarga: solo cambia el #. Sin esto seguiría viendo los números viejos.
+  window.addEventListener('hashchange', function () {
+    var nuevo = desdeEnlace();
+    if (nuevo) pintar(nuevo, false);
+  });
+
   var delEnlace = desdeEnlace();
   if (delEnlace) { pintar(delEnlace, false); return; }   // Joan ya le mandó todo adentro
   if (!CFG.url || !CFG.anon) {
