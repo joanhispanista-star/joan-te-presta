@@ -442,7 +442,7 @@
   <!-- ===== MENÚ PRINCIPAL ===== -->
   <div class="overlay on" id="menu">
     <div class="card">
-      <div class="brand"><div class="seal">◈</div><div><div class="l1">DRONES DE COMBATE</div><div class="l2">Simulador táctico · v0.13 · ciudades</div></div></div>
+      <div class="brand"><div class="seal">◈</div><div><div class="l1">DRONES DE COMBATE</div><div class="l2">Simulador táctico · v0.14</div></div></div>
       <div class="title">DRONES DE COMBATE</div>
       <div class="subtitle">Simulador de <b>drones terrestres y aéreos</b> no tripulados. Sensores <b>térmico y nocturno</b>, <b>enlace por línea de vista</b>, terreno <b>real del planeta</b>, día/noche y clima. Núcleo abierto para seguir sumando sistemas. <span style="color:var(--gris-2)">por Joan</span></div>
 
@@ -558,7 +558,9 @@
         <div class="subtitle" style="margin:0">Palanca IZQ = conducir/volar y girar · palanca DER = apuntar (o subir/bajar el dron). Botones a los lados: disparar, sensor, cámara, mirada, voz y 💥 kamikaze. Juega en horizontal.</div>
       </div>
 
-      <div class="foot">Cada archivo funciona solo. Guarda tu progreso en este navegador. <a id="resetProg">Borrar progreso</a></div>
+      <div class="foot">Cada archivo funciona solo. Guarda tu progreso en este navegador.
+        <a id="resetProg">Borrar progreso</a> · <a id="btnActualizar">🔄 Forzar actualización</a>
+        <span style="opacity:.6">(si la app se queda con una versión vieja o en blanco)</span></div>
     </div>
   </div>
 
@@ -1323,6 +1325,7 @@ function realHeightAt(x,z){
    recortan para que ambas cubran justo el mismo rectángulo.
    --------------------------------------------------------------------- */
 const REAL_SPAN_DEF=2400;                       // metros de lado del campo real
+let REAL_TOKEN=0;                               // identifica el mundo actual (la ciudad llega tarde)
 function mppAt(lat,z){ return 156543.03392*Math.cos(lat*Math.PI/180)/Math.pow(2,z); }
 function tileX2lon(x,z){ return x/Math.pow(2,z)*360-180; }
 function tileY2lat(y,z){ const n=Math.PI-2*Math.PI*y/Math.pow(2,z); return 180/Math.PI*Math.atan(0.5*(Math.exp(n)-Math.exp(-n))); }
@@ -1353,10 +1356,10 @@ async function buildRealWorld(map){
     return {x0:fx-h, x1:fx+h, y0:fy-h, y1:fy+h}; };
   const bbE=bbAt(ZE), bbT=bbAt(ZT);
   const G=512;
-  showLoading('Descargando terreno real', map.name+' · relieve');
+  showLoading('Paso 1 de 2 · relieve del terreno', map.name);
   const E=await fetchTiles(ZE, (z,x,y)=>'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/'+z+'/'+x+'/'+y+'.png', bbE, G, false);
   if(!E.ok) throw new Error('sin datos de elevación');
-  showLoading('Descargando imagen satelital', map.name+' · '+(ZT>=17?'alta definición':'satélite'));
+  showLoading('Paso 2 de 2 · imagen satelital', map.name+(ZT>=17?' · alta definición':''));
   const TX=await fetchTiles(ZT, (z,x,y)=>'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/'+z+'/'+y+'/'+x, bbT, ZT>=17?2048:1024, true);
   const imgOK=TX.ok>0, ic=TX.canvas;
   // decodifica elevación
@@ -1374,7 +1377,8 @@ async function buildRealWorld(map){
   const heights=new Float32Array(G*G);
   for(let i=0;i<G*G;i++) heights[i]=(heightsM[i]-minE)*vScale;
   const bbLL={ w:tileX2lon(bbT.x0,ZT), e:tileX2lon(bbT.x1,ZT), n:tileY2lat(bbT.y0,ZT), s:tileY2lat(bbT.y1,ZT) };
-  REAL={ G, heights, seaY:(0-minE)*vScale, spanM, map, minE, maxE, hScale, vScale, bb:bbT, Z:ZT, bbLL, mPerU:spanM/WORLD };
+  REAL={ G, heights, seaY:(0-minE)*vScale, spanM, map, minE, maxE, hScale, vScale, bb:bbT, Z:ZT, bbLL,
+         mPerU:spanM/WORLD, tok:++REAL_TOKEN };
   // material: textura satelital (o rampa por altura si falla)
   let mat;
   if(imgOK){ const tex=new THREE.CanvasTexture(ic); tex.colorSpace=THREE.SRGBColorSpace;
@@ -1400,11 +1404,12 @@ async function buildRealWorld(map){
   worldBase={ skyTop:map.skyTop||0x3a72b0, fog:map.fog||0xbcd0e0, fogN:0.0011, amb:0x4a4436 };
   setWater(REAL.seaY, minE<-5);   // agua solo si hay zonas bajo el nivel del mar
   applyEnvironment();
-  // 🏙️ CIUDAD REAL: edificios, ríos y arbolado de OpenStreetMap
-  try{
-    showLoading('Levantando la ciudad', map.name+' · edificios y ríos (OpenStreetMap)');
-    await buildOSM();
-  }catch(e){ console.warn('OSM no disponible:', e&&e.message); }
+  /* 🏙️ CIUDAD REAL: se trae EN SEGUNDO PLANO. Antes se esperaba aquí y la
+     pantalla de carga se quedaba negra 10-20 s (parecía que el juego moría);
+     ahora entras al mapa enseguida y los edificios aparecen al llegar. */
+  const tok=REAL.tok;
+  feed('🏙️ Trayendo los edificios de '+map.name+'…');
+  buildOSM(tok).catch(e=>console.warn('OSM no disponible:', e&&e.message));
 }
 
 /* =====================================================================
@@ -1465,8 +1470,9 @@ let BGU=null;
 async function getBGU(){ if(BGU!==null) return BGU;
   try{ BGU=await import('three/addons/utils/BufferGeometryUtils.js'); }catch(e){ BGU=false; } return BGU; }
 
-async function buildOSM(){
+async function buildOSM(tok){
   if(!REAL) return;
+  const vigente=()=>REAL && (tok===undefined || REAL.tok===tok);   // ¿sigue siendo este mundo?
   const b=REAL.bbLL;
   const box=b.s.toFixed(5)+','+b.w.toFixed(5)+','+b.n.toFixed(5)+','+b.e.toFixed(5);
   const q='[out:json][timeout:25];('
@@ -1478,6 +1484,7 @@ async function buildOSM(){
     +'way["natural"="wood"]('+box+');'
     +');out geom;';
   const j=await overpass(q, box);
+  if(!vigente()) return;                       // cambiaste de mapa mientras llegaba: no toques nada
   if(!j){ feed('⚠ OpenStreetMap ocupado — reintenta la misión para traer la ciudad','bad'); return; }
   if(j.vacio){ feed('Esta zona no tiene edificios mapeados en OpenStreetMap'); REAL.osm={edificios:0,agua:0,arboles:0}; return; }
   const ways=(j.elements||[]).filter(e=>e.geometry && e.geometry.length>2);
@@ -1594,9 +1601,26 @@ async function buildOSM(){
   REAL.osm={ edificios:nB, agua:nA, arboles:nV };
   feed('🏙️ '+nB+' edificios reales · '+nA+' cuerpos de agua · '+nV+' árboles','good');
 }
-function showLoading(title,sub){ const b=$('boot'); b.style.display='grid';
-  const l=b.querySelector('.l'), s=b.querySelector('.sub'); if(l)l.textContent=title||'Cargando…'; if(s)s.textContent=sub||''; }
-function hideLoading(){ $('boot').style.display='none'; }
+/* Pantalla de carga con SEÑALES DE VIDA: sin el contador parecía que el juego
+   se había quedado en blanco mientras descargaba. */
+let _cargaInt=null, _cargaT0=0, _cargaSub='';
+function showLoading(title,sub){
+  const b=$('boot'); b.style.display='grid';
+  const l=b.querySelector('.l'), s=b.querySelector('.sub');
+  if(l) l.textContent=title||'Cargando…';
+  _cargaSub=sub||'';
+  if(s) s.textContent=_cargaSub;
+  if(!_cargaInt){
+    _cargaT0=Date.now();
+    _cargaInt=setInterval(()=>{
+      const s2=$('boot').querySelector('.sub'); if(!s2) return;
+      const seg=Math.round((Date.now()-_cargaT0)/1000);
+      s2.textContent=_cargaSub+' · '+seg+' s'+(seg>10?' — la primera vez tarda, sigue trabajando…':'');
+    }, 500);
+  }
+}
+function hideLoading(){ $('boot').style.display='none';
+  if(_cargaInt){ clearInterval(_cargaInt); _cargaInt=null; } }
 
 /* =====================================================================
    VEHÍCULOS (construcción procedural)
@@ -3719,6 +3743,14 @@ function switchTab(name){
    ===================================================================== */
 function wireUI(){
   document.querySelectorAll('#navSeg button').forEach(b=> b.onclick=()=>switchTab(b.dataset.tab));
+  // rescate: borra cachés y el service worker, y recarga limpio
+  $('btnActualizar').onclick=async ()=>{
+    try{
+      if(window.caches){ const ks=await caches.keys(); await Promise.all(ks.map(k=>caches.delete(k))); }
+      if(navigator.serviceWorker){ const rs=await navigator.serviceWorker.getRegistrations(); await Promise.all(rs.map(r=>r.unregister())); }
+    }catch(e){}
+    location.replace(location.pathname+'?v='+Date.now());
+  };
   $('resetProg').onclick=()=>{ if(confirm('¿Borrar todo tu progreso y personalización?')){ store.prog={}; store.best={}; store.loadout=null; save(); renderMissions(); renderGarage(); } };
   // briefing
   $('brStart').onclick=()=>startMission(missionIdx);
