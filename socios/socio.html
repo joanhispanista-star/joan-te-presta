@@ -197,27 +197,65 @@ function fmtFecha(iso) {
   return Number(p[2]) + ' ' + mes[Number(p[1]) - 1] + ' ' + p[0];
 }
 
-/* ============================ DATOS DE EJEMPLO ============================ */
-var DEMO = {
-  nombre: 'Ana Ruiz',
-  datos: {
-    socio: { codigo: 'CL-0007', nivel_kyc: 2 },
-    garantia: { total: 340000, acumulada: 140000, cupon: 200000, nivel: 'plata',
-                pagados_a_tiempo: 4, racha: 2, creditos_total: 4, meses_sin_mora: 3 },
-    creditos: [
-      { codigo: 'CR-0021', capital: 300000, costo: 36000, desembolso: '2026-07-02',
-        corte: '2026-07-15', pagado: false, abonado: 0, prorrogas: 0 },
-      { codigo: 'CR-0018', capital: 250000, costo: 50000, desembolso: '2026-06-05',
-        corte: '2026-06-15', pagado: true, fecha_pagado: '2026-06-19', abonado: 300000, prorrogas: 1 },
-      { codigo: 'CR-0014', capital: 200000, costo: 40000, desembolso: '2026-05-04',
-        corte: '2026-05-15', pagado: true, fecha_pagado: '2026-05-15', abonado: 240000, prorrogas: 0 },
-      { codigo: 'CR-0009', capital: 150000, costo: 30000, desembolso: '2026-04-03',
-        corte: '2026-04-15', pagado: true, fecha_pagado: '2026-04-14', abonado: 180000, prorrogas: 0 }
-    ],
-    resumen: { total_prestado: 900000, primer_credito: '2026-04-03' }
-  },
-  actualizado_en: null
-};
+/* ============================ SOCIOS DE PRUEBA ============================
+   Mientras no haya base conectada, la app trae dos socios inventados para poder
+   probar el ingreso igual que lo hará un cliente de verdad. Las fechas se
+   calculan contra el día de hoy, así el ejemplo nunca queda viejo. */
+function fechaRel(dias) {
+  var x = new Date(); x.setDate(x.getDate() + dias);
+  return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0');
+}
+
+var DEMOS = (function () {
+  // Ana: 8 créditos cerrados (7 puntuales, el más viejo tarde) y uno abierto con atraso.
+  var cred = [{ codigo: 'CR-0009', capital: 600000, costo: 30000, desembolso: fechaRel(-23),
+                corte: fechaRel(-9), pagado: false, abonado: 0, prorrogas: 0 }];
+  var cobrado = 0, puntuales = 0;
+  for (var i = 1; i <= 8; i++) {
+    var cap = 100000 + i * 25000, costo = Math.round(cap * (i > 4 ? 0.20 : 0.12));
+    var tarde = (i === 8), prorroga = (i === 6) ? 35000 : 0;
+    cred.push({ codigo: 'CR-' + String(9 - i).padStart(4, '0'), capital: cap, costo: costo,
+      desembolso: fechaRel(-30 * i - 14), corte: fechaRel(-30 * i),
+      pagado: true, fecha_pagado: fechaRel(-30 * i + (tarde ? 6 : -1)),
+      abonado: cap + costo + prorroga, prorrogas: prorroga ? 1 : 0 });
+    cobrado += costo + prorroga;
+    if (!tarde) puntuales++;
+  }
+  var acum = Math.round(cobrado * 0.90);   // la misma regla del motor
+
+  return [
+    { cedula: '52111222', tel4: '2233', nombre: 'Ana Ruiz',
+      datos: {
+        socio: { codigo: 'CL-0007', nivel_kyc: 2 },
+        garantia: { total: acum + 200000, acumulada: acum, cupon: 200000, nivel: 'plata',
+          pagados_a_tiempo: puntuales, racha: 7, meses_sin_mora: 7, creditos_total: 9 },
+        creditos: cred,
+        resumen: { total_prestado: 2300000, primer_credito: fechaRel(-254) }
+      } },
+    { cedula: '79333444', tel4: '5566', nombre: 'Luis Gómez',
+      datos: {
+        socio: { codigo: 'CL-0008', nivel_kyc: 1 },
+        garantia: { total: 136000, acumulada: 36000, cupon: 100000, nivel: 'bronce',
+          pagados_a_tiempo: 1, racha: 1, meses_sin_mora: 1, creditos_total: 2 },
+        creditos: [
+          { codigo: 'CR-0011', capital: 250000, costo: 50000, desembolso: fechaRel(-6),
+            corte: fechaRel(7), pagado: false, abonado: 0, prorrogas: 0 },
+          { codigo: 'CR-0010', capital: 200000, costo: 40000, desembolso: fechaRel(-40),
+            corte: fechaRel(-26), pagado: true, fecha_pagado: fechaRel(-26), abonado: 240000, prorrogas: 0 }
+        ],
+        resumen: { total_prestado: 450000, primer_credito: fechaRel(-40) }
+      } }
+  ];
+})();
+
+function buscarDemo(cedula, tel4) {
+  for (var i = 0; i < DEMOS.length; i++) {
+    if (DEMOS[i].cedula === cedula && DEMOS[i].tel4 === tel4) {
+      return { nombre: DEMOS[i].nombre, datos: DEMOS[i].datos, actualizado_en: null };
+    }
+  }
+  return null;
+}
 
 /* ===================== HISTORIAL QUE VIENE EN EL ENLACE ===================
    Joan manda por WhatsApp un enlace con los datos del socio adentro, después
@@ -256,8 +294,12 @@ function entrar() {
 
   mostrar('pantallaCargando');
 
-  if (!CFG.url || !CFG.anon) {           // modo demostración
-    return setTimeout(function () { pintar(DEMO, true); }, 450);
+  if (!CFG.url || !CFG.anon) {           // modo de prueba, sin base conectada
+    return setTimeout(function () {
+      var d = buscarDemo(ced, tel);
+      if (d) return pintar(d, true);
+      fallo('En el modo de prueba solo hay dos socios de ejemplo. Probá con la cédula 52111222 y el celular 2233 (Ana Ruiz), o 79333444 y 5566 (Luis Gómez).');
+    }, 450);
   }
 
   fetch(CFG.url.replace(/\/+$/, '') + '/rest/v1/rpc/historial_socio', {
@@ -500,8 +542,12 @@ function pantallaConfig() {
   if (delEnlace) { pintar(delEnlace, false); return; }   // Joan ya le mandó todo adentro
   if (!CFG.url || !CFG.anon) {
     var a = $('avisoDemo');
-    a.innerHTML = '<b>Modo ejemplo.</b> Todavía no está conectada la base de datos, ' +
-                  'así que con cualquier cédula vas a ver un socio de muestra.';
+    a.innerHTML = '<b>Modo de prueba.</b> Todavía no está conectada la base, así que hay dos ' +
+                  'socios de ejemplo para que veas cómo queda:' +
+                  '<div style="margin-top:8px"><b>Ana Ruiz</b> — cédula <b>52111222</b>, celular <b>2233</b><br>' +
+                  '<span class="muted">9 créditos, Socio Plata, uno atrasado</span></div>' +
+                  '<div style="margin-top:6px"><b>Luis Gómez</b> — cédula <b>79333444</b>, celular <b>5566</b><br>' +
+                  '<span class="muted">2 créditos, Socio Bronce, al día</span></div>';
     a.classList.remove('oculto');
   }
   $('btnEntrar').addEventListener('click', entrar);
