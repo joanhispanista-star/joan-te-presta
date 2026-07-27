@@ -438,7 +438,7 @@
   <!-- ===== MENÚ PRINCIPAL ===== -->
   <div class="overlay on" id="menu">
     <div class="card">
-      <div class="brand"><div class="seal">◈</div><div><div class="l1">DRONES DE COMBATE</div><div class="l2">Simulador táctico · v0.9</div></div></div>
+      <div class="brand"><div class="seal">◈</div><div><div class="l1">DRONES DE COMBATE</div><div class="l2">Simulador táctico · v0.10 · IA etapa 1</div></div></div>
       <div class="title">DRONES DE COMBATE</div>
       <div class="subtitle">Simulador de <b>drones terrestres y aéreos</b> no tripulados. Sensores <b>térmico y nocturno</b>, <b>enlace por línea de vista</b>, terreno <b>real del planeta</b>, día/noche y clima. Núcleo abierto para seguir sumando sistemas. <span style="color:var(--gris-2)">por Joan</span></div>
 
@@ -521,6 +521,7 @@
           <span><kbd>F</kbd> desplegar dron aéreo</span>
           <span><kbd>C</kbd> cambiar cámara</span>
           <span><kbd>V</kbd> sensor (óptico / térmico / nocturno)</span>
+          <span><kbd>F1</kbd> depuración IA: conos de visión y estado</span>
           <span><kbd>Esc</kbd> pausa · soltar ratón</span>
         </div>
         <div class="h-sec">Dron aéreo · munición merodeadora</div>
@@ -683,6 +684,50 @@ function load(){ try{ const s=JSON.parse(localStorage.getItem(SKEY)||'{}');
   store.env=Object.assign({tod:'dia',wx:'despejado'}, s.env||{}); }catch(e){} }
 function save(){ try{ localStorage.setItem(SKEY, JSON.stringify(store)); }catch(e){} }
 load();
+
+/* =====================================================================
+   ⚙️  CONFIG_IA · TODO el balanceo de la inteligencia artificial
+   ---------------------------------------------------------------------
+   Aquí se ajusta el COMPORTAMIENTO sin tocar la lógica. Regla de oro:
+   la DIFICULTAD solo cambia puntería, reacción y coordinación —
+   NUNCA la vida ni el daño de las unidades.
+   `enabled:false` devuelve el juego al comportamiento anterior (interruptor
+   de seguridad). `debug:true` (tecla F1) dibuja conos, estados y contactos.
+   ===================================================================== */
+const CONFIG_IA = {
+  enabled: true,            // interruptor maestro de la capa de IA
+  debug: false,             // F1 en juego: conos de visión + estado + blanco
+
+  dificultad: 'veterano',   // novato | veterano | elite
+  SKILL: {
+    //            error de puntería · retardo de reacción (s) · calidad de coordinación
+    novato:   { nombre:'Novato',   error:0.110, reaccion:0.85, coord:0.30 },
+    veterano: { nombre:'Veterano', error:0.050, reaccion:0.45, coord:0.70 },
+    elite:    { nombre:'Élite',    error:0.018, reaccion:0.20, coord:1.00 },
+  },
+
+  /* Cono de visión por tipo de unidad. fov = ángulo TOTAL en grados,
+     alcance en unidades de juego (~5 m c/u), ojo = altura del sensor.
+     El dron ve LEJOS y ANCHO; el tanque ve CORTO y ESTRECHO. */
+  SENSOR: {
+    tank:     { fov:105, alcance:125, ojo:2.0 },
+    turret:   { fov:150, alcance:165, ojo:2.6 },
+    jammer:   { fov:360, alcance: 70, ojo:5.0 },
+    airdrone: { fov:220, alcance:235, ojo:0.4 },
+    aliado:   { fov:230, alcance:250, ojo:0.4 },
+  },
+
+  PERCEPCION: {
+    hz: 6,              // reevaluaciones por segundo (escalonadas entre unidades)
+    tContacto: 0.25,    // s de visión continua: sospecha -> CONTACTO
+    tIdentificar: 0.90, // s de visión continua: contacto -> IDENTIFICADO (habilita fuego)
+    memoria: 12,        // s que conserva un contacto perdido (última posición conocida)
+    olvido: 0.60,       // fracción de la memoria en que el rastro deja de extrapolarse
+    ruidoAlerta: 48,    // a esta distancia te OYE (motor) aunque no te vea -> solo sospecha
+    factorNoche: 0.62,  // recorte de alcance de noche
+    factorClima: 0.55,  // recorte máximo por niebla/lluvia/polvo
+  },
+};
 
 /* =====================================================================
    RUIDO / TERRENO ANALÍTICO  (misma función para malla y física)
@@ -1114,7 +1159,7 @@ function buildProps(b){
       d.rotation.set(h2(i,1)*TAU,h2(i,2)*TAU,h2(i,4)*TAU);
       d.scale.set(s, s*(0.7+h2(i,5)*0.6), s*(0.8+h2(i,6)*0.5));
       d.updateMatrix(); inst.setMatrixAt(k,d.matrix);
-      if(s>2.6) colliders.push({x,z,r:s*0.8});
+      if(s>2.6) colliders.push({x,z,r:s*0.8, h:s*1.3});   // h = altura, la usa la línea de vista
       k++;
     }
     inst.count=k; inst.instanceMatrix.needsUpdate=true; propGroup.add(inst);
@@ -1134,7 +1179,7 @@ function buildProps(b){
       const y=terrainHeight(x,z), s=0.8+h2(i,9)*0.7;
       d.position.set(x,y+1.5*s,z); d.rotation.set(0,h2(i,11)*TAU,0); d.scale.setScalar(s); d.updateMatrix(); tI.setMatrixAt(k,d.matrix);
       d.position.set(x,y+5.5*s,z); d.updateMatrix(); lI.setMatrixAt(k,d.matrix);
-      colliders.push({x,z,r:1.2*s}); k++;
+      colliders.push({x,z,r:1.2*s, h:8*s}); k++;
     }
     tI.count=lI.count=k; tI.instanceMatrix.needsUpdate=true; lI.instanceMatrix.needsUpdate=true; propGroup.add(tI); propGroup.add(lI);
   }
@@ -1152,7 +1197,7 @@ function buildProps(b){
       box.position.set(x, terrainHeight(x,z)+ht/2-1, z);
       box.rotation.y=Math.round(h2(i,29)*4)*Math.PI/8;
       propGroup.add(box);
-      colliders.push({x,z,r:Math.max(w,dpt)*0.55});
+      colliders.push({x,z,r:Math.max(w,dpt)*0.55, h:ht});
     }
   }
 }
@@ -1546,6 +1591,7 @@ function spawnEnemy(kind, x, z){
     mobile:(kind==='tank'||isAir), air:isAir, jammer:isJammer, bob:Math.random()*TAU };
   pickWaypoint(e);
   addHeat(mesh, isAir?0.5:(isTurret?1.6:2.0), isAir?4:(isTurret?7:6));
+  IA.iaInit(e, 'rojo', kind);          // sensores + memoria táctica propios
   enemies.push(e); return e;
 }
 function buildJammer(){
@@ -1583,18 +1629,225 @@ function damageEnemy(e, dmg){
     checkObjectives();
   }
 }
+/* =====================================================================
+   🧠 CAPA DE IA · ETAPA 1 · PERCEPCIÓN
+   ---------------------------------------------------------------------
+   Módulo independiente de la lógica de cada unidad. Cada unidad tiene:
+     · cono de visión propio (ángulo + alcance según su tipo),
+     · línea de vista REAL contra terreno y obstáculos (sin LOS no hay
+       detección aunque el enemigo esté en rango),
+     · memoria táctica: los contactos perdidos NO se olvidan al instante,
+       queda una "última posición conocida" que decae con el tiempo,
+     · certeza por contacto:  sospecha → contacto → identificado.
+       Solo IDENTIFICADO habilita fuego (nada de IA omnisciente).
+   Se apaga entero con CONFIG_IA.enabled=false.
+   ===================================================================== */
+const IA=(function(){
+  const _eye=new THREE.Vector3(), _tp=new THREE.Vector3(), _lk=new THREE.Vector3();
+  const _tg={rojo:[],azul:[]};
+  const CERT=['sospecha','CONTACTO','IDENTIFICADO'];
+  let uidSeq=0;
+  const uid=o=>o.__uid||(o.__uid='u'+(++uidSeq));
+  const SKILL=()=>CONFIG_IA.SKILL[CONFIG_IA.dificultad]||CONFIG_IA.SKILL.veterano;
+
+  /* ---- línea de vista: la corta el relieve O un obstáculo (roca/árbol/edificio) ---- */
+  function losBlocked(a,b){
+    const pasos=14;
+    for(let i=1;i<pasos;i++){ const t=i/pasos;
+      const x=lerp(a.x,b.x,t), z=lerp(a.z,b.z,t), y=lerp(a.y,b.y,t);
+      if(terrainHeight(x,z) > y+0.8) return true;                 // lo tapa el terreno
+    }
+    const dx=b.x-a.x, dz=b.z-a.z, L2=dx*dx+dz*dz;
+    if(L2>1e-6){
+      for(const c of colliders){
+        let t=((c.x-a.x)*dx+(c.z-a.z)*dz)/L2; if(t<=0||t>=1) continue;
+        const px=a.x+dx*t, pz=a.z+dz*t;
+        if(Math.hypot(px-c.x,pz-c.z) < c.r){
+          const py=lerp(a.y,b.y,t);
+          if(py < terrainHeight(c.x,c.z)+(c.h||4)) return true;    // lo tapa un obstáculo
+        }
+      }
+    }
+    return false;
+  }
+  /* los sensores van en la torreta si la unidad tiene; si no, miran al frente */
+  function lookYaw(u){
+    if(!u.air && !u.jammer && typeof u.aim==='number') return u.aim;
+    return u.yaw||0;
+  }
+  function iaInit(u, fac, kind){
+    u.ia={ fac, kind, sensor:CONFIG_IA.SENSOR[kind]||CONFIG_IA.SENSOR.tank,
+      contacts:new Map(), tNext:Math.random()*0.25,
+      estado:'PATRULLA', motivo:'inicio', alerta:0 };
+    return u.ia;
+  }
+  /* lista de blancos potenciales por bando (se refresca 1 vez por fotograma) */
+  function refrescarBlancos(){
+    const R=_tg.rojo, A=_tg.azul; R.length=0; A.length=0;
+    if(player.alive) R.push({obj:player,pos:player.pos,vel:player.vel,tipo:'ugv'});
+    if(drone.active) R.push({obj:drone,pos:drone.pos,vel:drone.vel,tipo:'dron'});
+    for(const a of allies) if(a.alive) R.push({obj:a,pos:a.pos,vel:a.vel,tipo:'dron'});
+    for(const e of enemies) if(e.alive) A.push({obj:e,pos:e.pos,vel:e.vel,
+      tipo: e.air?'dron' : (e.jammer?'jammer' : (e.tag==='turret'?'torreta':'tank')) });
+  }
+  function alcanceEfectivo(u,t){
+    const P=CONFIG_IA.PERCEPCION; let a=u.ia.sensor.alcance;
+    if(t.obj===player && stats && stats.stealth) a*=stats.stealth;      // motor silencioso
+    if(NIGHT) a*=P.factorNoche;                                          // de noche se ve menos
+    a*=lerp(P.factorClima,1,clamp(visRange,0,1));                        // niebla/lluvia/polvo
+    return a;
+  }
+  function percibir(u, dt){
+    if(!CONFIG_IA.enabled) return;
+    const ia=u.ia||iaInit(u, u.__fac||'rojo', u.kind||'tank');
+    const P=CONFIG_IA.PERCEPCION;
+    // envejecer la memoria táctica (barato, cada fotograma)
+    for(const [id,c] of ia.contacts){
+      c.edad=missionTime-c.tVisto;
+      if(c.edad>P.memoria || (c.obj && c.obj.alive===false)) ia.contacts.delete(id);
+    }
+    ia.tNext-=dt; if(ia.tNext>0) return;
+    const paso=1/Math.max(1,P.hz); ia.tNext=paso*(0.85+Math.random()*0.3);  // escalonado entre unidades
+    const S=ia.sensor, look=lookYaw(u), medioFov=(S.fov*Math.PI/180)/2;
+    const tId=P.tIdentificar + SKILL().reaccion*0.5;   // la dificultad cambia el tiempo de reacción
+    _eye.set(u.pos.x, u.pos.y+S.ojo, u.pos.z);
+    for(const t of (_tg[ia.fac]||[])){
+      if(t.obj===u) continue;
+      const dx=t.pos.x-u.pos.x, dz=t.pos.z-u.pos.z, d=Math.hypot(dx,dz);
+      let visto=false;
+      if(d<=alcanceEfectivo(u,t) && Math.abs(angDiff(Math.atan2(dx,dz),look))<=medioFov){
+        _tp.set(t.pos.x, t.pos.y+1.2, t.pos.z);
+        visto=!losBlocked(_eye,_tp);
+      }
+      const oido = !visto && d < P.ruidoAlerta;      // te OYE (motor) sin verte -> solo sospecha
+      const id=uid(t.obj); let c=ia.contacts.get(id);
+      if(visto||oido){
+        if(!c){ c={ id, obj:t.obj, tipo:t.tipo, pos:new THREE.Vector3().copy(t.pos), vel:new THREE.Vector3(),
+                    tVisto:missionTime, tVista:0, certeza:0, edad:0, visible:false };
+                ia.contacts.set(id,c); }
+        c.tVisto=missionTime; c.edad=0; c.visible=visto; c.tipo=t.tipo;
+        if(visto){
+          c.pos.copy(t.pos); if(t.vel) c.vel.copy(t.vel); else c.vel.set(0,0,0);
+          c.tVista=Math.min(c.tVista+paso, 9);
+          c.certeza = c.tVista>=tId ? 2 : (c.tVista>=P.tContacto ? 1 : 0);
+        } else {                                     // solo ruido: sospecha con posición imprecisa
+          c.tVista=Math.max(0,c.tVista-paso*0.5); c.certeza=0;
+          c.pos.set(t.pos.x+(Math.random()-0.5)*12, t.pos.y, t.pos.z+(Math.random()-0.5)*12);
+        }
+      } else if(c){ c.visible=false; c.tVista=Math.max(0,c.tVista-paso); if(c.certeza>1) c.certeza=1; }
+    }
+  }
+  /* mejor blanco VISIBLE ahora (sospechas no cuentan) */
+  function mejorContacto(u){
+    if(!u.ia) return null; let best=null, bs=-1e9;
+    for(const [,c] of u.ia.contacts){
+      if(!c.visible || c.certeza<1) continue;
+      const d=u.pos.distanceTo(c.pos);
+      const s=c.certeza*120 - d*0.6 + (c.tipo==='ugv'?45:0) + (c.tipo==='tank'?35:0) + (c.tipo==='torreta'?25:0);
+      if(s>bs){ bs=s; best=c; }
+    }
+    return best;
+  }
+  /* última posición conocida (extrapolada mientras el rastro esté fresco) */
+  function ultimaPos(u){
+    if(!u.ia) return null; let best=null, bt=1e9;
+    for(const [,c] of u.ia.contacts){ if(c.edad<bt){ bt=c.edad; best=c; } }
+    if(!best) return null;
+    const P=CONFIG_IA.PERCEPCION, f=clamp(1-best.edad/(P.memoria*P.olvido),0,1);
+    return _lk.copy(best.pos).addScaledVector(best.vel, Math.min(best.edad,3)*f);
+  }
+
+  /* ---------------- MODO DEPURACIÓN (F1) ---------------- */
+  let dbgL=null, dbgBox=null; const dbgLabels=[];
+  function ensureDbg(){
+    if(!dbgL){
+      const N=64*24;
+      const g=new THREE.BufferGeometry();
+      g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(N*3),3));
+      g.setAttribute('color',new THREE.BufferAttribute(new Float32Array(N*3),3));
+      dbgL=new THREE.LineSegments(g,new THREE.LineBasicMaterial({vertexColors:true,transparent:true,opacity:.7,depthTest:false}));
+      dbgL.frustumCulled=false; dbgL.renderOrder=998; scene.add(dbgL);
+    }
+    if(!dbgBox){ dbgBox=document.createElement('div');
+      dbgBox.style.cssText='position:fixed;inset:0;z-index:11;pointer-events:none;font:700 10px/1.2 Consolas,ui-monospace,monospace';
+      document.body.appendChild(dbgBox); }
+  }
+  function dbgOff(){ if(dbgL)dbgL.visible=false; if(dbgBox)dbgBox.style.display='none'; }
+  function dibujarDebug(){
+    if(!CONFIG_IA.debug || !playing){ dbgOff(); return; }
+    ensureDbg(); dbgL.visible=true; dbgBox.style.display='block';
+    const pa=dbgL.geometry.attributes.position, ca=dbgL.geometry.attributes.color;
+    const pos=pa.array, col=ca.array, max=pos.length/3; let n=0;
+    const push=(ax,ay,az,bx,by,bz,r,g,b)=>{ if(n+2>max) return;
+      pos[n*3]=ax;pos[n*3+1]=ay;pos[n*3+2]=az; col[n*3]=r;col[n*3+1]=g;col[n*3+2]=b; n++;
+      pos[n*3]=bx;pos[n*3+1]=by;pos[n*3+2]=bz; col[n*3]=r;col[n*3+1]=g;col[n*3+2]=b; n++; };
+    const lista=[];
+    for(const e of enemies) if(e.alive&&e.ia) lista.push([e,1,.38,.3]);
+    for(const a of allies)  if(a.alive&&a.ia) lista.push([a,.25,.72,1]);
+    let li=0;
+    for(const [u,r,g,b] of lista){
+      const S=u.ia.sensor, look=lookYaw(u), half=(S.fov*Math.PI/180)/2, R=Math.min(S.alcance,110), y=u.pos.y+S.ojo;
+      for(const s of [-half,half]) push(u.pos.x,y,u.pos.z, u.pos.x+Math.sin(look+s)*R, y, u.pos.z+Math.cos(look+s)*R, r,g,b);
+      let px=u.pos.x+Math.sin(look-half)*R, pz=u.pos.z+Math.cos(look-half)*R;
+      for(let i=1;i<=7;i++){ const a2=look-half+2*half*i/7;
+        const nx=u.pos.x+Math.sin(a2)*R, nz=u.pos.z+Math.cos(a2)*R;
+        push(px,y,pz,nx,y,nz, r*.55,g*.55,b*.55); px=nx; pz=nz; }
+      const c=mejorContacto(u);
+      if(c) push(u.pos.x,y,u.pos.z, c.pos.x,c.pos.y+1.5,c.pos.z, 1,.85,.2);
+      else { const lk=ultimaPos(u); if(lk) push(u.pos.x,y,u.pos.z, lk.x,lk.y+1.5,lk.z, .55,.55,.55); }
+      const sp=toScreen(_tp.set(u.pos.x,u.pos.y+4.2,u.pos.z));
+      let el=dbgLabels[li];
+      if(!el){ el=document.createElement('div');
+        el.style.cssText='position:absolute;transform:translate(-50%,-100%);white-space:nowrap;padding:1px 4px;border-radius:4px;background:rgba(8,10,14,.6);text-shadow:0 1px 3px #000';
+        dbgBox.appendChild(el); dbgLabels[li]=el; }
+      if(sp.vis){ el.style.display='block'; el.style.left=sp.x+'px'; el.style.top=sp.y+'px';
+        el.style.color = c ? '#ffd24a' : (u.ia.fac==='rojo' ? '#ff8a7a' : '#8be0ff');
+        el.textContent = u.ia.estado+' · '+(c?CERT[c.certeza]:'—')+' · c'+u.ia.contacts.size;
+      } else el.style.display='none';
+      li++;
+    }
+    for(let i=li;i<dbgLabels.length;i++) dbgLabels[i].style.display='none';
+    dbgL.geometry.setDrawRange(0,n); pa.needsUpdate=true; ca.needsUpdate=true;
+  }
+
+  return { percibir, mejorContacto, ultimaPos, iaInit, losBlocked, dibujarDebug, dbgOff, skill:SKILL, CERT,
+    tick(dt){ if(CONFIG_IA.enabled) refrescarBlancos(); },
+    resumen(){ const r=[]; for(const e of enemies) if(e.alive&&e.ia){ const c=mejorContacto(e);
+        r.push({t:e.kind, est:e.ia.estado, cont:e.ia.contacts.size, ve:!!c, cert:c?c.certeza:-1, rastro:!!ultimaPos(e)}); }
+      return r; } };
+})();
+
+const _toP=new THREE.Vector3();   // vector propio: V lo pisa terrainNormal() dentro de alignToGround
 function updateEnemies(dt){
   for(const e of enemies){
     if(!e.alive) continue;
-    const toP=V.copy(player.pos).sub(e.pos); const distP=toP.length();
-    // detección
-    const detRange = 130*(player.detected?1.2:1)*(stats.stealth||1);
-    if(distP<detRange){ e.state='engage'; e.target=player; player.detected=true; player.detTimer=3; }
-    else if(e.state==='engage' && distP>detRange*1.5){ e.state='patrol'; }
+    /* ===== PERCEPCIÓN (capa IA): qué SABE la unidad antes de decidir nada ===== */
+    let contacto=null, rastro=null, foco=null, puedeDisparar=false, investigando=false;
+    if(CONFIG_IA.enabled){
+      IA.percibir(e, dt);
+      contacto=IA.mejorContacto(e); rastro=IA.ultimaPos(e);
+      foco = contacto ? contacto.pos : rastro;
+      puedeDisparar = !!(contacto && contacto.certeza>=2);         // solo IDENTIFICADO abre fuego
+      if(contacto){
+        e.state='engage'; e.target=contacto.obj; e.ia.estado='ATACAR';
+        if(contacto.obj===player){ player.detected=true; player.detTimer=3; }
+      } else if(rastro && e.state==='engage'){
+        investigando=true; e.ia.estado='INVESTIGAR';               // va a la última posición conocida
+      } else {
+        e.state='patrol'; e.target=null; e.ia.estado='PATRULLA'; foco=null;
+      }
+    } else {                                                       // comportamiento anterior (interruptor)
+      const dR=130*(player.detected?1.2:1)*(stats.stealth||1), dd=player.pos.distanceTo(e.pos);
+      if(dd<dR){ e.state='engage'; e.target=player; player.detected=true; player.detTimer=3; }
+      else if(e.state==='engage' && dd>dR*1.5) e.state='patrol';
+      foco=player.pos; puedeDisparar=(e.state==='engage');
+    }
+    const toP=_toP.copy(foco||e.wp).sub(e.pos); const distP=foco?toP.length():9999;
 
     // DRON AÉREO ENEMIGO: vuela, orbita y ataca en picado
     if(e.air){
-      const desiredAlt=terrainHeight(e.pos.x,e.pos.z)+16, ideal=45;
+      if(!foco && Math.hypot(e.pos.x-e.wp.x, e.pos.z-e.wp.z)<12) pickWaypoint(e);   // patrulla sin contacto
+      const desiredAlt=terrainHeight(e.pos.x,e.pos.z)+16, ideal=(contacto?45:0);
       let dir=toP.clone().setY(0); const d2=dir.length()||1; dir.multiplyScalar(1/d2);
       if(d2<ideal) dir.multiplyScalar(-1);
       const lat=new THREE.Vector3(-dir.z,0,dir.x).multiplyScalar(0.6);
@@ -1606,7 +1859,7 @@ function updateEnemies(dt){
       e.yaw=Math.atan2(toP.x,toP.z); e.mesh.rotation.set(0.15, e.yaw, Math.sin(e.bob)*0.1);
       if(e.mesh.userData.rotors) for(const r of e.mesh.userData.rotors) r.rotation.y+=dt*80;
       e.reload-=dt;
-      if(e.state==='engage' && distP<95 && e.reload<=0){ e.reload=1.3+Math.random();
+      if(e.state==='engage' && puedeDisparar && distP<95 && e.reload<=0){ e.reload=1.3+Math.random();
         const d=toP.clone().normalize(); d.x+=(Math.random()-0.5)*0.05; d.z+=(Math.random()-0.5)*0.05; d.normalize();
         fireProjectile(e.pos.clone(), d, {speed:120, dmg:9, from:'enemy', color:0xff7a4a, splash:1.5, life:3}); }
       continue;
@@ -1622,7 +1875,8 @@ function updateEnemies(dt){
       let dir;
       if(e.state==='engage'){
         // mantener distancia media
-        const ideal=55; dir=toP.clone().setY(0).normalize(); if(distP<ideal) dir.multiplyScalar(-1);
+        const ideal=investigando?10:55;   // si solo hay rastro, se ACERCA a la última posición conocida
+        dir=toP.clone().setY(0).normalize(); if(distP<ideal) dir.multiplyScalar(-1);
       } else {
         dir=V2.copy(e.wp).sub(e.pos).setY(0); if(dir.length()<8){ pickWaypoint(e); } dir.normalize();
       }
@@ -1652,7 +1906,7 @@ function updateEnemies(dt){
     }
     // dispara
     e.reload-=dt;
-    if(e.state==='engage' && distP<150 && e.reload<=0 && Math.abs(angDiff(e.aim, Math.atan2(toP.x,toP.z)))<0.25){
+    if(e.state==='engage' && puedeDisparar && distP<150 && e.reload<=0 && Math.abs(angDiff(e.aim, Math.atan2(toP.x,toP.z)))<0.25){
       e.reload=1.6+Math.random()*1.1;
       const muzzle=e.pos.clone().setY(e.pos.y+2.0);
       const d=toP.clone().normalize();
@@ -1682,6 +1936,7 @@ function spawnAlly(idx, lvl){
   const a={ mesh, pos:new THREE.Vector3(), vel:new THREE.Vector3(), yaw:0, hp:L.hp, hpMax:L.hp,
     alive:true, state:'follow', target:null, reload:Math.random(), L, lvl, offset:idx, bob:Math.random()*TAU };
   a.pos.copy(player.pos).add(new THREE.Vector3((idx%2?1:-1)*8, 16+idx*2, -5));
+  IA.iaInit(a, 'azul', 'aliado');      // sensores + memoria táctica propios
   allies.push(a);
 }
 function damageAlly(a, dmg){
@@ -1691,10 +1946,21 @@ function damageAlly(a, dmg){
 function updateAllies(dt){
   for(const a of allies){
     if(!a.alive) continue;
-    // selección de blanco: designado (si no es recluta) o el más cercano en rango
-    let tgt=null;
-    if(a.L!==AI_LVL.rec && designatedTarget && designatedTarget.alive && a.pos.distanceTo(designatedTarget.pos)<a.L.det*1.4) tgt=designatedTarget;
-    if(!tgt){ let bd=a.L.det; for(const e of enemies){ if(!e.alive)continue; const d=a.pos.distanceTo(e.pos); if(d<bd){bd=d;tgt=e;} } }
+    /* ===== PERCEPCIÓN (capa IA): el compañero solo ataca lo que de verdad ve ===== */
+    let tgt=null, puedeDisparar=false;
+    if(CONFIG_IA.enabled){
+      IA.percibir(a, dt);
+      const c=IA.mejorContacto(a);
+      // un blanco DESIGNADO por láser cuenta como identificado (se lo pasó el operador)
+      if(a.L!==AI_LVL.rec && designatedTarget && designatedTarget.alive && a.pos.distanceTo(designatedTarget.pos)<a.L.det*1.4){
+        tgt=designatedTarget; puedeDisparar=true; a.ia.estado='ATACAR·designado';
+      } else if(c){ tgt=c.obj; puedeDisparar=(c.certeza>=2); a.ia.estado='ATACAR'; }
+      else a.ia.estado='ESCOLTA';
+    } else {                                                    // comportamiento anterior (interruptor)
+      if(a.L!==AI_LVL.rec && designatedTarget && designatedTarget.alive && a.pos.distanceTo(designatedTarget.pos)<a.L.det*1.4) tgt=designatedTarget;
+      if(!tgt){ let bd=a.L.det; for(const e of enemies){ if(!e.alive)continue; const d=a.pos.distanceTo(e.pos); if(d<bd){bd=d;tgt=e;} } }
+      puedeDisparar=!!tgt;
+    }
     a.target=tgt;
     // objetivo de vuelo: orbitar al blanco o formación con el jugador
     let goal;
@@ -1715,7 +1981,7 @@ function updateAllies(dt){
     if(a.mesh.userData.rotors) for(const r of a.mesh.userData.rotors) r.rotation.y+=dt*80;
     // dispara con predicción según el nivel
     a.reload-=dt;
-    if(tgt && a.reload<=0){ const dist=a.pos.distanceTo(tgt.pos);
+    if(tgt && puedeDisparar && a.reload<=0){ const dist=a.pos.distanceTo(tgt.pos);
       if(dist<a.L.det){ a.reload=a.L.reload;
         const tt=dist/150; const aim=tgt.pos.clone().addScaledVector(tgt.vel||UP.clone().multiplyScalar(0), tt*a.L.lead); aim.y+=1;
         const d=aim.sub(a.pos).normalize();
@@ -1746,6 +2012,9 @@ addEventListener('keydown',e=>{ keys[e.code]=true;
   if(e.code==='KeyF' && playing){ toggleDrone(); }
   if(e.code==='KeyV' && playing){ cycleSensor(); }
   if(e.code==='KeyK' && playing){ armKamikaze(); }
+  if(e.code==='F1' || e.code==='Backquote'){ e.preventDefault();
+    CONFIG_IA.debug=!CONFIG_IA.debug; if(!CONFIG_IA.debug) IA.dbgOff();
+    feed('🔎 Depuración IA '+(CONFIG_IA.debug?'ON — conos, estado y blancos':'OFF')); }
   if(e.code==='KeyM'){ toggleGaze(); }
   if(e.code==='KeyG' && gaze.ready){ calibrateGaze(); }
   if(e.code==='KeyH' && gaze.ready){ gaze.invertYaw=!gaze.invertYaw; feed('Mirada '+(gaze.invertYaw?'normal':'invertida')); }
@@ -2753,6 +3022,7 @@ function simulate(dt){
   if(mode!=='drone' && drone.batt<1) drone.batt=Math.min(1, drone.batt+dt*0.04);  // recarga en tierra
   const inp=readInput(dt);
   updatePlayer(dt, inp);
+  IA.tick(dt);            // capa de IA: refresca los blancos percibibles de cada bando
   updateEnemies(dt);
   updateAllies(dt);
   updateProjectiles(dt);
@@ -2767,6 +3037,7 @@ function simulate(dt){
   updateCamera(dt);
   updateUnderwater();
   updateHUD(dt);
+  IA.dibujarDebug();      // F1: conos de visión, estado y blanco de cada unidad
 }
 let errCount=0;
 function frame(){
@@ -2796,6 +3067,7 @@ function resume(){ paused=false; $('pause').classList.remove('on'); }
 function toMenu(){ playing=false; paused=false;
   $('pause').classList.remove('on'); $('result').classList.remove('on'); $('hud').classList.remove('on'); $('touch').classList.remove('on'); $('rotate').classList.remove('on');
   setSensor(0); $('linkFx').style.opacity=0; $('linkWarn').classList.remove('on'); $('underFx').classList.remove('on');   // limpia overlays
+  IA.dbgOff();
   $('menu').classList.add('on'); $('backPlaza').classList.add('on'); renderMissions(); }
 
 /* =====================================================================
@@ -3047,6 +3319,10 @@ if(location.search.indexOf('dbg')>=0) window.DRONES={
     gaze.baseYaw=0; gaze.basePitch=0; gaze.yaw=headYaw||0; gaze.pitch=headPitch||0; return true; },
   viewYaw:()=>+player.view.yaw.toFixed(3),
   postfx:()=>({bloom:useComposer, phys:physReady}),
+  ia:()=>IA.resumen(),
+  iaCfg:(k,v)=>{ if(v!==undefined) CONFIG_IA[k]=v; return {enabled:CONFIG_IA.enabled,debug:CONFIG_IA.debug,dificultad:CONFIG_IA.dificultad}; },
+  los:(ax,ay,az,bx,by,bz)=>IA.losBlocked({x:ax,y:ay,z:az},{x:bx,y:by,z:bz}),
+  colliders:()=>colliders.length,
   phys:()=>({ready:physReady, bodies:physBodies.length, barrels:physBodies.filter(p=>p.explosive).length}),
   barrelY:()=>{ const b=physBodies.find(p=>p.explosive); return b?{x:+b.body.position.x.toFixed(1),y:+b.body.position.y.toFixed(2),z:+b.body.position.z.toFixed(1),terr:+terrainHeight(b.body.position.x,b.body.position.z).toFixed(2)}:null; },
   blastBarrel:()=>{ const b=physBodies.find(p=>p.explosive&&!p.exploding); if(!b)return 'none'; b.exploding=true; barrelQueue.push(b); return 'queued'; },
