@@ -205,6 +205,7 @@
     <button class="navbtn on" data-v="dash"><span class="ic">📊</span> Tablero</button>
     <button class="navbtn" data-v="cred"><span class="ic">💵</span> Créditos</button>
     <button class="navbtn" data-v="clientes"><span class="ic">🧑‍🤝‍🧑</span> Clientes</button>
+    <button class="navbtn" data-v="socios"><span class="ic">🛡️</span> Socios</button>
     <button class="navbtn" data-v="ciclos"><span class="ic">📈</span> Ciclos</button>
     <button class="navbtn" data-v="cal"><span class="ic">📅</span> Calendario</button>
     <button class="navbtn" data-v="plantillas"><span class="ic">💬</span> Plantillas</button>
@@ -234,6 +235,16 @@
       <div class="ph"><div><h1>Clientes<span class="dot">.</span></h1><div class="sub">Ficha completa, historial de créditos y ganancia</div></div>
         <button class="btn btn-ghost" onclick="editarCliente()">＋ Agregar cliente</button></div>
       <div class="card"><div id="tblClientes"></div></div>
+    </section>
+
+    <section class="view" id="v-socios">
+      <div class="ph"><div><h1>Socios<span class="dot">.</span></h1><div class="sub">La garantía que has emitido, quién puede pedir más y a quién le falta qué</div></div>
+        <button class="btn btn-ghost btn-sm" onclick="exportarSocios()">⬇ Excel</button></div>
+      <div class="kpis" id="kpiSocios"></div>
+      <div class="card"><div id="socTramos"></div></div>
+      <div class="card"><div id="socNiveles"></div></div>
+      <div class="card"><div id="socPerfiles"></div></div>
+      <div class="card"><div id="socReferidos"></div></div>
     </section>
 
     <section class="view" id="v-ciclos">
@@ -404,7 +415,7 @@ function horarioPermitido(date){ const d=date||new Date(),dia=d.getDay(),h=d.get
 function contactadoHoy(s){ return (s.gestiones||[]).some(g=>g.fecha===hoyISO()); }
 
 /* ===== RENDER ===== */
-function render(){ renderHorario(); renderKpis(); renderCola(); renderCred(); renderClientes(); renderCiclos(); renderCalendario(); renderPlantillas(); }
+function render(){ renderHorario(); renderKpis(); renderCola(); renderCred(); renderClientes(); renderSocios(); renderCiclos(); renderCalendario(); renderPlantillas(); }
 function renderHorario(){ const r=horarioPermitido(),b=document.getElementById('horarioBox'); b.className='horario '+(r.ok?'ok':'no');
   b.innerHTML=r.ok?'<b>✓ Horario de cobro</b>Puedes contactar (Ley 2300).':'<b>✗ Fuera de horario</b>'+r.motivo+' (Ley 2300).'; }
 
@@ -972,6 +983,135 @@ function verMigracion(){
       <span class="vv"><b>${COP(g.total)}</b> de garantía<div class="muted">${g.nivel} · ${g.creditos_total} crédito(s) · ${g.pagados_a_tiempo} puntual(es)</div></span></div>`; }).join('')
     +(lote.length>40?`<div class="muted" style="margin-top:10px">…y ${lote.length-40} más.</div>`:''));
 }
+/* =======================================================================
+   PANEL DE SOCIOS (fase 4 del documento, §11)
+   No repite los indicadores del Tablero: acá va lo del modelo de socios —
+   garantía emitida, niveles, perfiles a medias y cartera por tramo del §9.
+   ======================================================================= */
+function fotoSocios(){
+  return DB.socios.map(s=>{
+    const m=migrarSocio(s);
+    const kyc=MotorReglas.garantiaPorDatos(datosKycDe(s));
+    const activos=DB.prestamos.filter(p=>p.socioId===s.id&&!p.pagado);
+    return { s, m, kyc, activos,
+      pendiente:MotorReglas.CUPON_KYC_MAXIMO-kyc.total,
+      cupo:MotorReglas.calcularCupo(m.garantia.total,m.garantia.nivel) };
+  });
+}
+function tramoDe(p){ return MotorReglas.tramoDeMora(-diasPara(p)); }
+
+function renderSocios(){
+  const foto=fotoSocios();
+  const g=foto.reduce((a,f)=>({
+    total:a.total+f.m.garantia.total, cupon:a.cupon+f.m.garantia.cupon,
+    acum:a.acum+f.m.garantia.acumulada, refs:a.refs+f.m.garantia.referidos,
+    pend:a.pend+f.pendiente, cupo:a.cupo+f.cupo }),{total:0,cupon:0,acum:0,refs:0,pend:0,cupo:0});
+  const conActivo=foto.filter(f=>f.activos.length).length;
+
+  document.getElementById('kpiSocios').innerHTML=`
+    <div class="kpi dark"><div class="et">🛡️ Garantía total emitida</div><div class="nm">${COP(g.total)}</div><div class="x">${DB.socios.length} socios</div></div>
+    <div class="kpi"><div class="et">🤝 Prestada por sus datos</div><div class="nm">${COP(g.cupon)}</div><div class="x">de un máximo de ${COP(DB.socios.length*MotorReglas.CUPON_KYC_MAXIMO)}</div></div>
+    <div class="kpi gan"><div class="et">💪 Ganada pagando</div><div class="nm">${COP(g.acum)}</div><div class="x">90% de todo lo cobrado</div></div>
+    <div class="kpi gan"><div class="et">👥 Por referidos</div><div class="nm">${COP(g.refs)}</div><div class="x">${COP(MotorReglas.GARANTIA_POR_REFERIDO)} por cada uno que paga</div></div>
+    <div class="kpi ${g.pend>0?'alert':''}"><div class="et">📋 Garantía sin entregar</div><div class="nm">${COP(g.pend)}</div><div class="x">te falta pedirles datos</div></div>
+    <div class="kpi verde"><div class="et">💳 Cupo disponible</div><div class="nm">${COP(g.cupo)}</div><div class="x">${conActivo} con crédito abierto</div></div>`;
+
+  /* ---- Cartera por tramo de mora (§9) ---- */
+  const activos=DB.prestamos.filter(p=>!p.pagado);
+  const porTramo={};
+  MotorReglas.TRAMOS_MORA.forEach(t=>{ porTramo[t.tramo]={t,n:0,monto:0,ids:[]}; });
+  activos.forEach(p=>{ const t=tramoDe(p); const b=porTramo[t.tramo];
+    b.n++; b.monto+=totalCiclo(p)+MotorReglas.recargoPorMora(capitalActual(p),diasMora(p)); b.ids.push(p.id); });
+  const conAlgo=MotorReglas.TRAMOS_MORA.filter(t=>porTramo[t.tramo].n>0);
+  document.getElementById('socTramos').innerHTML=
+    `<div class="card-h"><h3>Cartera por tramo</h3><span class="tag">Los tramos del §9, con el recargo del 1% diario ya sumado</span></div>`+
+    (!conAlgo.length?`<div class="empty"><div class="ic">✅</div><p>Sin créditos abiertos.</p></div>`:
+    `<table><thead><tr><th>Tramo</th><th>Días</th><th>Créditos</th><th>Por cobrar</th><th>Qué toca hacer</th><th>Canal</th></tr></thead><tbody>${
+      conAlgo.map(t=>{ const b=porTramo[t.tramo];
+        return `<tr><td><b>${escHTML(t.tramo)}</b></td>
+        <td class="muted">${t.desde===-Infinity?'antes de −2':(t.hasta===Infinity?t.desde+'+':t.desde+' a '+t.hasta)}</td>
+        <td class="num">${b.n}</td><td class="num">${COP(b.monto)}</td>
+        <td>${escHTML(t.accion)}</td><td class="muted">${escHTML(t.canal)}</td></tr>`;}).join('')}</tbody></table>`);
+
+  /* ---- Niveles ---- */
+  const porNivel={};
+  MotorReglas.NIVELES.forEach(n=>{ porNivel[n]={n:0,garantia:0,cupo:0}; });
+  foto.forEach(f=>{ const b=porNivel[f.m.garantia.nivel]; b.n++; b.garantia+=f.m.garantia.total; b.cupo+=f.cupo; });
+  document.getElementById('socNiveles').innerHTML=
+    `<div class="card-h"><h3>Niveles</h3><span class="tag">El nivel nunca baja: solo se sube pagando a tiempo</span></div>`+
+    `<table><thead><tr><th>Nivel</th><th>Factor</th><th>Socios</th><th>Garantía</th><th>Cupo que habilita</th></tr></thead><tbody>${
+      MotorReglas.NIVELES.map(n=>`<tr><td><b style="text-transform:capitalize">${n}</b></td>
+        <td class="muted">×${MotorReglas.FACTOR_CUPO[n]}</td>
+        <td class="num">${porNivel[n].n}</td><td class="num">${COP(porNivel[n].garantia)}</td>
+        <td class="num">${COP(porNivel[n].cupo)}</td></tr>`).join('')}</tbody></table>`;
+
+  /* ---- Perfiles a medias: la palanca más directa ---- */
+  const flojos=foto.filter(f=>f.pendiente>0).sort((a,b)=>b.pendiente-a.pendiente);
+  document.getElementById('socPerfiles').innerHTML=
+    `<div class="card-h"><h3>Perfiles por completar</h3><span class="tag">Cada dato que te den les sube el cupo — y a vos la colocación</span></div>`+
+    (!flojos.length?`<div class="empty"><div class="ic">🎉</div><p>Todos tus socios tienen el perfil completo.</p></div>`:
+    `<table><thead><tr><th>Cliente</th><th>Perfil</th><th>Le falta</th><th>Garantía pendiente</th><th></th></tr></thead><tbody>${
+      flojos.slice(0,30).map(f=>{ const faltan=f.kyc.faltantes;
+        return `<tr><td><b>${escHTML(f.s.nombre)}</b><div class="muted">${codCliente(f.s)}</div></td>
+        <td class="num">${f.kyc.porcentaje}%</td>
+        <td class="muted">${escHTML(faltan.slice(0,3).map(x=>x.etiqueta).join(', '))}${faltan.length>3?` y ${faltan.length-3} más`:''}</td>
+        <td class="num"><b>${COP(f.pendiente)}</b></td>
+        <td style="text-align:right"><button class="btn btn-wa btn-sm" onclick="pedirDatos('${f.s.id}')">💬 Pedírselos</button></td></tr>`;}).join('')}</tbody>
+      ${flojos.length>30?`<tfoot><tr><td colspan="5" class="muted">…y ${flojos.length-30} más.</td></tr></tfoot>`:''}</table>`);
+
+  /* ---- Referidos ---- */
+  const padrinos=foto.filter(f=>f.m.referidos.total>0)
+    .sort((a,b)=>b.m.referidos.pagaron-a.m.referidos.pagaron);
+  document.getElementById('socReferidos').innerHTML=
+    `<div class="card-h"><h3>Quién trae gente</h3><span class="tag">Solo suma cuando el referido paga</span></div>`+
+    (!padrinos.length?`<div class="empty"><div class="ic">👥</div><p>Todavía nadie ha traído a nadie.<br><span class="muted">El campo “Referido por” está en la ficha del cliente.</span></p></div>`:
+    `<table><thead><tr><th>Cliente</th><th>Trajo</th><th>Ya pagaron</th><th>Garantía ganada</th><th>A quién trajo</th></tr></thead><tbody>${
+      padrinos.map(f=>`<tr><td><b>${escHTML(f.s.nombre)}</b><div class="muted">${codCliente(f.s)}</div></td>
+        <td class="num">${f.m.referidos.total}</td><td class="num">${f.m.referidos.pagaron}</td>
+        <td class="num gano">${COP(f.m.garantia.referidos)}</td>
+        <td class="muted">${escHTML(f.m.referidos.lista.map(r=>r.nombre+(r.pago?' ✓':' ·')).join(', '))}</td></tr>`).join('')}</tbody></table>`);
+}
+
+function pedirDatos(id){
+  const s=DB.socios.find(x=>x.id===id); if(!s)return;
+  const kyc=MotorReglas.garantiaPorDatos(datosKycDe(s));
+  if(!kyc.faltantes.length) return alert(s.nombre+' ya tiene el perfil completo.');
+  const nom=(s.nombre||'').split(' ')[0];
+  const msg='Hola '+nom+' 🙂 Te escribe '+(DB.config.negocio||'Joan')+'. Te cuento algo que te sirve: '
+    +'con los datos que ya tenés cargados llevás '+COP(kyc.total)+' de garantía, y si me pasás lo que falta '
+    +'te subo '+COP(MotorReglas.CUPON_KYC_MAXIMO-kyc.total)+' más, que es más cupo para cuando lo necesites.\n\n'
+    +'Me faltaría:\n'+kyc.faltantes.map(f=>'• '+f.etiqueta+' ('+COP(f.valor)+')').join('\n')
+    +'\n\nCuando puedas me lo mandás por acá, sin apuro.';
+  openModal('Pedirle datos · '+s.nombre,`
+    <div class="info-row"><span class="k">Perfil</span><b>${kyc.porcentaje}%</b></div>
+    <div class="info-row"><span class="k">Garantía que tiene</span><b>${COP(kyc.total)}</b></div>
+    <div class="info-row"><span class="k">Que le falta desbloquear</span><b class="gano">${COP(MotorReglas.CUPON_KYC_MAXIMO-kyc.total)}</b></div>
+    <div class="sub-h">Mensaje</div>
+    <div class="alerta info" style="white-space:pre-wrap">${escHTML(msg)}</div>
+    <a class="btn btn-wa" style="margin-top:16px" target="_blank" rel="noopener" href="${waLink(waNum(s),msg)}">💬 Mandar por WhatsApp</a>`);
+}
+
+function exportarSocios(){
+  const foto=fotoSocios();
+  const cab=['Codigo','Nombre','Cedula','Celular','Nivel','Garantia total','Prestada por datos',
+    'Ganada pagando','Por referidos','Cupo','Perfil %','Garantia pendiente','Creditos',
+    'Pagados a tiempo','Racha','Referidos','Referidos que pagaron','Estado'];
+  const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+  const filas=foto.map(f=>{
+    const act=f.activos[0];
+    return [codCliente(f.s),f.s.nombre,f.s.cedula||'',waNum(f.s),f.m.garantia.nivel,
+      f.m.garantia.total,f.m.garantia.cupon,f.m.garantia.acumulada,f.m.garantia.referidos,f.cupo,
+      f.kyc.porcentaje,f.pendiente,f.m.garantia.creditos_total,f.m.garantia.pagados_a_tiempo,
+      f.m.garantia.racha,f.m.referidos.total,f.m.referidos.pagaron,
+      act?tramoDe(act).tramo:'sin credito'].map(q).join(';');
+  });
+  const csv='\uFEFF'+[cab.map(q).join(';')].concat(filas).join('\r\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download='socios-'+hoyISO()+'.csv'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+}
+
 /* ===== ENLACE PERSONAL POR WHATSAPP (sin nube, funciona hoy) =====
    El historial del cliente viaja DENTRO del enlace, en la parte de después del
    #, que el navegador nunca le manda al servidor. Así no hay base de datos, no
