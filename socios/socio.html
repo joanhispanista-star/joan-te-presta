@@ -452,6 +452,7 @@ function vistaInicio() {
   var h = '';
   if (S.esDemo) h += '<div class="aviso demo"><b>Estás viendo un ejemplo.</b> Todavía no está ' +
                      'conectada la base, así que estos números son de muestra.</div>';
+  h += avisoPago();
 
   h += '<div class="card hero aire">' +
        '<div class="etq">Podés pedir hasta</div>' +
@@ -533,7 +534,30 @@ function tarjetaActivo(c) {
       (dias < 0 ? fila('Te quedan', Math.abs(dias) + ' día' + (dias !== -1 ? 's' : '')) : '');
   }
   if (c.prorrogas) h += fila('Prórrogas usadas', String(c.prorrogas));
+  h += '<button class="btn sec sm" style="margin-top:14px" onclick="recordarme()">📅 Que mi celular me lo recuerde</button>' +
+       '<div class="muted" id="recordarPie" style="font-size:12.5px;margin-top:8px;text-align:center">' +
+       'Te avisa dos días antes y el mismo día, aunque no tengas la app abierta.</div>';
   return h + '</div>';
+}
+
+/* Cuenta regresiva arriba de todo cuando el pago ya está encima. */
+function avisoPago() {
+  var c = S.activo;
+  if (!c) return '';
+  var d = M.diasDeMora(c.corte, hoyISO());
+  if (d < -2) return '';
+  var total = Number(c.capital || 0) + Number(c.costo || 0);
+  if (d > 0) {
+    var r = M.recargoPorMora(c.capital, d);
+    return '<div class="aviso ojo"><b>Tu pago venció hace ' + d + ' día' + (d !== 1 ? 's' : '') + '.</b><br>' +
+      'Van ' + COP(total + r) + ' con el recargo. Pagá lo que puedas: cada abono cuenta y no perdés nada.</div>';
+  }
+  if (d === 0) {
+    return '<div class="aviso oro"><b>Hoy es tu día de pago.</b><br>' +
+      'Son ' + COP(total) + '. Si no alcanzás, hablá con ' + esc(nombreJoan()) + ': hay prórroga.</div>';
+  }
+  return '<div class="aviso calmo"><b>Te quedan ' + Math.abs(d) + ' día' + (d !== -1 ? 's' : '') +
+    ' para tu pago.</b><br>Son ' + COP(total) + ' el ' + fmtFecha(c.corte) + '. Con tiempo, sin apuro.</div>';
 }
 
 /* ========================= CALCULADORA ========================= */
@@ -795,6 +819,84 @@ function insignias() {
   return '<div class="insignias">' + lista.map(function (i) {
     return '<div class="ins ' + (i.ok ? 'gana' : '') + '"><span class="em">' + i.em + '</span>' + esc(i.t) + '</div>';
   }).join('') + '</div>';
+}
+
+/* ================= RECORDATORIO EN SU PROPIO CELULAR =================
+   Fase 6 del documento. Las notificaciones push de verdad necesitan un
+   servidor que las empuje; sin eso, la forma que sí funciona hoy en iPhone y
+   Android es meterle el pago en el calendario con sus alarmas: el teléfono
+   avisa solo, aunque la app esté cerrada y sin internet. */
+function textoICS(s) { return String(s).replace(/[\\;,]/g, '\\$&').replace(/\n/g, '\\n'); }
+
+/* El formato pide líneas de máximo 75 octetos; las largas se parten y la
+   continuación arranca con un espacio. Apple y Google aguantan sin plegar,
+   pero un lector estricto rechazaría el archivo entero. Se corta a 70
+   caracteres porque las tildes ocupan dos octetos. */
+function plegarICS(lineas) {
+  var out = [];
+  lineas.forEach(function (l) {
+    while (l.length > 70) { out.push(l.slice(0, 70)); l = ' ' + l.slice(70); }
+    out.push(l);
+  });
+  return out.join('\r\n');
+}
+
+function armarICS(c) {
+  var total = Number(c.capital || 0) + Number(c.costo || 0);
+  var f = String(c.corte).slice(0, 10).replace(/-/g, '');      // AAAAMMDD
+  var inicio = f + 'T090000';                                   // 9 de la mañana, hora local
+  var fin = f + 'T093000';
+  var sello = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+  var quien = nombreJoan();
+  var desc = 'Total a pagar: ' + COP(total) + ' (capital ' + COP(c.capital) + ' + costo ' + COP(c.costo) + '). ' +
+    'Si ese día no podés pagar todo, no pasa nada: se puede dejar una prórroga o un plan de pagos, ' +
+    'y aunque te atrases seguís siendo socio.';
+  return plegarICS([
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Joan te presta//Socios//ES',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'BEGIN:VEVENT',
+    'UID:' + (c.codigo || 'credito') + '-' + f + '@joantepresta',
+    'DTSTAMP:' + sello,
+    'DTSTART:' + inicio,
+    'DTEND:' + fin,
+    'SUMMARY:' + textoICS('Pagar ' + COP(total) + ' a ' + quien),
+    'DESCRIPTION:' + textoICS(desc),
+    'BEGIN:VALARM',
+    'TRIGGER:-P2D',
+    'ACTION:DISPLAY',
+    'DESCRIPTION:' + textoICS('En 2 días vence tu pago de ' + COP(total) + ' con ' + quien),
+    'END:VALARM',
+    'BEGIN:VALARM',
+    'TRIGGER:PT0S',
+    'ACTION:DISPLAY',
+    'DESCRIPTION:' + textoICS('Hoy vence tu pago de ' + COP(total) + ' con ' + quien),
+    'END:VALARM',
+    'END:VEVENT',
+    'END:VCALENDAR'
+  ]);
+}
+
+function recordarme() {
+  var c = S.activo;
+  if (!c) return alert('No tenés ningún crédito abierto para recordar.');
+  var ics = armarICS(c);
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([ics], { type: 'text/calendar;charset=utf-8' }));
+  a.download = 'pago-' + (c.codigo || 'credito') + '.ics';
+  a.click();
+  setTimeout(function () { URL.revokeObjectURL(a.href); }, 3000);
+  var d = M.diasDeMora(c.corte, hoyISO());
+  $('recordarPie').innerHTML = '✓ Listo. Abrilo y tocá “Agregar” para que quede en tu calendario. ' +
+    'Te va a avisar <b>dos días antes</b>' + (d < -2 ? ' (el ' + fmtFecha(fechaRelDe(c.corte, -2)) + ')' : '') +
+    ' y otra vez el mismo día.';
+}
+function fechaRelDe(iso, dias) {
+  var p = String(iso).slice(0, 10).split('-');
+  var d = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]) + dias);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
 
 /* ======================= PEDIR EL CRÉDITO =======================
