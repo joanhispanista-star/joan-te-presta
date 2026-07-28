@@ -2,19 +2,28 @@
   "name": "Joan te presta · Mi cuenta de socio",
   "short_name": "Mi cuenta",
   "description": "Mirá tu cupo, tu garantía y tu historial, y calculá un crédito antes de pedirlo.",
+  "id": "/joan-te-presta/socios/socio.html",
   "start_url": "socio.html",
   "scope": "./",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "orientation": "portrait",
   "background_color": "#0f3d2e",
   "theme_color": "#0f3d2e",
   "lang": "es-CO",
+  "dir": "ltr",
+  "categories": ["finance"],
   "icons": [
+    { "src": "icono-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icono-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icono-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
     {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%230f3d2e'/%3E%3Ctext x='256' y='350' font-size='272' text-anchor='middle' fill='%23f2c14e' font-family='system-ui'%3EJ%3C/text%3E%3C/svg%3E",
-      "sizes": "512x512",
-      "type": "image/svg+xml",
-      "purpose": "any"
+      "name": "Calcular un crédito",
+      "short_name": "Calculadora",
+      "url": "socio.html#calc",
+      "icons": [{ "src": "icono-192.png", "sizes": "192x192", "type": "image/png" }]
     }
   ]
 }

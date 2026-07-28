@@ -9,8 +9,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Mi cuenta">
 <link rel="manifest" href="socio.webmanifest">
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%230f3d2e'/%3E%3Ctext x='90' y='122' font-size='96' text-anchor='middle' fill='%23f2c14e' font-family='system-ui'%3EJ%3C/text%3E%3C/svg%3E">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f3d2e'/%3E%3Ctext x='32' y='45' font-size='36' text-anchor='middle' fill='%23f2c14e' font-family='system-ui'%3EJ%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="icono-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icono-192.png">
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{
@@ -1080,6 +1080,14 @@ function pantallaConfig() {
   window.addEventListener('hashchange', function () {
     var nuevo = desdeEnlace(); if (nuevo) abrir(nuevo, false);
   });
+
+  // Que abra sin internet: el historial ya viaja en el enlace, solo falta que
+  // la página esté en el teléfono.
+  if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sw-socio.js').catch(function () {});
+    });
+  }
 
   var delEnlace = desdeEnlace();
   if (delEnlace) return abrir(delEnlace, false);

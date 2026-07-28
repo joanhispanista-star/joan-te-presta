@@ -292,12 +292,19 @@
 
         <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--linea)">
           <h3 style="margin:0 0 4px">📲 Compartir con mis clientes</h3>
-          <div class="help" style="margin-bottom:14px">Sube el historial de tus clientes a la nube para que cada uno lo vea en su celular en <b>socios/socio.html</b>. Solo suben nombre, cédula, celular y sus créditos — nunca fotos ni ubicación.</div>
+          <div class="help" style="margin-bottom:10px">Sube el historial de tus clientes a la nube para que cada uno lo vea en su celular con su cédula, siempre al día. Solo suben nombre, cédula, celular y sus créditos — nunca fotos ni ubicación.</div>
+          <div class="alerta info" style="margin-bottom:14px;font-size:13px">
+            <b>Tres pasos, una sola vez:</b><br>
+            1. Entrá a <b>supabase.com</b> y creá un proyecto nuevo (gratis).<br>
+            2. Menú <b>SQL Editor → New query</b>, pegá todo el archivo <b>socios/supabase.sql</b> y dale Run. Cambiá la clave de la última línea por una tuya, larga.<br>
+            3. De <b>Settings → API</b> copiá la Project URL y la llave <b>anon public</b>, pegalas acá abajo con tu clave, y tocá <b>Probar conexión</b>.
+          </div>
           <div class="field"><label>Project URL de Supabase</label><input id="cfgSbUrl" placeholder="https://xxxx.supabase.co"></div>
           <div class="field"><label>Llave anon public</label><input id="cfgSbAnon" placeholder="eyJ..."></div>
           <div class="field"><label>Tu clave de sincronización</label><input id="cfgSbClave" type="password" placeholder="la que pusiste en supabase.sql"><div class="help">Se guarda solo en este computador. Nunca viaja dentro de la página del cliente.</div></div>
           <div style="display:flex;gap:10px;flex-wrap:wrap">
             <button class="btn btn-rojo btn-sm" onclick="guardarSupabase()">Guardar conexión</button>
+            <button class="btn btn-ghost btn-sm" onclick="probarSupabase()">🔌 Probar conexión</button>
             <button class="btn btn-negro btn-sm" onclick="sincronizarSocios()">☁ Subir historiales</button>
             <button class="btn btn-ghost btn-sm" onclick="verMigracion()">👁 Ver qué se va a subir</button>
           </div>
@@ -1160,6 +1167,41 @@ function copiarEnlace(id){
   if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(()=>alert('Enlace copiado.'),()=>prompt('Copialo de aquí:',t));
   else prompt('Copialo de aquí:',t);
 }
+/* Diagnóstico de la conexión: en vez de "no funcionó", decir QUÉ falta.
+   Prueba las dos funciones que usa el circuito, la de leer y la de escribir. */
+function probarSupabase(){
+  const c=sbCfg(), est=document.getElementById('sbEstado');
+  const decir=(icono,txt)=>{ est.innerHTML=icono+' '+txt; };
+  if(!c.url||!c.anon){ return decir('⚠️','Faltan la URL y la llave. Pegalas arriba y tocá “Guardar conexión”.'); }
+  if(!c.clave){ return decir('⚠️','Falta tu clave de sincronización, la que pusiste en la última línea de supabase.sql.'); }
+  decir('⏳','Probando…');
+  const cab={'Content-Type':'application/json',apikey:c.anon,Authorization:'Bearer '+c.anon};
+
+  // 1) Leer: con una cédula que no existe. Si la función está, responde null.
+  fetch(c.url+'/rest/v1/rpc/historial_socio',{method:'POST',headers:cab,
+    body:JSON.stringify({p_cedula:'0',p_tel4:'0000'})})
+  .then(r=>r.text().then(t=>({ok:r.ok,status:r.status,t})))
+  .then(r=>{
+    if(r.status===404) throw {paso:'Todavía no corriste <b>socios/supabase.sql</b> en el SQL Editor: la función <i>historial_socio</i> no existe en tu proyecto.'};
+    if(r.status===401||r.status===403) throw {paso:'La llave <b>anon public</b> no es la correcta, o el <code>grant execute</code> del final del SQL no se corrió.'};
+    if(!r.ok) throw {paso:'Supabase respondió '+r.status+': '+r.t.slice(0,140)};
+    // 2) Escribir: lote vacío, solo para validar la clave. No toca ningún dato.
+    return fetch(c.url+'/rest/v1/rpc/sincronizar_socios',{method:'POST',headers:cab,
+      body:JSON.stringify({p_clave:c.clave,p_lote:[]})})
+      .then(r2=>r2.text().then(t2=>({ok:r2.ok,status:r2.status,t:t2})));
+  })
+  .then(r=>{
+    if(r.status===404) throw {paso:'La función <i>sincronizar_socios</i> no existe. Corré el archivo <b>socios/supabase.sql</b> completo, no solo una parte.'};
+    if(!r.ok&&r.t.indexOf('clave')>=0) throw {paso:'Tu clave de sincronización no coincide con la que quedó en la base. Volvé a correr la última línea del SQL con la clave que estás escribiendo acá.'};
+    if(!r.ok) throw {paso:'Al escribir respondió '+r.status+': '+r.t.slice(0,140)};
+    decir('✅','<b>Todo listo.</b> Las dos funciones responden y tu clave es la correcta. Ya podés tocar “Subir historiales”.');
+  })
+  .catch(e=>{
+    if(e&&e.paso) return decir('❌',e.paso);
+    decir('❌','No hubo respuesta. Revisá que la Project URL esté bien escrita (va completa, con https://) y que tengas internet.');
+  });
+}
+
 function sincronizarSocios(){
   const c=sbCfg();
   if(!c.url||!c.anon||!c.clave) return alert('Primero pegá la URL, la llave anon y tu clave, y dale a "Guardar conexión".');
