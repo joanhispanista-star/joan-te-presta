@@ -269,6 +269,7 @@
       <div class="ph"><div><h1>Ajustes<span class="dot">.</span></h1></div></div>
       <div class="card"><div class="modal-b cfg">
         <div class="field"><label>Tu nombre / negocio (para los mensajes)</label><input id="cfgNeg"></div>
+        <div class="field"><label>Tu WhatsApp</label><input id="cfgWa" inputmode="numeric" placeholder="Ej: 3001234567"><div class="help">A este número te llegan las solicitudes de crédito y los datos que te manden los clientes desde su app. Sin esto, al cliente le toca buscarte el chat a mano.</div></div>
         <div class="field"><label>Costo administrativo base (%)</label><input type="number" id="cfgCosto" step="0.5"><div class="help">Plano sobre el capital, sin importar los días. La prórroga cobra este mismo porcentaje.</div></div>
         <div class="field"><label>Tasa de usura de referencia (% E.A.)</label><input type="number" id="cfgUsura" step="0.01" placeholder="Ej: 28.5"><div class="help">Marca en rojo los créditos cuya E.A. equivalente lo supere. 0 = sin alerta.</div></div>
         <div class="field"><label>PIN de acceso</label><input type="text" id="cfgPin" maxlength="6"></div>
@@ -320,7 +321,7 @@ function cargar(){
   let d={}; try{ d=JSON.parse(localStorage.getItem(KEY)||'{}'); }catch(e){}
   d.socios=d.socios||d.clientes||[]; d.prestamos=d.prestamos||[]; d.papelera=d.papelera||[];
   d.plantillas=Object.assign({},...Object.keys(PLANTILLAS_DEF).map(k=>({[k]:PLANTILLAS_DEF[k].m})),d.plantillas||{});
-  d.config=Object.assign({costoBasePct:20,tasaUsuraEA:0,pin:'1234',negocio:'Joan'},d.config||{});
+  d.config=Object.assign({costoBasePct:20,tasaUsuraEA:0,pin:'1234',negocio:'Joan',whatsapp:''},d.config||{});
   d.contadores=Object.assign({cliente:0,credito:0},d.contadores||{});
   d.socios.forEach(s=>{ s.gestiones=s.gestiones||[]; s.referencia=s.referencia||{nombre:'',telefono:''}; if(s.whatsappIgual===undefined)s.whatsappIgual=true;
     if(s.cedulaFrenteFoto===undefined)s.cedulaFrenteFoto=s.cedulaFoto||null; if(s.cedulaReversoFoto===undefined)s.cedulaReversoFoto=null; if(s.selfieFoto===undefined)s.selfieFoto=null;
@@ -872,7 +873,7 @@ function abonarCapital(id){ const p=DB.prestamos.find(x=>x.id===id),m=Number(doc
   p.abonosCapital=p.abonosCapital||[]; p.abonosCapital.push({fecha:hoyISO(),monto:m}); addComp(p,'abono',m); guardar(); abrirPago(id); render(); }
 
 /* ===== CONFIG ===== */
-function pintarCfg(){ document.getElementById('cfgNeg').value=DB.config.negocio; document.getElementById('cfgCosto').value=DB.config.costoBasePct; document.getElementById('cfgUsura').value=DB.config.tasaUsuraEA||''; document.getElementById('cfgPin').value=DB.config.pin;
+function pintarCfg(){ document.getElementById('cfgNeg').value=DB.config.negocio; document.getElementById('cfgCosto').value=DB.config.costoBasePct; document.getElementById('cfgUsura').value=DB.config.tasaUsuraEA||''; document.getElementById('cfgPin').value=DB.config.pin; document.getElementById('cfgWa').value=DB.config.whatsapp||'';
   const c=sbCfg(); document.getElementById('cfgSbUrl').value=c.url||''; document.getElementById('cfgSbAnon').value=c.anon||''; document.getElementById('cfgSbClave').value=c.clave||'';
   document.getElementById('sbEstado').textContent=(c.url&&c.anon&&c.clave)?'Conexión lista. Subí los historiales cuando quieras.':'Todavía sin conectar. Corré socios/supabase.sql y pegá acá los tres datos.'; }
 
@@ -929,6 +930,9 @@ function migrarSocio(s){
   const meses=Math.max(0,Math.floor(diasEntre(desde,hoyISO())/30));
   const nivel=MotorReglas.evaluarNivel(aTiempo,racha,meses,s.nivelSocio||'bronce');
   return {
+    // Para que las solicitudes y los datos que mande el cliente te lleguen a vos
+    // y no tenga que buscarte el chat.
+    negocio:{ nombre:DB.config.negocio||'Joan', whatsapp:String(DB.config.whatsapp||'').replace(/\D/g,'') },
     socio:{codigo:codCliente(s)},
     garantia:{ total:g.total, acumulada:g.acumulada, cupon:g.cupon, referidos:g.referidos, nivel,
       pagados_a_tiempo:aTiempo, racha, meses_sin_mora:meses, creditos_total:ps.length },
@@ -1034,7 +1038,7 @@ function sincronizarSocios(){
   })
   .catch(()=>{ est.textContent='No hubo conexión. Revisá el internet y volvé a intentar.'; });
 }
-function guardarCfg(){ DB.config.negocio=gv('cfgNeg')||'Joan'; DB.config.costoBasePct=Number(gv('cfgCosto'))||20; DB.config.tasaUsuraEA=Number(gv('cfgUsura'))||0; DB.config.pin=gv('cfgPin')||'1234'; guardar(); render(); alert('Ajustes guardados.'); }
+function guardarCfg(){ DB.config.negocio=gv('cfgNeg')||'Joan'; DB.config.costoBasePct=Number(gv('cfgCosto'))||20; DB.config.tasaUsuraEA=Number(gv('cfgUsura'))||0; DB.config.pin=gv('cfgPin')||'1234'; DB.config.whatsapp=gv('cfgWa').replace(/\D/g,''); guardar(); render(); alert('Ajustes guardados.'); }
 function exportar(){ const b=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'}),a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='respaldo-joan-te-presta.json'; a.click(); }
 function importar(e){ const f=e.target.files[0]; if(!f)return; const inp=e.target; const r=new FileReader();
   r.onload=()=>{ try{ const d=JSON.parse(r.result); const socios=d.socios||d.clientes, prest=d.prestamos;

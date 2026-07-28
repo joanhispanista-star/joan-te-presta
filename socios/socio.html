@@ -262,6 +262,15 @@ var esc = function (s) {
 var NIVEL_EMOJI = { bronce: '🥉', plata: '🥈', oro: '🥇', platino: '💎' };
 var NIVEL_COLOR = { bronce: 'var(--bronce)', plata: 'var(--plata)', oro: 'var(--nivel-oro)', platino: 'var(--platino)' };
 
+/* Abre WhatsApp con el mensaje ya escrito. Si el CRM mandó el número de Joan,
+   va directo a su chat; si no, el cliente elige a quién mandárselo. */
+function porWhatsApp(texto) {
+  var n = ((S && S.negocio && S.negocio.whatsapp) || '').replace(/\D/g, '');
+  var destino = n ? (n.length <= 10 ? '57' + n : n) : '';
+  window.open('https://wa.me/' + destino + '?text=' + encodeURIComponent(texto), '_blank', 'noopener');
+}
+function nombreJoan() { return (S && S.negocio && S.negocio.nombre) || 'Joan'; }
+
 function hoyISO() { return fechaRel(0); }
 function fechaRel(dias) {
   var x = new Date(); x.setDate(x.getDate() + dias);
@@ -297,6 +306,7 @@ var DEMOS = (function () {
   return [
     { cedula: '52111222', tel4: '2233', nombre: 'Ana Ruiz',
       datos: {
+        negocio: { nombre: 'Joan te presta', whatsapp: '' },
         socio: { codigo: 'CL-0007' },
         garantia: { total: acum + 75000 + 10000, acumulada: acum, cupon: 75000, referidos: 10000,
           nivel: 'plata', pagados_a_tiempo: puntuales, racha: 7, meses_sin_mora: 7, creditos_total: 9 },
@@ -307,6 +317,7 @@ var DEMOS = (function () {
       } },
     { cedula: '79333444', tel4: '5566', nombre: 'Luis Gómez',
       datos: {
+        negocio: { nombre: 'Joan te presta', whatsapp: '' },
         socio: { codigo: 'CL-0008' },
         garantia: { total: 76000, acumulada: 36000, cupon: 40000, referidos: 0, nivel: 'bronce',
           pagados_a_tiempo: 1, racha: 1, meses_sin_mora: 1, creditos_total: 2 },
@@ -396,6 +407,7 @@ function abrir(resp, esDemo) {
                              Number(g.meses_sin_mora || 0), g.nivel || 'bronce');
   S = {
     nombre: resp.nombre || 'Socio',
+    codigo: (d.socio && d.socio.codigo) || '',
     esDemo: !!esDemo,
     deEnlace: !!resp.deEnlace,
     actualizado: resp.actualizado_en,
@@ -408,7 +420,8 @@ function abrir(resp, esDemo) {
     pagados: creditos.filter(function (c) { return c.pagado; }),
     perfil: (d.perfil && d.perfil.datos) || {},
     referidos: d.referidos || { total: 0, pagaron: 0, lista: [] },
-    resumen: d.resumen || {}
+    resumen: d.resumen || {},
+    negocio: d.negocio || { nombre: 'Joan', whatsapp: '' }
   };
   NUEVOS = {};
   MONTO = Math.max(50000, Math.min(S.cupo || 300000, 500000));
@@ -446,7 +459,7 @@ function vistaInicio() {
        '<div class="muted" style="font-size:14px;margin-top:5px">' +
        'Con una tasa del ' + pct(M.calcularTasa(S.garantia, Math.max(S.cupo, 1))) + ' por quincena</div>' +
        barraHaciaTasa(S.garantia, Math.max(S.cupo, 1)) +
-       '<button class="btn oro sm" style="margin-top:16px" onclick="irA(\'calc\')">🧮 Calcular un crédito</button>' +
+       '<button class="btn oro sm" style="margin-top:16px" onclick="irA(\'calc\')">🧮 Calcular y pedir un crédito</button>' +
        '</div>';
 
   h += S.activo ? tarjetaActivo(S.activo) :
@@ -609,6 +622,16 @@ function salidaCalc(s) {
     fila('Garantía que te deja', '+' + COP(s.garantia_que_deja)) +
     fila('Quedarías con', COP(s.garantia_despues)) +
     fila('Y tu cupo pasaría a', COP(M.calcularCupo(s.garantia_despues, S.nivel))) +
+    '</div>';
+
+  /* --- Pedirlo --- */
+  var puede = M.puedeSolicitar({ nivel_kyc: 1, estado: 'activo', garantia_total: S.garantia, nivel_socio: S.nivel });
+  h += '<div class="card aire"><h3 class="tit">¿Te sirve así?</h3>' +
+    '<p class="sub">Le llega a ' + esc(nombreJoan()) + ' por WhatsApp con estos mismos números. ' +
+    'No es un compromiso: él te responde y ahí deciden.</p>' +
+    (puede.ok
+      ? '<button class="btn oro" style="margin-top:14px" onclick="pedirCredito()">Pedir ' + COP(s.capital) + '</button>'
+      : '<div class="aviso ojo" style="margin-top:12px">Para pedir necesitás completar tus datos primero.</div>') +
     '</div>';
 
   /* --- Cómo crece si repite --- */
@@ -774,6 +797,64 @@ function insignias() {
   }).join('') + '</div>';
 }
 
+/* ======================= PEDIR EL CRÉDITO =======================
+   Pantalla 3 del documento: todo a la vista antes de confirmar, sin letra
+   chica. No crea nada por su cuenta: le manda la solicitud a Joan, que es
+   quien aprueba y desembolsa. */
+function pedirCredito() {
+  var s = M.simularCredito(MONTO, S.garantia, { fechaDesembolso: hoyISO() });
+  var sobreCupo = MONTO > S.cupo;
+  var h = '<div class="card aire"><h3 class="tit">Revisá antes de pedir</h3>' +
+    '<p class="sub">Esto es todo lo que hay. No hay cobros escondidos ni letra chica.</p>' +
+    '<div class="cifra" style="margin-top:12px">' + COP(s.capital) + '</div>' +
+    '<div class="muted" style="font-size:13px">es lo que recibirías</div>' +
+    fila('Costo por la quincena (' + pct(s.tasa) + ')', COP(s.costo)) +
+    fila('Fecha de pago', fmtFecha(s.fecha_corte)) +
+    fila('Total a devolver ese día', COP(s.total_a_pagar)) +
+    '<div class="sep"></div>' +
+    fila('Tu garantía hoy', COP(S.garantia)) +
+    fila('Garantía que te dejaría', '+' + COP(s.garantia_que_deja)) +
+    (s.ahorro > 0 ? fila('Te ahorrás por tu historial', COP(s.ahorro)) : '') +
+    (sobreCupo
+      ? '<div class="aviso ojo" style="margin-top:14px">Estás pidiendo más que tu cupo de ' +
+        COP(S.cupo) + '. Se lo podés pedir igual: ' + esc(nombreJoan()) + ' lo revisa y te responde.</div>'
+      : '<div class="aviso calmo" style="margin-top:14px">Está dentro de tu cupo de ' + COP(S.cupo) + '.</div>') +
+    '<div class="aviso oro" style="font-size:13.5px">Si llegado el día no podés pagar todo, no se te ' +
+    'cierra nada: podés dejar una prórroga o un plan de pagos. Y aunque te atrases, seguís siendo socio.</div>' +
+    '<button class="btn" style="margin-top:16px" onclick="mandarSolicitud(' + MONTO + ')">' +
+      'Mandarle la solicitud a ' + esc(nombreJoan().split(' ')[0]) + '</button>' +
+    '<button class="btn sec sm" style="margin-top:10px" onclick="irA(\'calc\')">Volver a la calculadora</button>' +
+    '</div>';
+  $('cuerpo').innerHTML = '<div class="panel">' + h + '</div>';
+  window.scrollTo(0, 0);
+}
+
+function mandarSolicitud(monto) {
+  var s = M.simularCredito(monto, S.garantia, { fechaDesembolso: hoyISO() });
+  var texto = 'Hola ' + nombreJoan() + ', soy ' + S.nombre +
+    (S.codigo ? ' (' + S.codigo + ')' : '') + '. Quiero pedir un crédito:\n\n' +
+    '• Monto: ' + COP(s.capital) + '\n' +
+    '• Tasa que me toca: ' + pct(s.tasa) + '\n' +
+    '• Costo: ' + COP(s.costo) + '\n' +
+    '• Total a devolver: ' + COP(s.total_a_pagar) + '\n' +
+    '• Fecha de pago: ' + fmtFecha(s.fecha_corte) + '\n\n' +
+    'Mi garantía hoy es de ' + COP(S.garantia) + ' y mi cupo ' + COP(S.cupo) + '.' +
+    (monto > S.cupo ? ' Sé que me estoy pasando del cupo, contame si se puede.' : '') +
+    '\n\nGracias.';
+  porWhatsApp(texto);
+  $('cuerpo').innerHTML = '<div class="panel"><div class="card aire">' +
+    '<div style="font-size:44px;text-align:center">📩</div>' +
+    '<h3 class="tit" style="text-align:center;margin-top:8px">Solicitud enviada</h3>' +
+    '<p class="sub" style="text-align:center">Se abrió WhatsApp con tu solicitud lista. ' +
+    'Si no se abrió, escribile a ' + esc(nombreJoan()) + ' directamente.</p>' +
+    '<div class="aviso calmo" style="font-size:13.5px">Pediste <b>' + COP(s.capital) + '</b> para pagar ' +
+    '<b>' + COP(s.total_a_pagar) + '</b> el ' + fmtFecha(s.fecha_corte) + '. ' +
+    'Guardá este dato para cuando te responda.</div>' +
+    '<button class="btn sec" style="margin-top:14px" onclick="irA(\'inicio\')">Volver al inicio</button>' +
+    '</div></div>';
+  window.scrollTo(0, 0);
+}
+
 /* ==================== COMPLETAR EL PERFIL ==================== */
 function abrirPerfil() {
   var faltan = M.garantiaPorDatos(S.perfil).faltantes;
@@ -823,15 +904,15 @@ function mandarPerfil() {
     var d = M.DATOS_KYC.filter(function (x) { return x.id === id; })[0];
     return t + (d ? d.valor : 0);
   }, 0);
-  var texto = 'Hola Joan, soy ' + S.nombre + '. Te mando mis datos para completar mi perfil:\n\n' +
+  var texto = 'Hola ' + nombreJoan() + ', soy ' + S.nombre + '. Te mando mis datos para completar mi perfil:\n\n' +
     ids.map(function (id) { return '• ' + (etq[id] || id) + ': ' + NUEVOS[id]; }).join('\n') +
     '\n\nCon esto mi garantía sube ' + COP(suma) + '.';
-  var url = 'https://wa.me/?text=' + encodeURIComponent(texto);
-  window.open(url, '_blank', 'noopener');
+  porWhatsApp(texto);
 }
 
+/* La invitación va para el amigo, no para Joan: acá no se pone destinatario. */
 function invitar() {
-  var texto = 'Te recomiendo a Joan te presta. Yo ya soy socio: uno va pagando y le van bajando ' +
+  var texto = 'Te recomiendo ' + nombreJoan() + '. Yo ya soy socio: uno va pagando y le van bajando ' +
     'la tasa y subiendo el cupo, y si te atrasás no te cierran la puerta. Decile que vas de mi parte, ' +
     'que a los dos nos sirve.';
   window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank', 'noopener');
