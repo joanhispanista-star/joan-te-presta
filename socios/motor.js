@@ -490,6 +490,63 @@
     });
   }
 
+  /**
+   * Las reglas del acuerdo, en datos, para que la pantalla que se las muestra
+   * al socio salga de las MISMAS constantes que hacen las cuentas. Si algún
+   * día se cambia un número, la explicación cambia sola: no puede quedar
+   * prometiendo una cosa mientras el motor hace otra.
+   */
+  function reglasResumen() {
+    return {
+      costo: {
+        tasa: TASA_CREDITO,
+        texto: 'El costo es siempre el ' + Math.round(TASA_CREDITO * 100) +
+               '% de lo que pidas, por quincena. No sube ni baja: ni por tu historial, ni por el monto.'
+      },
+      garantia: {
+        factor_puntual: FACTOR_GARANTIA,
+        factor_mora: FACTOR_GARANTIA_MORA,
+        texto: 'Cada peso de costo que pagás se te vuelve garantía, y la garantía es lo que ' +
+               'te deja pedir más. Pagando en la fecha suma completo; pagando tarde suma la mitad, ' +
+               'pero suma.'
+      },
+      cupon: {
+        maximo: CUPON_KYC_MAXIMO,
+        datos: DATOS_KYC.length,
+        texto: 'Por cada dato tuyo que tengamos cargado te prestamos garantía. Con los ' +
+               DATOS_KYC.length + ' completos son ' + CUPON_KYC_MAXIMO.toLocaleString('es-CO') +
+               ' de cupo, sin haber pagado todavía nada.'
+      },
+      referidos: {
+        por_cada_uno: GARANTIA_POR_REFERIDO,
+        texto: 'Cada persona que traigas te suma ' + GARANTIA_POR_REFERIDO.toLocaleString('es-CO') +
+               ', desde que esa persona pague su crédito.'
+      },
+      niveles: NIVELES.map(function (n) {
+        return { nivel: n, factor: FACTOR_CUPO[n], requisitos: REQUISITOS_NIVEL[n],
+                 prorrogas: Math.min(PRORROGAS_POR_NIVEL[n], TOPE_DURO_PRORROGAS) };
+      }),
+      tope: {
+        cupo: CUPO_MAXIMO,
+        texto: 'Lo máximo que se presta son ' + CUPO_MAXIMO.toLocaleString('es-CO') + '.'
+      },
+      mora: {
+        diaria: TASA_MORA_DIARIA,
+        dias_castigo: DIAS_CASTIGO,
+        texto: 'Si te atrasás se cobra un ' + (TASA_MORA_DIARIA * 100) +
+               '% diario sobre el capital. Pero atrasarte NO te baja de nivel, NO te borra la ' +
+               'garantía y NO te cierra la puerta: podés volver a pedir. Lo único que pasa a los ' +
+               DIAS_CASTIGO + ' días es si no abonaste ni un peso, y ni ahí se pierde la garantía: ' +
+               'se congela hasta que vuelvas.'
+      },
+      prorroga: {
+        texto: 'Si llegado el día no podés pagar todo, se puede aplazar pagando el costo, o pasar ' +
+               'a un plan de pagos en ' + CUOTAS_PLAN_DE_PAGOS + ' cortes con un costo reducido del ' +
+               (TASA_PLAN_DE_PAGOS * 100) + '%.'
+      }
+    };
+  }
+
   /* ------------------------------------------- §3 garantía por tus datos */
 
   function hayDato(v) {
@@ -1010,6 +1067,7 @@
     garantiaPorDatos: garantiaPorDatos,
     garantiaPorReferidos: garantiaPorReferidos,
     garantiaTotal: garantiaTotal,
+    reglasResumen: reglasResumen,
 
     // Calculadora y proyecciones
     simularCredito: simularCredito,

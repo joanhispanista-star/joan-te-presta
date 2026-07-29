@@ -330,6 +330,8 @@ var DEMOS = (function () {
     { cedula: '52111222', tel4: '2233', nombre: 'Ana Ruiz',
       datos: {
         negocio: { nombre: 'Joan te presta', whatsapp: '' },
+        comunidad: { socios: 34, creditos_pagados: 218, garantia_construida: 9840000,
+                     prestado: 52400000, puntualidad: 87, desde: fechaRel(-540) },
         socio: { codigo: 'CL-0007' },
         garantia: { total: cobrado + 75000 + 10000, acumulada: cobrado, cupon: 75000, referidos: 10000,
           nivel: 'oro', pagados_a_tiempo: puntuales, racha: 7, meses_sin_mora: 7, creditos_total: 9 },
@@ -341,6 +343,8 @@ var DEMOS = (function () {
     { cedula: '79333444', tel4: '5566', nombre: 'Luis Gómez',
       datos: {
         negocio: { nombre: 'Joan te presta', whatsapp: '' },
+        comunidad: { socios: 34, creditos_pagados: 218, garantia_construida: 9840000,
+                     prestado: 52400000, puntualidad: 87, desde: fechaRel(-540) },
         socio: { codigo: 'CL-0008' },
         garantia: { total: 140000, acumulada: 40000, cupon: 100000, referidos: 0, nivel: 'bronce',
           pagados_a_tiempo: 1, racha: 1, meses_sin_mora: 1, creditos_total: 2 },
@@ -441,7 +445,8 @@ function abrir(resp, esDemo) {
     perfil: (d.perfil && d.perfil.datos) || {},
     referidos: d.referidos || { total: 0, pagaron: 0, lista: [] },
     resumen: d.resumen || {},
-    negocio: d.negocio || { nombre: 'Joan', whatsapp: '' }
+    negocio: d.negocio || { nombre: 'Joan', whatsapp: '' },
+    comunidad: d.comunidad || null
   };
   NUEVOS = {};
   MONTO = Math.max(100000, Math.min(S.cupo || 300000, 500000));
@@ -490,7 +495,101 @@ function vistaInicio() {
        '<div class="muted" style="font-size:13px;margin-top:8px">' + textoProximoNivel() + '</div>' +
        '</div>';
 
+  h += tarjetaComunidad();
   return h + pie();
+}
+
+/* ========================== LA COMUNIDAD ==========================
+   No es un banco: es un grupo. Acá el socio ve que entró a algo, no que le
+   prestaron. Solo cifras del conjunto — nunca el nombre ni el monto de nadie. */
+function tarjetaComunidad() {
+  var c = S.comunidad;
+  if (!c || !c.socios) {
+    return '<div class="card" onclick="verReglas()" style="cursor:pointer">' +
+      '<div class="etq">Cómo funciona esto</div>' +
+      '<p style="margin:8px 0 0;font-size:14.5px">Las reglas del acuerdo, completas y sin letra chica.</p>' +
+      '</div>';
+  }
+  return '<div class="card" onclick="verComunidad()" style="cursor:pointer">' +
+    '<div class="etq">La comunidad</div>' +
+    '<div class="cifra sm">' + c.socios + ' socios</div>' +
+    '<p class="sub">Entre todos llevan ' + COP(c.garantia_construida) + ' de garantía construida.</p>' +
+    '<div class="muted" style="font-size:13px;margin-top:10px">Ver cómo va el grupo y las reglas →</div>' +
+    '</div>';
+}
+
+function verComunidad() {
+  var c = S.comunidad || {};
+  var h = '<div class="card laca"><div class="etq">Somos</div>' +
+    '<div class="cifra">' + (c.socios || 0) + ' socios</div>' +
+    '<div class="muted" style="font-size:13.5px;margin-top:6px">' +
+      'Esto no es un banco. Es un grupo que se presta entre sí y crece junto.</div>' +
+    (c.desde ? fila('Andando desde', fmtFecha(c.desde)) : '') +
+    '</div>';
+
+  h += '<div class="card"><h3 class="tit">Lo que llevamos entre todos</h3>' +
+    '<p class="sub">Cifras del grupo. Acá no aparece el nombre ni el monto de nadie, ni el tuyo.</p>' +
+    fila('Garantía construida', COP(c.garantia_construida || 0)) +
+    fila('Créditos pagados', String(c.creditos_pagados || 0)) +
+    (c.puntualidad != null ? fila('Se pagan en fecha', c.puntualidad + '%') : '') +
+    '</div>';
+
+  var miParte = c.garantia_construida
+    ? Math.max(1, Math.round(Number(S.g.acumulada || 0) / c.garantia_construida * 100)) : 0;
+  h += '<div class="card"><h3 class="tit">Tu parte</h3>' +
+    fila('De lo construido, pusiste', miParte + '%') +
+    fila('Gente que trajiste', String(S.referidos.total || 0)) +
+    '<p class="sub" style="margin-top:12px">El grupo crece cuando alguien trae a alguien y esa ' +
+    'persona paga. Por eso traer gente te suma cupo: no es una comisión, es que el grupo se hizo ' +
+    'más grande.</p>' +
+    '<button class="btn sec sm" style="margin-top:14px" onclick="invitar()">Invitar a alguien</button>' +
+    '</div>';
+
+  h += '<div class="card" onclick="verReglas()" style="cursor:pointer">' +
+    '<div class="etq">Cómo funciona esto</div>' +
+    '<p style="margin:8px 0 0;font-size:14.5px">Las reglas del acuerdo, completas. Las mismas para todos.</p>' +
+    '</div>';
+
+  h += '<button class="btn sec" style="margin-top:14px" onclick="irA(\'inicio\')">Volver</button>';
+  $('cuerpo').innerHTML = '<div class="panel">' + h + '</div>';
+  window.scrollTo(0, 0);
+}
+
+/* Las reglas salen del motor, no de un texto suelto: si algún día cambia un
+   número, esta pantalla cambia sola. No puede quedar prometiendo otra cosa. */
+function verReglas() {
+  var r = M.reglasResumen();
+  var bloque = function (titulo, texto) {
+    return '<div class="card"><div class="etq">' + esc(titulo) + '</div>' +
+      '<p style="margin:8px 0 0;font-size:14.5px">' + esc(texto) + '</p></div>';
+  };
+  var h = '<div class="card laca"><div class="etq">El acuerdo</div>' +
+    '<h1 style="font-size:22px;margin-top:8px;color:var(--blanco-laca)">Cómo funciona esto</h1>' +
+    '<div class="muted" style="font-size:13.5px;margin-top:8px">Las mismas reglas para todos los ' +
+    'socios. Están acá para que las puedas leer cuando quieras, no solo cuando pedís.</div></div>';
+
+  h += bloque('El costo', r.costo.texto);
+  h += bloque('Tu cupo crece pagando', r.garantia.texto);
+  h += bloque('Y crece dando tus datos', r.cupon.texto);
+  h += bloque('Y crece trayendo gente', r.referidos.texto);
+
+  h += '<div class="card"><div class="etq">Los niveles</div>' +
+    '<p class="sub">Cuánto podés pedir es tu garantía multiplicada por el factor de tu nivel.</p>' +
+    '<div style="margin-top:8px">' + r.niveles.map(function (n) {
+      return '<div class="nivel ' + (n.nivel === S.nivel ? 'aqui' : '') + '">' +
+        '<span class="txt"><span class="nm">' + n.nivel + (n.nivel === S.nivel ? ' · acá estás' : '') + '</span>' +
+        '<span class="rq">' + requisitoTexto({ nivel: n.nivel, requisitos: n.requisitos, factor: n.factor }) + '</span></span>' +
+        '<span class="cp">×' + n.factor + '</span></div>';
+    }).join('') + '</div>' +
+    '<div class="muted" style="font-size:13px;margin-top:12px">' + esc(r.tope.texto) + '</div></div>';
+
+  h += '<div class="card"><div class="etq">Si te atrasás</div>' +
+    '<p style="margin:8px 0 0;font-size:14.5px">' + esc(r.mora.texto) + '</p>' +
+    '<div class="aviso" style="margin-top:12px">' + esc(r.prorroga.texto) + '</div></div>';
+
+  h += '<button class="btn sec" style="margin-top:14px" onclick="irA(\'inicio\')">Volver</button>';
+  $('cuerpo').innerHTML = '<div class="panel">' + h + '</div>';
+  window.scrollTo(0, 0);
 }
 
 /* Cuánto le falta para el siguiente nivel, en porcentaje y en palabras. */

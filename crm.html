@@ -943,6 +943,27 @@ function referidosDe(s){
   }));
 }
 
+/* Cifras del grupo para que cada socio vea que entró a algo colectivo.
+   SOLO agregados: ni un nombre, ni un monto de nadie en particular. */
+function fotoComunidad(){
+  const pagados=DB.prestamos.filter(p=>p.pagado);
+  const puntuales=pagados.filter(esPuntual).length;
+  const garantia=DB.socios.reduce((t,s)=>{
+    const ps=DB.prestamos.filter(p=>p.socioId===s.id);
+    return t+Math.round(ps.reduce((a,p)=>a+gananciaCobrada(p),0));
+  },0);
+  return {
+    socios:DB.socios.length,
+    creditos_pagados:pagados.length,
+    garantia_construida:garantia,
+    prestado:DB.prestamos.reduce((t,p)=>t+p.capital,0),
+    puntualidad:pagados.length?Math.round(puntuales/pagados.length*100):null,
+    desde:DB.prestamos.length
+      ? DB.prestamos.map(p=>p.fechaDesembolso).filter(Boolean).sort()[0]
+      : null
+  };
+}
+
 function migrarSocio(s){
   const ps=DB.prestamos.filter(p=>p.socioId===s.id)
     .sort((a,b)=>String(a.fechaDesembolso).localeCompare(String(b.fechaDesembolso)));
@@ -962,6 +983,7 @@ function migrarSocio(s){
     // Para que las solicitudes y los datos que mande el cliente te lleguen a vos
     // y no tenga que buscarte el chat.
     negocio:{ nombre:DB.config.negocio||'Joan', whatsapp:String(DB.config.whatsapp||'').replace(/\D/g,'') },
+    comunidad:fotoComunidad(),
     socio:{codigo:codCliente(s)},
     garantia:{ total:g.total, acumulada:g.acumulada, cupon:g.cupon, referidos:g.referidos, nivel,
       pagados_a_tiempo:aTiempo, racha, meses_sin_mora:meses, creditos_total:ps.length },
