@@ -172,6 +172,12 @@
     return typeof v === 'number' && isFinite(v);
   }
 
+  // Admite negativos: solo se usa para el ajuste manual de la migración.
+  function numeroFinito(v, nombre) {
+    if (!esNumero(v)) throw new TypeError(nombre + ': se esperaba un número, llegó ' + describir(v));
+    return v;
+  }
+
   function numeroNoNegativo(v, nombre) {
     if (!esNumero(v)) throw new TypeError(nombre + ': se esperaba un número, llegó ' + describir(v));
     if (v < 0) throw new RangeError(nombre + ': no puede ser negativo (' + v + ')');
@@ -527,11 +533,16 @@
     var porDatos = garantiaPorDatos(entrada.datos).total;
     var porReferidos = garantiaPorReferidos(entrada.referidos);
     var acumulada = numeroNoNegativo(entrada.acumulada == null ? 0 : entrada.acumulada, 'acumulada');
+    // Ajuste a mano de Joan al migrar (§13): puede sumar o restar, pero la
+    // garantía total nunca queda negativa.
+    var ajuste = entrada.ajuste == null ? 0 : numeroFinito(entrada.ajuste, 'ajuste');
+    var total = Math.max(0, porDatos + porReferidos + acumulada + ajuste);
     return {
       cupon: porDatos,
       referidos: porReferidos,
       acumulada: acumulada,
-      total: porDatos + porReferidos + acumulada
+      ajuste: ajuste,
+      total: total
     };
   }
 

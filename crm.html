@@ -240,9 +240,16 @@
     <section class="view" id="v-socios">
       <div class="ph"><div><h1>Socios<span class="dot">.</span></h1><div class="sub">La garantía que has emitido, quién puede pedir más y a quién le falta qué</div></div>
         <button class="btn btn-ghost btn-sm" onclick="exportarSocios()">⬇ Excel</button></div>
+      <div class="card"><div class="card-h"><h3>📥 Solicitudes</h3><span class="tag">Lo que te piden desde la app</span></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+          <button class="btn btn-negro btn-sm" onclick="traerSolicitudes()">↻ Buscar en la nube</button>
+          <button class="btn btn-ghost btn-sm" onclick="pegarSolicitud()">📋 Pegar el WhatsApp</button>
+        </div>
+        <div id="bandeja"></div></div>
       <div class="kpis" id="kpiSocios"></div>
       <div class="card"><div id="socTramos"></div></div>
       <div class="card"><div id="socNiveles"></div></div>
+      <div class="card"><div id="socMigracion"></div></div>
       <div class="card"><div id="socPerfiles"></div></div>
       <div class="card"><div id="socReferidos"></div></div>
     </section>
@@ -343,7 +350,8 @@ function cargar(){
   d.contadores=Object.assign({cliente:0,credito:0},d.contadores||{});
   d.socios.forEach(s=>{ s.gestiones=s.gestiones||[]; s.referencia=s.referencia||{nombre:'',telefono:''}; if(s.whatsappIgual===undefined)s.whatsappIgual=true;
     if(s.cedulaFrenteFoto===undefined)s.cedulaFrenteFoto=s.cedulaFoto||null; if(s.cedulaReversoFoto===undefined)s.cedulaReversoFoto=null; if(s.selfieFoto===undefined)s.selfieFoto=null;
-    if(s.telefono2===undefined)s.telefono2=''; if(s.notaRiesgo===undefined)s.notaRiesgo=''; if(s.ubicacion===undefined)s.ubicacion=null; });
+    if(s.telefono2===undefined)s.telefono2=''; if(s.notaRiesgo===undefined)s.notaRiesgo=''; if(s.ubicacion===undefined)s.ubicacion=null;
+    if(s.ajusteGarantia===undefined)s.ajusteGarantia=0; if(s.ajusteMotivo===undefined)s.ajusteMotivo=''; if(s.migracionRevisada===undefined)s.migracionRevisada=null; });
   d.prestamos.forEach(p=>{ if(p.cicloActual===undefined)p.cicloActual=p.fechaPago; p.prorrogas=p.prorrogas||[]; p.abonosCapital=p.abonosCapital||[]; p.comprobantes=p.comprobantes||[];
     if(p.pagado===undefined){ const ab=(p.abonos||[]).reduce((s,a)=>s+a.monto,0); p.pagado=(p.total&&ab>=p.total-0.5)||false; if(p.pagado){p.fechaPagado=p.fechaPagado||isoLocal(new Date());p.cicloPago=p.cicloPago||p.cicloActual;p.gananciaPago=p.gananciaPago||(p.capital*(p.costoPct||20)/100);} } });
   // Numeración única (no se reasigna nunca; solo se completa la que falte, en orden de creación)
@@ -939,7 +947,7 @@ function migrarSocio(s){
   // La garantía reconoce TODO lo que el socio ya pagó de costo, puntual o tarde.
   const acumulada=Math.round(ps.reduce((t,p)=>t+gananciaCobrada(p),0)*0.90);
   const datos=datosKycDe(s), refs=referidosDe(s);
-  const g=MotorReglas.garantiaTotal({datos,referidos:refs,acumulada});
+  const g=MotorReglas.garantiaTotal({datos,referidos:refs,acumulada,ajuste:Number(s.ajusteGarantia)||0});
   const kyc=MotorReglas.garantiaPorDatos(datos);
   const aTiempo=pagados.filter(esPuntual).length;
   let racha=0; for(let i=pagados.length-1;i>=0;i--){ if(esPuntual(pagados[i]))racha++; else break; }
@@ -1008,6 +1016,7 @@ function fotoSocios(){
 function tramoDe(p){ return MotorReglas.tramoDeMora(-diasPara(p)); }
 
 function renderSocios(){
+  renderBandeja();
   const foto=fotoSocios();
   const g=foto.reduce((a,f)=>({
     total:a.total+f.m.garantia.total, cupon:a.cupon+f.m.garantia.cupon,
@@ -1052,6 +1061,37 @@ function renderSocios(){
         <td class="num">${porNivel[n].n}</td><td class="num">${COP(porNivel[n].garantia)}</td>
         <td class="num">${COP(porNivel[n].cupo)}</td></tr>`).join('')}</tbody></table>`;
 
+  /* ---- Revisión de la migración (§13 del documento) ----
+     Antes de que el cliente vea su garantía, Joan la mira y la confirma o la
+     ajusta. Nadie queda expuesto a un número que él no aprobó. */
+  const sinRevisar=foto.filter(f=>!f.s.migracionRevisada);
+  const conAjuste=foto.filter(f=>Number(f.s.ajusteGarantia));
+  const totalAjustes=conAjuste.reduce((t,f)=>t+Number(f.s.ajusteGarantia),0);
+  document.getElementById('socMigracion').innerHTML=
+    `<div class="card-h"><h3>Revisión de la migración</h3><span class="tag">Qué garantía le reconoce el sistema a cada cliente de siempre</span></div>`+
+    (!foto.length?`<div class="empty"><div class="ic">📋</div><p>Sin clientes todavía.</p></div>`:
+    `<div class="alerta ${sinRevisar.length?'warn':'info'}" style="margin-bottom:12px">
+      ${sinRevisar.length
+        ? `Te faltan <b>${sinRevisar.length}</b> de ${foto.length} cliente(s) por revisar. Mirá que el número le cuadre a cada uno <b>antes</b> de mandarle el enlace o subirlo a la nube.`
+        : `Ya revisaste a los ${foto.length} clientes. ✓`}
+      ${conAjuste.length?`<br>Llevás ${conAjuste.length} ajuste(s) a mano, por ${COP(totalAjustes)} en total.`:''}
+    </div>
+    <table><thead><tr><th>Cliente</th><th>Ganada pagando</th><th>Por sus datos</th><th>Ajuste</th><th>Garantía final</th><th>Cupo</th><th></th></tr></thead><tbody>${
+      foto.slice().sort((a,b)=>(a.s.migracionRevisada?1:0)-(b.s.migracionRevisada?1:0)||b.m.garantia.total-a.m.garantia.total)
+      .map(f=>{ const aj=Number(f.s.ajusteGarantia)||0;
+        return `<tr><td><b>${escHTML(f.s.nombre)}</b><div class="muted">${codCliente(f.s)} · ${f.m.garantia.creditos_total} crédito(s)</div></td>
+        <td class="num">${COP(f.m.garantia.acumulada)}</td>
+        <td class="num">${COP(f.m.garantia.cupon)}</td>
+        <td class="num ${aj?(aj>0?'gano':''):'muted'}">${aj?(aj>0?'+':'')+COP(aj):'—'}</td>
+        <td class="num"><b>${COP(f.m.garantia.total)}</b></td>
+        <td class="num">${COP(f.cupo)}</td>
+        <td style="text-align:right">${f.s.migracionRevisada
+          ? `<span class="muted" title="Revisado el ${escHTML(f.s.migracionRevisada)}">✓ revisado</span> `
+          : ''}<button class="btn btn-ghost btn-sm" onclick="revisarMigracion('${f.s.id}')">Revisar</button></td></tr>`;}).join('')}</tbody>
+      <tfoot><tr><td>Total (${foto.length})</td><td class="num">${COP(g.acum)}</td><td class="num">${COP(g.cupon)}</td>
+        <td class="num">${totalAjustes?COP(totalAjustes):'—'}</td><td class="num"><b>${COP(g.total)}</b></td>
+        <td class="num">${COP(g.cupo)}</td><td></td></tr></tfoot></table>`);
+
   /* ---- Perfiles a medias: la palanca más directa ---- */
   const flojos=foto.filter(f=>f.pendiente>0).sort((a,b)=>b.pendiente-a.pendiente);
   document.getElementById('socPerfiles').innerHTML=
@@ -1077,6 +1117,155 @@ function renderSocios(){
         <td class="num">${f.m.referidos.total}</td><td class="num">${f.m.referidos.pagaron}</td>
         <td class="num gano">${COP(f.m.garantia.referidos)}</td>
         <td class="muted">${escHTML(f.m.referidos.lista.map(r=>r.nombre+(r.pago?' ✓':' ·')).join(', '))}</td></tr>`).join('')}</tbody></table>`);
+}
+
+/* Ficha de revisión de un cliente: de dónde sale cada peso de su garantía,
+   crédito por crédito, para poder confirmarla o corregirla con criterio. */
+function revisarMigracion(id){
+  const s=DB.socios.find(x=>x.id===id); if(!s)return;
+  const m=migrarSocio(s), gg=m.garantia, aj=Number(s.ajusteGarantia)||0;
+  const cerrados=m.creditos.filter(c=>c.pagado);
+  openModal('Migración · '+s.nombre,`
+    <div class="info-row"><span class="k">Ganada pagando <span class="muted">(90% de todo lo que te pagó)</span></span><b>${COP(gg.acumulada)}</b></div>
+    <div class="info-row"><span class="k">Prestada por sus datos <span class="muted">(${m.perfil.porcentaje}% del perfil)</span></span><b>${COP(gg.cupon)}</b></div>
+    <div class="info-row"><span class="k">Por referidos <span class="muted">(${m.referidos.pagaron} ya pagaron)</span></span><b>${COP(gg.referidos)}</b></div>
+    ${aj?`<div class="info-row"><span class="k">Tu ajuste a mano</span><b class="${aj>0?'gano':''}">${aj>0?'+':''}${COP(aj)}</b></div>
+      ${s.ajusteMotivo?`<div class="muted" style="font-size:12px;margin:-4px 0 8px">Motivo: ${escHTML(s.ajusteMotivo)}</div>`:''}`:''}
+    <div class="info-row" style="border-top:2px solid var(--linea);padding-top:10px"><span class="k"><b>Garantía que va a ver</b></span><b style="font-size:18px">${COP(gg.total)}</b></div>
+    <div class="info-row"><span class="k">Con eso puede pedir</span><b>${COP(MotorReglas.calcularCupo(gg.total,gg.nivel))}</b> <span class="muted">(${escHTML(gg.nivel)})</span></div>
+
+    <div class="sub-h">De dónde salió lo ganado pagando</div>
+    ${cerrados.length
+      ? cerrados.map(c=>`<div class="info-row"><span class="k">${escHTML(c.codigo)} <span class="muted">${fmtFecha(c.desembolso)}</span></span><span class="vv">${COP(c.capital)} → <b class="gano">+${COP(c.garantia)}</b></span></div>`).join('')
+        +`<div class="muted" style="font-size:12px;margin-top:6px">Es el 90% del costo y las prórrogas que ya te pagó de cada uno.</div>`
+      : `<div class="alerta info">Todavía no ha cerrado ningún crédito, así que no tiene garantía ganada. Lo que ve viene de sus datos.</div>`}
+
+    <div class="sub-h">¿El número le cuadra?</div>
+    <div class="help" style="margin-bottom:8px">Si creés que a este cliente le corresponde más (o menos) por lo que ha sido con vos, ajustalo. Queda registrado y el cliente solo ve el total.</div>
+    <div class="two">
+      <div class="field"><label>Ajuste en pesos</label><input id="mgAjuste" type="number" inputmode="numeric" value="${aj||''}" placeholder="Ej: 50000 o -20000"></div>
+      <div class="field"><label>Motivo <span class="muted">(para vos)</span></label><input id="mgMotivo" value="${escHTML(s.ajusteMotivo||'')}" placeholder="Ej: cliente de 3 años"></div>
+    </div>
+    <div class="two" style="margin-top:8px">
+      <button class="btn btn-rojo" onclick="guardarRevision('${s.id}')">✓ Guardar y marcar revisado</button>
+      <button class="btn btn-ghost" onclick="guardarRevision('${s.id}',true)">Guardar sin marcar</button>
+    </div>`);
+}
+function guardarRevision(id,sinMarcar){
+  const s=DB.socios.find(x=>x.id===id); if(!s)return;
+  const v=document.getElementById('mgAjuste').value.trim();
+  const aj=v===''?0:Number(v);
+  if(!isFinite(aj)) return alert('El ajuste tiene que ser un número. Podés poner negativo para restar.');
+  s.ajusteGarantia=aj||0;
+  s.ajusteMotivo=gv('mgMotivo');
+  if(!sinMarcar) s.migracionRevisada=hoyISO();
+  guardar(); cerrarModal(); render();
+}
+/* =======================================================================
+   BANDEJA DE SOLICITUDES
+   Dos caminos al mismo lugar: si Supabase está conectado entran solas, y si
+   no, se pega el mensaje de WhatsApp que manda la app (trae un código al
+   final con los mismos números, para no volver a teclear nada).
+   ======================================================================= */
+function deB64Url(t){
+  const s=t.replace(/-/g,'+').replace(/_/g,'/');
+  const bin=atob(s), by=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++)by[i]=bin.charCodeAt(i);
+  return JSON.parse(new TextDecoder().decode(by));
+}
+function leerCodigoSolicitud(texto){
+  const m=/SOL:([A-Za-z0-9\-_]+)/.exec(String(texto||''));
+  if(!m) return null;
+  try{
+    const p=deB64Url(m[1]);
+    if(!p||!p.k) return null;
+    return { origen:'pegada', id:'peg-'+Date.now(), nombre:p.n||'Socio', codigo:p.c||'', cedula:p.d||'',
+      capital:Number(p.k)||0, tasa:Number(p.t)||0, costo:Number(p.o)||0, total:Number(p.p)||0,
+      fecha_corte:p.f||null, garantia:Number(p.g)||0, cupo:Number(p.u)||0, sobre_cupo:!!p.x,
+      creada_en:hoyISO() };
+  }catch(e){ return null; }
+}
+function pegarSolicitud(){
+  const t=prompt('Pegá aquí el mensaje de WhatsApp que te mandó el cliente:');
+  if(t===null) return;
+  const s=leerCodigoSolicitud(t);
+  if(!s) return alert('No encontré el código de la solicitud en ese texto.\n\nTiene que ser el mensaje completo que manda la app; al final trae una línea que empieza con "SOL:".');
+  _solicitudes=[s].concat(_solicitudes.filter(x=>x.id!==s.id));
+  renderBandeja();
+}
+
+let _solicitudes=[];
+function traerSolicitudes(){
+  const c=sbCfg(), b=document.getElementById('bandeja');
+  if(!c.url||!c.anon||!c.clave){ return alert('Para recibir solicitudes solas hay que conectar Supabase primero (Ajustes → Compartir con mis clientes).\n\nMientras tanto podés usar "Pegar el WhatsApp".'); }
+  b.innerHTML='<div class="muted">Buscando…</div>';
+  fetch(c.url+'/rest/v1/rpc/listar_solicitudes',{method:'POST',
+    headers:{'Content-Type':'application/json',apikey:c.anon,Authorization:'Bearer '+c.anon},
+    body:JSON.stringify({p_clave:c.clave,p_estado:'nueva'})})
+  .then(r=>r.text().then(t=>({ok:r.ok,status:r.status,t})))
+  .then(r=>{
+    if(r.status===404){ b.innerHTML='<div class="alerta warn">Tu base todavía no tiene la bandeja. Volvé a correr <b>socios/supabase.sql</b> completo: ahora trae la tabla de solicitudes.</div>'; return; }
+    if(!r.ok){ b.innerHTML='<div class="alerta warn">No pude leer las solicitudes ('+r.status+'). '+escHTML(r.t.slice(0,140))+'</div>'; return; }
+    const nube=(JSON.parse(r.t)||[]).map(x=>Object.assign({origen:'nube'},x));
+    _solicitudes=nube.concat(_solicitudes.filter(x=>x.origen==='pegada'));
+    renderBandeja();
+  })
+  .catch(()=>{ b.innerHTML='<div class="alerta warn">Sin conexión. Revisá el internet.</div>'; });
+}
+
+function renderBandeja(){
+  const b=document.getElementById('bandeja');
+  if(!_solicitudes.length){
+    b.innerHTML=`<div class="empty"><div class="ic">📭</div><p>Ninguna solicitud pendiente.<br><span class="muted">Entran solas si conectaste Supabase; si no, pegá el WhatsApp que te manden.</span></p></div>`;
+    return;
+  }
+  b.innerHTML=`<table><thead><tr><th>Cliente</th><th>Pide</th><th>Tasa</th><th>Total a devolver</th><th>Paga el</th><th></th></tr></thead><tbody>${
+    _solicitudes.map(s=>{
+      const cli=DB.socios.find(x=>String(x.cedula||'').replace(/\D/g,'')===String(s.cedula||'').replace(/\D/g,''));
+      return `<tr><td><b>${escHTML(s.nombre)}</b><div class="muted">${escHTML(s.codigo||(cli?codCliente(cli):'sin ficha'))}${s.origen==='pegada'?' · pegada':''}</div></td>
+      <td class="num"><b>${COP(s.capital)}</b>${s.sobre_cupo?'<div class="muted" style="color:var(--rojo)">sobre su cupo de '+COP(s.cupo)+'</div>':''}</td>
+      <td class="num">${(Number(s.tasa)*100).toFixed(0)}%</td>
+      <td class="num">${COP(s.total)}</td>
+      <td>${s.fecha_corte?fmtFecha(s.fecha_corte):'—'}</td>
+      <td style="text-align:right">
+        <button class="btn btn-rojo btn-sm" onclick="crearDesdeSolicitud('${s.id}')">✓ Crear crédito</button>
+        <button class="btn btn-ghost btn-sm" onclick="descartarSolicitud('${s.id}')">✕</button></td></tr>`;
+    }).join('')}</tbody></table>`;
+}
+
+function marcarEnNube(s,estado){
+  const c=sbCfg();
+  if(s.origen!=='nube'||!c.url||!c.anon||!c.clave) return Promise.resolve();
+  return fetch(c.url+'/rest/v1/rpc/marcar_solicitud',{method:'POST',
+    headers:{'Content-Type':'application/json',apikey:c.anon,Authorization:'Bearer '+c.anon},
+    body:JSON.stringify({p_clave:c.clave,p_id:s.id,p_estado:estado})}).catch(()=>{});
+}
+function quitarSolicitud(id){ _solicitudes=_solicitudes.filter(x=>String(x.id)!==String(id)); renderBandeja(); }
+function descartarSolicitud(id){
+  const s=_solicitudes.find(x=>String(x.id)===String(id)); if(!s)return;
+  if(!confirm('Descartar la solicitud de '+s.nombre+' por '+COP(s.capital)+'?'))return;
+  marcarEnNube(s,'descartada'); quitarSolicitud(id);
+}
+function crearDesdeSolicitud(id){
+  const s=_solicitudes.find(x=>String(x.id)===String(id)); if(!s)return;
+  const dig=v=>String(v||'').replace(/\D/g,'');
+  const cli=DB.socios.find(x=>dig(x.cedula)===dig(s.cedula));
+  if(!cli) return alert('No tengo ficha de "'+s.nombre+'" con la cédula '+(s.cedula||'—')+'.\n\nCreale la ficha primero desde Clientes y volvé a intentar.');
+  const pct=Math.round(Number(s.tasa)*100)||DB.config.costoBasePct||20;
+  if(!confirm('Crear el crédito de '+cli.nombre+':\n\n'
+    +'• Capital: '+COP(s.capital)+'\n• Costo: '+pct+'% ('+COP(s.costo)+')\n'
+    +'• Total a devolver: '+COP(s.total)+'\n• Paga el: '+(s.fecha_corte?fmtFecha(s.fecha_corte):'—')+'\n'
+    +(s.sobre_cupo?'\n⚠️ Está pidiendo más que su cupo de '+COP(s.cupo)+'.\n':'')
+    +'\n¿Lo registro?'))return;
+  const p={ id:'P'+Date.now(), numero:nextNumCredito(), socioId:cli.id, socioNombre:cli.nombre,
+    telefono:cli.telefono, capital:Number(s.capital)||0, costoPct:pct,
+    fechaDesembolso:hoyISO(), cicloActual:s.fecha_corte||quincenaQueAplica(hoyISO()),
+    prorrogas:[], abonosCapital:[], comprobantes:[], pagado:false,
+    fechaCreacion:new Date().toISOString(), origen:'solicitud' };
+  DB.prestamos.push(p);
+  marcarEnNube(s,'atendida'); quitarSolicitud(id);
+  guardar(); render();
+  if(confirm('✓ Crédito '+codCredito(p)+' registrado para '+cli.nombre+'.\n\n¿Enviar el mensaje de bienvenida por WhatsApp?')) gestionar(p.id,'bienvenida');
 }
 
 function pedirDatos(id){
@@ -1141,6 +1330,7 @@ function mandarHistorial(id){
   const s=DB.socios.find(x=>x.id===id); if(!s)return;
   if(!DB.prestamos.some(p=>p.socioId===s.id))
     return alert(s.nombre+' todavía no tiene créditos registrados, así que no hay historial para mandarle.');
+  if(!s.migracionRevisada&&!confirm('Todavía no revisaste la garantía que le calculó el sistema a '+s.nombre+'.\n\nUna vez le mandes el enlace, ese número lo va a ver él. ¿Mandarlo igual?\n\n(Cancelá y usá "Revisar" en la pestaña Socios para mirarlo primero.)'))return;
   const enlace=enlaceHistorial(s);
   const msg=aplicarVars(DB.plantillas.historial||PLANTILLAS_DEF.historial.m,null,s,enlace);
   const m=migrarSocio(s), g=m.garantia;
@@ -1207,7 +1397,10 @@ function sincronizarSocios(){
   if(!c.url||!c.anon||!c.clave) return alert('Primero pegá la URL, la llave anon y tu clave, y dale a "Guardar conexión".');
   const lote=loteMigracion();
   if(!lote.length) return alert('No hay clientes con cédula y celular para subir.');
-  if(!confirm('Subir el historial de '+lote.length+' cliente(s) a la nube.\n\nCada uno lo va a poder ver entrando con su cédula y los últimos 4 de su celular. ¿Continuar?'))return;
+  const sinRev=DB.socios.filter(s=>!s.migracionRevisada&&DB.prestamos.some(p=>p.socioId===s.id)).length;
+  if(!confirm('Subir el historial de '+lote.length+' cliente(s) a la nube.\n\n'
+    +(sinRev?'⚠️ '+sinRev+' de ellos todavía no tienen la garantía revisada por vos.\n\n':'')
+    +'Cada uno lo va a poder ver entrando con su cédula y los últimos 4 de su celular. ¿Continuar?'))return;
   const est=document.getElementById('sbEstado'); est.textContent='Subiendo…';
   fetch(c.url+'/rest/v1/rpc/sincronizar_socios',{ method:'POST',
     headers:{'Content-Type':'application/json',apikey:c.anon,Authorization:'Bearer '+c.anon},

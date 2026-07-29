@@ -35,12 +35,33 @@ create table if not exists public.config_privada (
   valor text not null
 );
 
+-- Solicitudes de crédito que mandan los socios desde su app.
+create table if not exists public.solicitudes (
+  id          bigint generated always as identity primary key,
+  cedula      text        not null,
+  nombre      text        not null,
+  capital     bigint      not null,
+  tasa        numeric     not null,
+  costo       bigint      not null,
+  total       bigint      not null,
+  fecha_corte date,
+  garantia    bigint,
+  cupo        bigint,
+  sobre_cupo  boolean     not null default false,
+  estado      text        not null default 'nueva',   -- nueva | atendida | descartada
+  creada_en   timestamptz not null default now()
+);
+create index if not exists solicitudes_pendientes
+  on public.solicitudes (creada_en desc) where estado = 'nueva';
+
 alter table public.socios_historial enable row level security;
 alter table public.config_privada  enable row level security;
+alter table public.solicitudes     enable row level security;
 
 -- Sin políticas = nadie entra directo. Y por si acaso, se quitan los permisos.
 revoke all on public.socios_historial from anon, authenticated;
 revoke all on public.config_privada  from anon, authenticated;
+revoke all on public.solicitudes      from anon, authenticated;
 
 -- ------------------------------------------------------------- funciones ---
 
@@ -124,6 +145,100 @@ begin
 end
 $$;
 
+-- SOLICITAR: el socio manda su solicitud desde la app. Se le exige la misma
+-- pareja cédula + últimos 4 del celular que para entrar, así que nadie puede
+-- llenar la bandeja de Joan con solicitudes inventadas.
+create or replace function public.crear_solicitud(
+  p_cedula text, p_tel4 text, p_datos jsonb)
+returns bigint
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare r public.socios_historial; nuevo bigint; recientes integer;
+begin
+  select * into r
+    from public.socios_historial
+   where cedula = public.solo_digitos(p_cedula)
+     and tel4   = right(public.solo_digitos(p_tel4), 4);
+
+  if not found then
+    perform pg_sleep(0.3);
+    raise exception 'socio no encontrado';
+  end if;
+
+  -- Freno simple al spam: máximo 5 solicitudes por socio en una hora.
+  select count(*) into recientes
+    from public.solicitudes
+   where cedula = r.cedula and creada_en > now() - interval '1 hour';
+  if recientes >= 5 then
+    raise exception 'demasiadas solicitudes seguidas';
+  end if;
+
+  insert into public.solicitudes
+    (cedula, nombre, capital, tasa, costo, total, fecha_corte, garantia, cupo, sobre_cupo)
+  values (
+    r.cedula, r.nombre,
+    coalesce((p_datos->>'capital')::bigint, 0),
+    coalesce((p_datos->>'tasa')::numeric, 0),
+    coalesce((p_datos->>'costo')::bigint, 0),
+    coalesce((p_datos->>'total')::bigint, 0),
+    nullif(p_datos->>'fecha_corte','')::date,
+    nullif(p_datos->>'garantia','')::bigint,
+    nullif(p_datos->>'cupo','')::bigint,
+    coalesce((p_datos->>'sobre_cupo')::boolean, false)
+  )
+  returning id into nuevo;
+
+  return nuevo;
+end
+$$;
+
+-- LEER LA BANDEJA: solo Joan, con su clave.
+create or replace function public.listar_solicitudes(p_clave text, p_estado text default 'nueva')
+returns setof public.solicitudes
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare esperado text;
+begin
+  select valor into esperado from public.config_privada where clave = 'clave_sync';
+  if esperado is null or p_clave is null or p_clave <> esperado then
+    perform pg_sleep(1);
+    raise exception 'clave de sincronización incorrecta';
+  end if;
+  return query
+    select * from public.solicitudes
+     where estado = coalesce(p_estado, 'nueva')
+     order by creada_en desc
+     limit 200;
+end
+$$;
+
+-- MARCARLA: atendida o descartada, para que no vuelva a salir.
+create or replace function public.marcar_solicitud(p_clave text, p_id bigint, p_estado text)
+returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare esperado text; n integer;
+begin
+  select valor into esperado from public.config_privada where clave = 'clave_sync';
+  if esperado is null or p_clave is null or p_clave <> esperado then
+    perform pg_sleep(1);
+    raise exception 'clave de sincronización incorrecta';
+  end if;
+  if p_estado not in ('nueva','atendida','descartada') then
+    raise exception 'estado inválido';
+  end if;
+  update public.solicitudes set estado = p_estado where id = p_id;
+  get diagnostics n = row_count;
+  return n;
+end
+$$;
+
 -- BORRAR un socio de la nube (si pide que le quiten los datos).
 create or replace function public.olvidar_socio(p_clave text, p_cedula text)
 returns integer
@@ -146,13 +261,19 @@ $$;
 
 -- ---------------------------------------------------------------- grants ---
 
-revoke all on function public.historial_socio(text, text)      from public;
-revoke all on function public.sincronizar_socios(text, jsonb)  from public;
-revoke all on function public.olvidar_socio(text, text)        from public;
+revoke all on function public.historial_socio(text, text)          from public;
+revoke all on function public.sincronizar_socios(text, jsonb)      from public;
+revoke all on function public.olvidar_socio(text, text)            from public;
+revoke all on function public.crear_solicitud(text, text, jsonb)   from public;
+revoke all on function public.listar_solicitudes(text, text)       from public;
+revoke all on function public.marcar_solicitud(text, bigint, text) from public;
 
-grant execute on function public.historial_socio(text, text)     to anon;
-grant execute on function public.sincronizar_socios(text, jsonb) to anon;
-grant execute on function public.olvidar_socio(text, text)       to anon;
+grant execute on function public.historial_socio(text, text)          to anon;
+grant execute on function public.sincronizar_socios(text, jsonb)      to anon;
+grant execute on function public.olvidar_socio(text, text)            to anon;
+grant execute on function public.crear_solicitud(text, text, jsonb)   to anon;
+grant execute on function public.listar_solicitudes(text, text)       to anon;
+grant execute on function public.marcar_solicitud(text, bigint, text) to anon;
 
 -- ----------------------------------------------------------------- clave ---
 -- ⚠️ CAMBIALA. Mínimo 12 caracteres. Es la que vas a escribir en el CRM.

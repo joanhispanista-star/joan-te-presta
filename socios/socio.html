@@ -380,7 +380,7 @@ function entrar() {
   if (!CFG.url || !CFG.anon) {
     return setTimeout(function () {
       var d = buscarDemo(ced, tel);
-      if (d) return abrir(d, true);
+      if (d) { d.cedula = ced; d.tel4 = tel; return abrir(d, true); }
       fallo('En el modo de prueba solo hay dos socios de ejemplo. Probá con la cédula 52111222 y el celular 2233 (Ana Ruiz), o 79333444 y 5566 (Luis Gómez).');
     }, 400);
   }
@@ -391,6 +391,7 @@ function entrar() {
   }).then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('http ' + r.status)); })
     .then(function (j) {
       if (!j) return fallo('No encontré esa cédula con ese celular. Revisá los números, y si siguen sin salir escribile a Joan.');
+      j.cedula = ced; j.tel4 = tel;    // para poder mandar solicitudes después
       abrir(j, false);
     }).catch(function () { fallo('No pude conectarme. Revisá que tengas internet y volvé a intentar.'); });
 
@@ -408,6 +409,8 @@ function abrir(resp, esDemo) {
   S = {
     nombre: resp.nombre || 'Socio',
     codigo: (d.socio && d.socio.codigo) || '',
+    cedula: resp.cedula || '',
+    tel4: resp.tel4 || '',
     esDemo: !!esDemo,
     deEnlace: !!resp.deEnlace,
     actualizado: resp.actualizado_en,
@@ -893,6 +896,20 @@ function recordarme() {
     'Te va a avisar <b>dos días antes</b>' + (d < -2 ? ' (el ' + fmtFecha(fechaRelDe(c.corte, -2)) + ')' : '') +
     ' y otra vez el mismo día.';
 }
+/* Código compacto de la solicitud, para que Joan lo pegue en su CRM y no tenga
+   que volver a teclear los números. Va al final del mensaje de WhatsApp. */
+function codigoSolicitud(s, monto) {
+  var paq = {
+    n: S.nombre, c: S.codigo || '', d: S.cedula || '',
+    k: s.capital, t: s.tasa, o: s.costo, p: s.total_a_pagar,
+    f: s.fecha_corte, g: S.garantia, u: S.cupo, x: monto > S.cupo ? 1 : 0
+  };
+  var bytes = new TextEncoder().encode(JSON.stringify(paq));
+  var bin = '';
+  for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
 function fechaRelDe(iso, dias) {
   var p = String(iso).slice(0, 10).split('-');
   var d = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]) + dias);
@@ -933,6 +950,24 @@ function pedirCredito() {
 
 function mandarSolicitud(monto) {
   var s = M.simularCredito(monto, S.garantia, { fechaDesembolso: hoyISO() });
+
+  // Si la base está conectada, la solicitud entra sola a la bandeja de Joan.
+  // Si no, igual le llega por WhatsApp con el código pegable de abajo.
+  if (CFG.url && CFG.anon && S.cedula && S.tel4) {
+    fetch(CFG.url.replace(/\/+$/, '') + '/rest/v1/rpc/crear_solicitud', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey: CFG.anon, Authorization: 'Bearer ' + CFG.anon },
+      body: JSON.stringify({
+        p_cedula: S.cedula, p_tel4: S.tel4,
+        p_datos: {
+          capital: s.capital, tasa: s.tasa, costo: s.costo, total: s.total_a_pagar,
+          fecha_corte: s.fecha_corte, garantia: S.garantia, cupo: S.cupo,
+          sobre_cupo: monto > S.cupo
+        }
+      })
+    }).catch(function () {});   // si falla, queda el WhatsApp, que es lo que manda
+  }
+
   var texto = 'Hola ' + nombreJoan() + ', soy ' + S.nombre +
     (S.codigo ? ' (' + S.codigo + ')' : '') + '. Quiero pedir un crédito:\n\n' +
     '• Monto: ' + COP(s.capital) + '\n' +
@@ -942,7 +977,10 @@ function mandarSolicitud(monto) {
     '• Fecha de pago: ' + fmtFecha(s.fecha_corte) + '\n\n' +
     'Mi garantía hoy es de ' + COP(S.garantia) + ' y mi cupo ' + COP(S.cupo) + '.' +
     (monto > S.cupo ? ' Sé que me estoy pasando del cupo, contame si se puede.' : '') +
-    '\n\nGracias.';
+    '\n\nGracias.' +
+    // Código para que Joan lo pegue en su CRM y quede el crédito armado sin
+    // volver a teclear nada. Al cliente no le estorba: va al final.
+    '\n\n· · ·\nSOL:' + codigoSolicitud(s, monto);
   porWhatsApp(texto);
   $('cuerpo').innerHTML = '<div class="panel"><div class="card aire">' +
     '<div style="font-size:44px;text-align:center">📩</div>' +
