@@ -38,6 +38,23 @@
  * cuenta pagos puntuales seguidos, y sin racha simplemente se sube más lento.
  * Nadie retrocede.
  * ---------------------------------------------------------------------------
+ * PRECIO FIJO — 29-jul-2026, pedido de Joan. Deroga el §5 entero:
+ *
+ *   El costo es SIEMPRE el 20% del capital. Se acabaron los escalones por
+ *   cobertura (20/12/5/3%). La garantía ya no fija el PRECIO, solo el CUPO.
+ *
+ *   Consecuencia que hubo que arreglar en el mismo movimiento: con el precio
+ *   clavado y la mora sumando garantía, pagar tarde acumulaba MÁS que pagar en
+ *   fecha (el atrasado paga costo + recargo, y todo sumaba igual). La app le
+ *   estaba enseñando al socio que atrasarse convenía. Se corrigió con un BONO,
+ *   no con un castigo: lo pagado con mora sigue sumando, pero al 50%; lo pagado
+ *   en fecha suma al 100%. Nadie pierde garantía ni baja de nivel.
+ *
+ *   Y para que el cupo crezca rápido: FACTOR_GARANTIA de 0,90 a 1,00, factores
+ *   de cupo de 1/1,25/1,5/2 a 1,5/2/2,5/3, y umbrales de nivel de 3/8/20 pagos
+ *   a 2/5/10. Un socio que arranca con 200.000 llega al techo de 20 millones en
+ *   11 créditos (5,5 meses) en vez de 28 (14 meses).
+ * ---------------------------------------------------------------------------
  * DECISIONES tomadas donde el documento no era explícito (revisar con Joan):
  *
  * D1. La ventana mínima de 5 días (§7.3) se mide contra la fecha de corte YA
@@ -96,13 +113,10 @@
 
   var NIVELES = ['bronce', 'plata', 'oro', 'platino'];
 
-  // §5 — tasa por cobertura (garantia_total / capital_solicitado)
-  var ESCALONES_TASA = [
-    { cobertura_min: 2.00, tasa: 0.03 },
-    { cobertura_min: 1.00, tasa: 0.05 },
-    { cobertura_min: 0.50, tasa: 0.12 },
-    { cobertura_min: 0.00, tasa: 0.20 }
-  ];
+  /* §5 DEROGADO (29-jul-2026): ya no hay escalones de tasa por cobertura.
+     El costo es SIEMPRE el 20% del capital. La garantía dejó de fijar el
+     PRECIO y ahora fija solo el CUPO: cuánto puede pedir. */
+  var TASA_CREDITO = 0.20;
 
   /* §3 REEMPLAZADO (27-jul-2026): el cupón ya no es una tabla de tres escalones.
      La plataforma presta garantía DATO POR DATO: cada cosa que el socio entrega
@@ -130,20 +144,34 @@
   var GARANTIA_POR_REFERIDO = 5000; // pero solo cuando el referido paga puntual
   var CUPO_MAXIMO = 20000000;       // techo de la plataforma: 20 millones
 
-  // §5 — factor de cupo y prórrogas por nivel
-  var FACTOR_CUPO = { bronce: 1.0, plata: 1.25, oro: 1.5, platino: 2.0 };
+  /* §5 — factor de cupo y prórrogas por nivel.
+     Subidos el 29-jul-2026 para que el cupo crezca rápido, que es lo que se
+     pidió. Ojo con lo que significan: el cupo es garantía × factor, y la
+     garantía NO es plata depositada, es un puntaje. Con factor 2,5 le estás
+     prestando 2,5 veces lo que el socio te ha pagado en toda su historia. */
+  var FACTOR_CUPO = { bronce: 1.5, plata: 2.0, oro: 2.5, platino: 3.0 };
   var PRORROGAS_POR_NIVEL = { bronce: 1, plata: 2, oro: 2, platino: 2 };
   var TOPE_DURO_PRORROGAS = 2; // §8, tope duro por encima del nivel
 
-  // §5 — requisitos de nivel
+  // §5 — requisitos de nivel, bajados el 29-jul-2026 para que se suba rápido.
   var REQUISITOS_NIVEL = {
     bronce: { pagos_a_tiempo: 0, racha: 0, meses_sin_mora: 0 },
-    plata: { pagos_a_tiempo: 3, racha: 0, meses_sin_mora: 0 },
-    oro: { pagos_a_tiempo: 8, racha: 4, meses_sin_mora: 0 },
-    platino: { pagos_a_tiempo: 20, racha: 0, meses_sin_mora: 6 }
+    plata: { pagos_a_tiempo: 2, racha: 0, meses_sin_mora: 0 },
+    oro: { pagos_a_tiempo: 5, racha: 3, meses_sin_mora: 0 },
+    platino: { pagos_a_tiempo: 10, racha: 0, meses_sin_mora: 3 }
   };
 
-  var FACTOR_GARANTIA = 0.90;      // 90% de TODO costo pagado (cambio 26-jul-2026)
+  /* Cuánta garantía deja cada peso de costo pagado.
+     29-jul-2026: sube de 0,90 a 1,00 — cada peso de costo que paga se le vuelve
+     cupo, que además se explica en una frase.
+
+     Y aparece el BONO POR PUNTUALIDAD. Con el costo clavado en 20% y la mora
+     sumando garantía, pagar tarde acumulaba MÁS rápido que pagar en fecha (el
+     que se atrasa paga costo + recargo, y todo sumaba igual). La app le estaba
+     enseñando al socio que atrasarse convenía. Se arregla sin castigar a nadie:
+     lo pagado con mora sigue sumando, pero lo pagado en fecha suma el doble. */
+  var FACTOR_GARANTIA = 1.00;       // pagó en la fecha de corte o antes
+  var FACTOR_GARANTIA_MORA = 0.50;  // pagó tarde: suma, pero la mitad
   var DIAS_VENTANA_MINIMA = 5;     // §7.3
   var DIAS_CORTE_FIJO = 15;        // §7 — día 15 y último del mes
   var CUOTAS_PLAN_DE_PAGOS = 3;    // §8
@@ -160,7 +188,8 @@
     { tramo: 'D2', desde: 6, hasta: 15, accion: 'contacto directo, oferta de plan de pagos', canal: 'llamada' },
     { tramo: 'M1', desde: 16, hasta: 45, accion: 'gestión con referencias', canal: 'llamada' },
     { tramo: 'M2', desde: 46, hasta: 89, accion: 'última instancia antes de castigo', canal: 'llamada' },
-    { tramo: 'castigo', desde: 90, hasta: Infinity, accion: 'veto + garantía a cero', canal: '—' }
+    // La garantía NO se pone en cero: se congela (ver evaluarCastigo).
+    { tramo: 'castigo', desde: 90, hasta: Infinity, accion: 'suspender y congelar la garantía', canal: '—' }
   ];
 
   // Estados desde los que NO tiene sentido prorrogar (§6)
@@ -404,28 +433,24 @@
 
   /* ------------------------------------------------------ §5 tasa y cupo */
 
-  /** cobertura = garantia_total / capital_solicitado (§5). */
-  function calcularCobertura(garantiaTotal, capitalSolicitado) {
-    var g = numeroNoNegativo(garantiaTotal, 'garantiaTotal');
-    var c = numeroPositivo(capitalSolicitado, 'capitalSolicitado');
-    return g / c;
-  }
-
   /**
-   * §5 — Tasa por corte según la cobertura.
-   *   < 50%  → 20% | 50–99% → 12% | 100–199% → 5% | ≥ 200% → 3%
-   * Los bordes se comparan multiplicando (g >= 2*c) en vez de dividiendo, para
-   * que 50/100/200% exactos caigan siempre del lado bueno para el socio.
+   * Costo del crédito: SIEMPRE el 20% del capital (cambio 29-jul-2026).
    *
-   * @returns {number} 0.03 | 0.05 | 0.12 | 0.20
+   * Conserva los dos parámetros y sus validaciones porque hay llamadores y
+   * pruebas que cuentan con que reviente si el capital es cero o negativo.
+   * La garantía ya no influye en el precio: ahora solo abre cupo.
+   *
+   * @returns {number} siempre 0.20
    */
   function calcularTasa(garantiaTotal, capitalSolicitado) {
-    var g = numeroNoNegativo(garantiaTotal, 'garantiaTotal');
-    var c = numeroPositivo(capitalSolicitado, 'capitalSolicitado');
-    if (g >= 2 * c) return 0.03;
-    if (g >= c) return 0.05;
-    if (2 * g >= c) return 0.12;
-    return 0.20;
+    numeroNoNegativo(garantiaTotal == null ? 0 : garantiaTotal, 'garantiaTotal');
+    numeroPositivo(capitalSolicitado, 'capitalSolicitado');
+    return TASA_CREDITO;
+  }
+
+  /** Costo en pesos de un capital, al 20%. */
+  function calcularCosto(capital) {
+    return Math.round(numeroPositivo(capital, 'capital') * TASA_CREDITO);
   }
 
   /**
@@ -549,16 +574,17 @@
   /* ------------------------------------------------------- §4 garantía */
 
   /**
-   * Garantía que deja un costo pagado: round(costo × 0.90).
+   * Garantía que deja un costo pagado.
    *
-   * Desde el 26-jul-2026 acumula TODO costo que el socio pague —crédito,
-   * prórroga, recargo de mora, cuotas del plan de pagos—, puntual o no. El §4
-   * del documento (donde la mora congelaba la acumulación) quedó derogado.
+   * TODO lo que el socio paga suma —crédito, prórroga, recargo de mora, cuotas
+   * del plan de pagos—, esté al día o atrasado. El §4 original (donde la mora
+   * congelaba la acumulación) sigue derogado: nadie deja de sumar.
+   *
+   * Lo que cambia (29-jul-2026) es cuánto: en fecha suma el 100% del costo,
+   * tarde suma el 50%. Es un bono al puntual, no una multa al que se atrasa.
    *
    * @param {number} costoPagado
-   * @param {boolean} [pagoFueATiempo]  se conserva para la auditoría y para no
-   *        romper llamadores viejos, pero YA NO cambia el resultado. Quien
-   *        necesite distinguir puntualidad, use liquidarCredito().
+   * @param {boolean} [pagoFueATiempo]  si se omite, se asume puntual.
    * @returns {number} incremento de garantia_acumulada (entero, COP).
    */
   function acumularGarantia(costoPagado, pagoFueATiempo) {
@@ -566,7 +592,8 @@
     if (pagoFueATiempo !== undefined && typeof pagoFueATiempo !== 'boolean') {
       throw new TypeError('pagoFueATiempo: se esperaba true o false, llegó ' + describir(pagoFueATiempo));
     }
-    return Math.round(costo * FACTOR_GARANTIA);
+    var factor = pagoFueATiempo === false ? FACTOR_GARANTIA_MORA : FACTOR_GARANTIA;
+    return Math.round(costo * factor);
   }
 
   /* ------------------------------------------------------------ §9 mora */
@@ -632,12 +659,13 @@
       : capital; // D9
     var recargo = recargoPorMora(base, diasMora, opciones);
     var costoTotal = costo + recargo;
+    var aTiempo = diasMora === 0;
 
     return {
       fecha_corte: iso(corte),
       fecha_pago: iso(pago),
       dias_mora: diasMora,
-      pago_a_tiempo: diasMora === 0,
+      pago_a_tiempo: aTiempo,
       tramo: tramoDeMora(dias).tramo,
       capital: capital,
       costo: costo,
@@ -646,7 +674,9 @@
       base_mora: base,
       costo_total_pagado: costoTotal,
       total_a_pagar: capital + costoTotal,
-      garantia_generada: acumularGarantia(costoTotal),
+      garantia_generada: acumularGarantia(costoTotal, aTiempo),
+      // Lo que habría ganado pagando en fecha, para poder mostrárselo.
+      garantia_si_puntual: acumularGarantia(costo, true),
       supera_dias_castigo: diasMora >= DIAS_CASTIGO // §6: a los 90 días se castiga
     };
   }
@@ -741,54 +771,42 @@
 
   /* ------------------------------------------------ simulador de crédito */
 
-  /** Qué garantía le faltaría para bajar al siguiente escalón de tasa. */
-  function siguienteEscalon(capital, garantiaDisponible) {
-    var c = numeroPositivo(capital, 'capital');
-    var g = numeroNoNegativo(garantiaDisponible, 'garantiaDisponible');
-    var metas = [{ cob: 0.5, tasa: 0.12 }, { cob: 1, tasa: 0.05 }, { cob: 2, tasa: 0.03 }];
-    for (var i = 0; i < metas.length; i++) {
-      var necesaria = metas[i].cob * c;
-      if (g < necesaria) {
-        return {
-          tasa: metas[i].tasa,
-          garantia_necesaria: Math.ceil(necesaria),
-          falta: Math.ceil(necesaria - g)
-        };
-      }
-    }
-    return null; // ya está en la mejor tasa
-  }
-
   /**
-   * Simula un crédito: qué paga, qué tasa le toca por su cobertura, cuánto se
-   * ahorra frente a no tener garantía, y cuánta garantía le deja el crédito.
-   * Es el cálculo que hay detrás de la calculadora de la app.
+   * Simula un crédito. Con el costo fijo en 20% ya no hay tasas que comparar:
+   * lo único que la garantía decide es CUÁNTO puede pedir. Así que la
+   * simulación responde otra pregunta — ¿le alcanza el cupo?, ¿cuánto le falta
+   * de garantía si no?, ¿cuánto le sube el cupo al pagarlo?
+   *
+   * @param {number} capital            lo que quiere pedir
+   * @param {number} garantiaDisponible su garantía de hoy
+   * @param {object} [opciones] {nivelSocio, fechaDesembolso}
    */
   function simularCredito(capital, garantiaDisponible, opciones) {
     opciones = opciones || {};
     var c = numeroPositivo(capital, 'capital');
     var g = numeroNoNegativo(garantiaDisponible, 'garantiaDisponible');
+    var nivel = normalizarNivel(opciones.nivelSocio || 'bronce', 'opciones.nivelSocio');
 
-    var tasa = calcularTasa(g, c);
-    var costo = Math.round(c * tasa);
-    var deja = acumularGarantia(costo);
-
-    var tasaSin = calcularTasa(0, c);
-    var costoSin = Math.round(c * tasaSin);
+    var costo = calcularCosto(c);
+    var deja = acumularGarantia(costo, true);
+    var cupo = calcularCupo(g, nivel);
+    var necesaria = garantiaNecesariaPara(c, nivel);
 
     return {
       capital: c,
-      tasa: tasa,
+      tasa: TASA_CREDITO,
       costo: costo,
       total_a_pagar: c + costo,
-      cobertura: g / c,
-      cubierto: g >= c,                    // la garantía ya solventa el crédito
       garantia_disponible: g,
+      cupo: cupo,
+      dentro_del_cupo: c <= cupo,
+      // Si se pasa: cuánta garantía necesitaría para que le alcanzara.
+      garantia_necesaria: necesaria,
+      falta_garantia: Math.max(0, necesaria - g),
+      // Lo que el crédito le devuelve al pagarlo.
       garantia_que_deja: deja,
       garantia_despues: g + deja,
-      sin_garantia: { tasa: tasaSin, costo: costoSin, total_a_pagar: c + costoSin },
-      ahorro: costoSin - costo,            // lo que le ahorra su historial, en pesos
-      siguiente_escalon: siguienteEscalon(c, g),
+      cupo_despues: calcularCupo(g + deja, nivel),
       fecha_corte: opciones.fechaDesembolso ? calcularFechaCorte(opciones.fechaDesembolso) : null
     };
   }
@@ -797,19 +815,22 @@
    * Cómo crece la garantía si el socio repite un crédito del mismo tamaño.
    * Sirve para mostrarle el camino en vez de pedirle que se lo imagine.
    */
-  function proyectarCrecimiento(garantiaInicial, capital, vueltas, nivelSocio) {
+  function proyectarCrecimiento(garantiaInicial, capital, vueltas, nivelSocio, opcionesCrecimiento) {
+    opcionesCrecimiento = opcionesCrecimiento || {};
     var g = numeroNoNegativo(garantiaInicial, 'garantiaInicial');
     var c = numeroPositivo(capital, 'capital');
     var n = enteroNoNegativo(vueltas == null ? 6 : vueltas, 'vueltas');
     var nivel = normalizarNivel(nivelSocio || 'bronce');
     var pasos = [];
     for (var i = 1; i <= n; i++) {
-      var tasa = calcularTasa(g, c);
-      var costo = Math.round(c * tasa);
-      var gana = acumularGarantia(costo);
+      // Cada vuelta pide todo el cupo que tiene en ese momento: así se ve la
+      // escalera de verdad, no un crédito del mismo tamaño repetido.
+      var pide = opcionesCrecimiento.pideElCupo ? Math.max(c, calcularCupo(g, nivel)) : c;
+      var costo = calcularCosto(pide);
+      var gana = acumularGarantia(costo, true);
       g += gana;
       pasos.push({
-        credito: i, tasa: tasa, costo: costo,
+        credito: i, capital: pide, costo: costo,
         garantia_ganada: gana, garantia: g, cupo: calcularCupo(g, nivel)
       });
     }
@@ -841,6 +862,7 @@
       // La última cuota absorbe el resto de la división, para no perder pesos.
       var capital = (i === n - 1) ? saldo : cuotaBase;
       var costo = Math.round(saldo * TASA_PLAN_DE_PAGOS);
+      var gana = acumularGarantia(costo, true);
       cuotas.push({
         numero: i + 1,
         fecha_corte: fechas[i],
@@ -848,11 +870,11 @@
         capital: capital,
         costo: costo,
         total: capital + costo,
-        garantia_generada: acumularGarantia(costo)
+        garantia_generada: gana
       });
       totalCosto += costo;
       totalPagar += capital + costo;
-      totalGarantia += acumularGarantia(costo);
+      totalGarantia += gana;
       saldo -= capital;
     }
 
@@ -890,7 +912,12 @@
     }
 
     var capital = numeroPositivo(credito.capital, 'credito.capital');
-    var tasa = opciones.tasaVigente != null ? opciones.tasaVigente : credito.tasa_aplicada;
+    /* La prórroga cuesta lo mismo que el crédito. Los créditos nuevos van todos
+       al 20%; a los que se pactaron con otra tasa se les respeta la suya, que
+       para eso se guardó (subirles el precio a mitad de camino sería cambiarles
+       las reglas después de haberles prestado). */
+    var tasa = opciones.tasaVigente != null ? opciones.tasaVigente
+             : (credito.tasa_aplicada != null ? credito.tasa_aplicada : TASA_CREDITO);
     numeroPositivo(tasa, 'credito.tasa_aplicada');
     if (tasa > 1) throw new RangeError('credito.tasa_aplicada: se esperaba decimal (0.20), llegó ' + tasa);
 
@@ -939,7 +966,7 @@
       ok: true,
       credito: actualizado,
       costo_prorroga: costo,
-      garantia_generada: acumularGarantia(costo), // cambio 26-jul-2026: sí acumula
+      garantia_generada: acumularGarantia(costo, true), // cambio 26-jul-2026: sí acumula
       fecha_corte_anterior: iso(corteActual),
       fecha_corte_nueva: nuevoCorte,
       prorrogas_restantes: permitidas - (usadas + 1),
@@ -951,7 +978,7 @@
         nota: 'Prórroga ' + (usadas + 1) + '/' + permitidas + ': corte ' +
           iso(corteActual) + ' → ' + nuevoCorte,
         genera_garantia: true,
-        garantia_generada: acumularGarantia(costo)
+        garantia_generada: acumularGarantia(costo, true)
       },
       plan_de_pagos: null
     };
@@ -963,6 +990,7 @@
     // Fase 2 — las seis del documento (§12)
     calcularFechaCorte: calcularFechaCorte,
     calcularTasa: calcularTasa,
+    calcularCosto: calcularCosto,
     calcularCupo: calcularCupo,
     acumularGarantia: acumularGarantia,
     evaluarNivel: evaluarNivel,
@@ -985,7 +1013,6 @@
 
     // Calculadora y proyecciones
     simularCredito: simularCredito,
-    siguienteEscalon: siguienteEscalon,
     proyectarCrecimiento: proyectarCrecimiento,
     proyeccionNiveles: proyeccionNiveles,
     garantiaNecesariaPara: garantiaNecesariaPara,
@@ -994,7 +1021,6 @@
     detalleFechaCorte: detalleFechaCorte,
     cortesSiguientes: cortesSiguientes,
     cortesNominalesDelMes: cortesNominalesDelMes,
-    calcularCobertura: calcularCobertura,
     construirPlanDePagos: construirPlanDePagos,
 
     // Calendario
@@ -1012,7 +1038,7 @@
 
     // Constantes de negocio, para que la UI no las repita a mano
     NIVELES: NIVELES,
-    ESCALONES_TASA: ESCALONES_TASA,
+    TASA_CREDITO: TASA_CREDITO,
     DATOS_KYC: DATOS_KYC,
     CUPON_KYC_MAXIMO: CUPON_KYC_MAXIMO,
     GARANTIA_POR_REFERIDO: GARANTIA_POR_REFERIDO,
@@ -1022,6 +1048,7 @@
     TOPE_DURO_PRORROGAS: TOPE_DURO_PRORROGAS,
     REQUISITOS_NIVEL: REQUISITOS_NIVEL,
     FACTOR_GARANTIA: FACTOR_GARANTIA,
+    FACTOR_GARANTIA_MORA: FACTOR_GARANTIA_MORA,
     DIAS_VENTANA_MINIMA: DIAS_VENTANA_MINIMA,
     CUOTAS_PLAN_DE_PAGOS: CUOTAS_PLAN_DE_PAGOS,
     TASA_PLAN_DE_PAGOS: TASA_PLAN_DE_PAGOS,

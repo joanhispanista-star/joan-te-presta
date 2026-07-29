@@ -288,7 +288,7 @@
       <div class="card"><div class="modal-b cfg">
         <div class="field"><label>Tu nombre / negocio (para los mensajes)</label><input id="cfgNeg"></div>
         <div class="field"><label>Tu WhatsApp</label><input id="cfgWa" inputmode="numeric" placeholder="Ej: 3001234567"><div class="help">A este número te llegan las solicitudes de crédito y los datos que te manden los clientes desde su app. Sin esto, al cliente le toca buscarte el chat a mano.</div></div>
-        <div class="field"><label>Costo administrativo base (%)</label><input type="number" id="cfgCosto" step="0.5"><div class="help">Plano sobre el capital, sin importar los días. La prórroga cobra este mismo porcentaje.</div></div>
+        <div class="field"><label>Costo del crédito</label><input type="text" id="cfgCosto" readonly style="opacity:.7"><div class="help">Fijo desde el 29-jul-2026: siempre el 20% del capital, sin importar los días ni la garantía. La prórroga cobra ese mismo porcentaje. Los créditos que ya estaban abiertos con otro costo lo conservan.</div></div>
         <div class="field"><label>Tasa de usura de referencia (% E.A.)</label><input type="number" id="cfgUsura" step="0.01" placeholder="Ej: 28.5"><div class="help">Marca en rojo los créditos cuya E.A. equivalente lo supere. 0 = sin alerta.</div></div>
         <div class="field"><label>PIN de acceso</label><input type="text" id="cfgPin" maxlength="6"></div>
         <button class="btn btn-rojo" onclick="guardarCfg()">Guardar ajustes</button>
@@ -328,6 +328,9 @@
 <script src="socios/motor.js"></script>
 <script>
 const KEY='joan_socios_v1';
+/* El costo es fijo desde el 29-jul-2026. Se lee del motor para que no haya dos
+   verdades; si algún día cambia, cambia en un solo lugar. */
+const TASA_FIJA_PCT=Math.round(MotorReglas.TASA_CREDITO*100);
 const MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 const PLANTILLAS_DEF={
   bienvenida:{t:'Bienvenida · crédito nuevo',x:'Al desembolsar, para agradecer la confianza',m:'¡Hola {nombre}! De corazón, gracias por confiar en {negocio} 🙂 Ya te quedó entregado tu crédito de {monto}. Con calma te recuerdo que tu primera cuota de {saldo} es el {fecha_pago}. Aquí estamos para acompañarte en lo que necesites.'},
@@ -803,7 +806,7 @@ function nuevoCredito(preId){
     <div class="two"><div class="field"><label>Celular</label><input id="qTel" inputmode="numeric" value="${pre?(pre.telefono||''):''}"></div>
       <div class="field"><label>Correo <span class="muted">(opcional)</span></label><input id="qEmail" value="${pre?(pre.email||''):''}"></div></div>
     <div class="two"><div class="field"><label>Capital a desembolsar</label><input id="qCap" type="number" inputmode="numeric" placeholder="$" oninput="calcRapido()"></div>
-      <div class="field"><label>Costo (%)</label><input id="qCosto" type="number" step="0.5" value="${DB.config.costoBasePct}" oninput="calcRapido()"></div></div>
+      <div class="field"><label>Costo</label><input id="qCosto" type="text" readonly value="20% fijo" style="opacity:.7"></div></div>
     <div class="field"><label>Fecha de desembolso</label><input id="qFecha" type="date" value="${hoyISO()}" oninput="calcRapido()"></div>
     <div class="field"><label>Próxima quincena de pago <span class="muted">(opcional — para clientes que ya venían de antes)</span></label><input id="qCiclo" type="date" oninput="calcRapido()"><div class="help">Déjalo vacío y lo calculo solo desde la fecha de desembolso.</div></div>
     <div class="calc" id="qCalc"></div>
@@ -826,7 +829,7 @@ function parsearPegado(){
   calcRapido();
 }
 function calcRapido(){
-  const cap=Number(gv('qCap'))||0,costo=Number(gv('qCosto'))||0,f=gv('qFecha'),ovr=gv('qCiclo'),c=document.getElementById('qCalc'); if(!c)return;
+  const cap=Number(gv('qCap'))||0,costo=TASA_FIJA_PCT,f=gv('qFecha'),ovr=gv('qCiclo'),c=document.getElementById('qCalc'); if(!c)return;
   if(!f||!cap){ c.innerHTML='<span class="muted" style="font-size:12.5px">Completa capital y fecha.</span>'; return; }
   const pago=ovr||quincenaQueAplica(f),dias=diasEntre(f,pago),k=cap*costo/100,total=cap+k,ea=eaEquivalente(costo,dias),usura=DB.config.tasaUsuraEA,sobre=usura>0&&ea>usura;
   c.innerHTML=`<div class="calc-row"><span>Ganancia (costo ${costo}%)</span><span class="v gano">${COP(k)}</span></div>
@@ -836,7 +839,7 @@ function calcRapido(){
     ${sobre?`<div style="color:var(--rojo);font-size:12px;margin-top:5px">⚠️ Supera la usura de referencia (${usura}%).</div>`:''}`;
 }
 function guardarRapido(){
-  const nombre=gv('qNombre'),tel=gv('qTel'),cap=Number(gv('qCap'))||0,costo=Number(gv('qCosto'))||DB.config.costoBasePct,f=gv('qFecha'),ovr=gv('qCiclo');
+  const nombre=gv('qNombre'),tel=gv('qTel'),cap=Number(gv('qCap'))||0,costo=TASA_FIJA_PCT,f=gv('qFecha'),ovr=gv('qCiclo');
   if(!nombre||!tel){ alert('Pon al menos nombre y celular.'); return; } if(cap<=0){ alert('Pon el capital.'); return; }
   let s=DB.socios.find(x=>tel&&(x.telefono||'').replace(/\D/g,'').slice(-10)===tel.replace(/\D/g,'').slice(-10));
   if(!s){ s={id:'C'+Date.now(),numero:nextNumCliente(),nombre,telefono:tel,email:gv('qEmail'),whatsappIgual:true,referencia:{nombre:'',telefono:''},gestiones:[],fechaRegistro:new Date().toISOString()}; DB.socios.push(s); }
@@ -899,7 +902,7 @@ function abonarCapital(id){ const p=DB.prestamos.find(x=>x.id===id),m=Number(doc
   p.abonosCapital=p.abonosCapital||[]; p.abonosCapital.push({fecha:hoyISO(),monto:m}); addComp(p,'abono',m); guardar(); abrirPago(id); render(); }
 
 /* ===== CONFIG ===== */
-function pintarCfg(){ document.getElementById('cfgNeg').value=DB.config.negocio; document.getElementById('cfgCosto').value=DB.config.costoBasePct; document.getElementById('cfgUsura').value=DB.config.tasaUsuraEA||''; document.getElementById('cfgPin').value=DB.config.pin; document.getElementById('cfgWa').value=DB.config.whatsapp||'';
+function pintarCfg(){ document.getElementById('cfgNeg').value=DB.config.negocio; document.getElementById('cfgCosto').value=TASA_FIJA_PCT+'% del capital'; document.getElementById('cfgUsura').value=DB.config.tasaUsuraEA||''; document.getElementById('cfgPin').value=DB.config.pin; document.getElementById('cfgWa').value=DB.config.whatsapp||'';
   const c=sbCfg(); document.getElementById('cfgSbUrl').value=c.url||''; document.getElementById('cfgSbAnon').value=c.anon||''; document.getElementById('cfgSbClave').value=c.clave||'';
   document.getElementById('sbEstado').textContent=(c.url&&c.anon&&c.clave)?'Conexión lista. Subí los historiales cuando quieras.':'Todavía sin conectar. Corré socios/supabase.sql y pegá acá los tres datos.'; }
 
@@ -1251,7 +1254,7 @@ function crearDesdeSolicitud(id){
   const dig=v=>String(v||'').replace(/\D/g,'');
   const cli=DB.socios.find(x=>dig(x.cedula)===dig(s.cedula));
   if(!cli) return alert('No tengo ficha de "'+s.nombre+'" con la cédula '+(s.cedula||'—')+'.\n\nCreale la ficha primero desde Clientes y volvé a intentar.');
-  const pct=Math.round(Number(s.tasa)*100)||DB.config.costoBasePct||20;
+  const pct=TASA_FIJA_PCT;
   if(!confirm('Crear el crédito de '+cli.nombre+':\n\n'
     +'• Capital: '+COP(s.capital)+'\n• Costo: '+pct+'% ('+COP(s.costo)+')\n'
     +'• Total a devolver: '+COP(s.total)+'\n• Paga el: '+(s.fecha_corte?fmtFecha(s.fecha_corte):'—')+'\n'
@@ -1413,7 +1416,7 @@ function sincronizarSocios(){
   })
   .catch(()=>{ est.textContent='No hubo conexión. Revisá el internet y volvé a intentar.'; });
 }
-function guardarCfg(){ DB.config.negocio=gv('cfgNeg')||'Joan'; DB.config.costoBasePct=Number(gv('cfgCosto'))||20; DB.config.tasaUsuraEA=Number(gv('cfgUsura'))||0; DB.config.pin=gv('cfgPin')||'1234'; DB.config.whatsapp=gv('cfgWa').replace(/\D/g,''); guardar(); render(); alert('Ajustes guardados.'); }
+function guardarCfg(){ DB.config.negocio=gv('cfgNeg')||'Joan'; DB.config.costoBasePct=TASA_FIJA_PCT; DB.config.tasaUsuraEA=Number(gv('cfgUsura'))||0; DB.config.pin=gv('cfgPin')||'1234'; DB.config.whatsapp=gv('cfgWa').replace(/\D/g,''); guardar(); render(); alert('Ajustes guardados.'); }
 function exportar(){ const b=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'}),a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='respaldo-joan-te-presta.json'; a.click(); }
 function importar(e){ const f=e.target.files[0]; if(!f)return; const inp=e.target; const r=new FileReader();
   r.onload=()=>{ try{ const d=JSON.parse(r.result); const socios=d.socios||d.clientes, prest=d.prestamos;

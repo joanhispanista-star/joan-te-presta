@@ -4,7 +4,7 @@
 
    Estrategia: la página y el motor van "red primero" (así una versión nueva
    llega apenas hay señal), y lo demás "caché primero" (los iconos no cambian). */
-const CACHE = 'socio-v3';
+const CACHE = 'socio-v4';
 const BASE = new URL('./', self.location).pathname;
 const ARCHIVOS = [
   'socio.html', 'motor.js', 'socio.webmanifest',
