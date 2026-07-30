@@ -1,11 +1,11 @@
 ==========================================================
-   JOAN TE PRESTA · CRM — En tu computador y en tu celular
+   PLATADEUNA · PANEL — En tu computador y en tu celular
 ==========================================================
 
 ----------------------------------------------------------
 📱 USAR EN EL CELULAR COMO APP (con cámara y GPS)
 ----------------------------------------------------------
-Ahora el CRM se puede instalar en el teléfono como una app
+Ahora el panel se puede instalar en el teléfono como una app
 (ícono en la pantalla de inicio, pantalla completa, funciona
 sin internet una vez abierto), y permite TOMAR FOTOS con la
 cámara y GUARDAR LA UBICACIÓN (GPS) de cada cliente.
@@ -98,7 +98,7 @@ QUÉ NECESITAS (nada más):
 ----------------------------------------------------------
 PASO A PASO PARA EMPEZAR HOY
 ----------------------------------------------------------
-1. Guarda "crm.html" en tu carpeta (ej: Documentos\Joan te presta\).
+1. Guarda "crm.html" en tu carpeta (ej: Documentos\PlataDeuna\).
 2. Doble clic en "crm.html" → abre en Chrome.
 3. PIN inicial: 1234  → cámbialo en Ajustes ⚙️.
 4. En Ajustes pon: tu nombre/negocio, el costo base (20%)
@@ -106,7 +106,7 @@ PASO A PASO PARA EMPEZAR HOY
 5. Empieza a cargar tus clientes activos con "＋ Nuevo crédito".
    - Para clientes que ya venían de antes, usa el campo opcional
      "Próxima quincena de pago" para poner la fecha real.
-6. Sugerencia: ancla Chrome a la barra de tareas y deja el CRM
+6. Sugerencia: ancla Chrome a la barra de tareas y deja el panel
    como página fijada para abrirlo rápido cada día.
 
 ----------------------------------------------------------

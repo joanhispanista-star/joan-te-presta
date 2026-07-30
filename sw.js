@@ -1,5 +1,10 @@
-/* Joan te presta · CRM — service worker (funcionamiento sin internet) */
-const CACHE = 'joan-crm-v1';
+/* PlataDeuna · Panel — service worker (funcionamiento sin internet)
+
+   OJO: acá el panel va CACHÉ PRIMERO, incluido crm.html. Cada vez que se publique una
+   versión nueva hay que subirle el número a CACHE, porque "activate" borra las cachés
+   con otro nombre y ese es el único momento en que el navegador suelta la copia vieja.
+   Sin eso, un navegador que ya abrió el panel se queda con la versión anterior para siempre. */
+const CACHE = 'panel-plata-v2';
 const ASSETS = [
   'crm.html', 'index.html', 'manifest.webmanifest',
   'icon-192.png', 'icon-512.png', 'icon-512-maskable.png', 'apple-touch-icon.png'

@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
-<title>Joan te presta · Mi cuenta de socio</title>
+<title>PlataDeuna · Mi cuenta de socio</title>
 <meta name="theme-color" content="#0C0A0B">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Mi cuenta">
+<meta name="apple-mobile-web-app-title" content="PlataDeuna">
 <link rel="manifest" href="socio.webmanifest">
 <link rel="apple-touch-icon" href="icono-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icono-192.png">
@@ -92,8 +92,11 @@ h1,h2,h3{margin:0;font-family:ui-serif,"New York","Iowan Old Style",Georgia,"Tim
 
 /* ---------------- cabecera ---------------- */
 .cab{padding:calc(env(safe-area-inset-top) + 18px) 0 20px; border-radius:0 0 var(--r) var(--r)}
-.marca{display:flex;align-items:center;gap:9px;font-size:12px;letter-spacing:.1em;
-  text-transform:uppercase;font-weight:700;color:rgba(251,247,244,.55)}
+/* Sin caja alta y con poco tracking a propósito: el nombre va pegado, y en mayúsculas
+   ("PLATADEUNA") queda un bloque de diez letras sin corte. La D mayúscula es lo único
+   que marca dónde empieza la segunda palabra, así que la caja alta la borraría. */
+.marca{display:flex;align-items:center;gap:9px;font-size:13px;letter-spacing:.02em;
+  font-weight:700;color:rgba(251,247,244,.72)}
 .pin{width:24px;height:24px;border-radius:7px;background:var(--rojo);color:#fff;
   display:grid;place-items:center;font-weight:800;font-size:13px;letter-spacing:0}
 .cab h1{font-size:21px;margin-top:12px;color:var(--blanco-laca)}
@@ -223,13 +226,13 @@ details[open] summary::after{content:' ↑'}
 <!-- ======================= ENTRAR ======================= -->
 <div id="pEntrar">
   <div class="cab laca"><div class="lustre"><i></i></div><div class="wrap">
-    <div class="marca"><span class="pin">J</span> Joan te presta</div>
+    <div class="marca"><span class="pin">P</span> PlataDeuna</div>
     <h1>Mi cuenta de socio</h1>
   </div></div>
   <div class="wrap">
     <div class="card">
       <h3 class="tit">Entrá con tus datos</h3>
-      <p class="sub">Los mismos que le diste a Joan cuando abriste tu crédito.</p>
+      <p class="sub">Los mismos que diste cuando abriste tu crédito.</p>
       <label for="inCedula">Tu cédula</label>
       <input id="inCedula" type="text" inputmode="numeric" autocomplete="off" placeholder="Ej: 52111222">
       <label for="inTel">Últimos 4 números de tu celular</label>
@@ -239,7 +242,7 @@ details[open] summary::after{content:' ↑'}
       <div id="avisoDemo" class="aviso oculto"></div>
     </div>
     <div class="pie">Tus datos solo los ves vos, con tu cédula y tu celular.<br>
-      ¿No te reconoce? Escribile a Joan y lo revisa.</div>
+      ¿No te reconoce? Escribinos y lo revisamos.</div>
   </div>
 </div>
 
@@ -248,7 +251,7 @@ details[open] summary::after{content:' ↑'}
 <!-- ======================= CUENTA ======================= -->
 <div id="pCuenta" class="oculto">
   <div class="cab laca"><div class="lustre"><i></i></div><div class="wrap">
-    <div class="marca"><span class="pin">J</span> Joan te presta</div>
+    <div class="marca"><span class="pin">P</span> PlataDeuna</div>
     <h1 id="uNombre">—</h1>
     <div class="chip-nivel" id="uNivel">—</div>
   </div></div>
@@ -305,7 +308,8 @@ function porWhatsApp(texto) {
   var destino = n ? (n.length <= 10 ? '57' + n : n) : '';
   window.open('https://wa.me/' + destino + '?text=' + encodeURIComponent(texto), '_blank', 'noopener');
 }
-function nombreJoan() { return (S && S.negocio && S.negocio.nombre) || 'Joan'; }
+/* La marca. Se llama así por historia; devuelve el nombre del negocio. */
+function nombreJoan() { return (S && S.negocio && S.negocio.nombre) || 'PlataDeuna'; }
 
 /* ===================== SOCIOS DE PRUEBA ===================== */
 var DEMOS = (function () {
@@ -329,7 +333,7 @@ var DEMOS = (function () {
   return [
     { cedula: '52111222', tel4: '2233', nombre: 'Ana Ruiz',
       datos: {
-        negocio: { nombre: 'Joan te presta', whatsapp: '' },
+        negocio: { nombre: 'PlataDeuna', whatsapp: '' },
         comunidad: { socios: 34, creditos_pagados: 218, garantia_construida: 9840000,
                      prestado: 52400000, puntualidad: 87, desde: fechaRel(-540) },
         socio: { codigo: 'CL-0007' },
@@ -342,7 +346,7 @@ var DEMOS = (function () {
       } },
     { cedula: '79333444', tel4: '5566', nombre: 'Luis Gómez',
       datos: {
-        negocio: { nombre: 'Joan te presta', whatsapp: '' },
+        negocio: { nombre: 'PlataDeuna', whatsapp: '' },
         comunidad: { socios: 34, creditos_pagados: 218, garantia_construida: 9840000,
                      prestado: 52400000, puntualidad: 87, desde: fechaRel(-540) },
         socio: { codigo: 'CL-0008' },
@@ -414,7 +418,7 @@ function entrar() {
     body: JSON.stringify({ p_cedula: ced, p_tel4: tel })
   }).then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('http ' + r.status)); })
     .then(function (j) {
-      if (!j) return fallo('No encontré esa cédula con ese celular. Revisá los números, y si siguen sin salir escribile a Joan.');
+      if (!j) return fallo('No encontré esa cédula con ese celular. Revisá los números, y si siguen sin salir escribinos.');
       j.cedula = ced; j.tel4 = tel;
       abrir(j, false);
     }).catch(function () { fallo('No pude conectarme. Revisá que tengas internet y volvé a intentar.'); });
@@ -445,7 +449,7 @@ function abrir(resp, esDemo) {
     perfil: (d.perfil && d.perfil.datos) || {},
     referidos: d.referidos || { total: 0, pagaron: 0, lista: [] },
     resumen: d.resumen || {},
-    negocio: d.negocio || { nombre: 'Joan', whatsapp: '' },
+    negocio: d.negocio || { nombre: 'PlataDeuna', whatsapp: '' },
     comunidad: d.comunidad || null
   };
   NUEVOS = {};
@@ -767,7 +771,7 @@ function armarICS(c) {
     'Si ese día no podés pagar todo, se puede dejar una prórroga o un plan de pagos, ' +
     'y aunque te atrases seguís siendo socio.';
   return plegarICS([
-    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Joan te presta//Socios//ES',
+    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//PlataDeuna//Socios//ES',
     'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'BEGIN:VEVENT',
     'UID:' + (c.codigo || 'credito') + '-' + f + '@joantepresta',
     'DTSTAMP:' + sello, 'DTSTART:' + f + 'T090000', 'DTEND:' + f + 'T093000',
@@ -823,7 +827,7 @@ function pedirCredito() {
     '<div class="aviso">Si llegado el día no podés pagar todo, no se te cierra nada: podés dejar ' +
     'una prórroga o un plan de pagos. Y aunque te atrases, seguís siendo socio.</div>' +
     '<button class="btn" style="margin-top:16px" onclick="mandarSolicitud(' + MONTO + ')">' +
-      'Mandarle la solicitud a ' + esc(nombreJoan().split(' ')[0]) + '</button>' +
+      'Mandar la solicitud' + '</button>' +
     '<button class="btn sec sm" style="margin-top:10px" onclick="irA(\'calc\')">Volver</button>' +
     '</div>';
   $('cuerpo').innerHTML = '<div class="panel">' + h + '</div>';
@@ -845,7 +849,7 @@ function mandarSolicitud(monto) {
     }).catch(function () {});
   }
 
-  var texto = 'Hola ' + nombreJoan() + ', soy ' + S.nombre +
+  var texto = 'Hola, soy ' + S.nombre +
     (S.codigo ? ' (' + S.codigo + ')' : '') + '. Quiero pedir un crédito:\n\n' +
     '• Monto: ' + COP(s.capital) + '\n' +
     '• Costo (' + pct(s.tasa) + '): ' + COP(s.costo) + '\n' +
@@ -859,7 +863,7 @@ function mandarSolicitud(monto) {
   $('cuerpo').innerHTML = '<div class="panel"><div class="card">' +
     '<h3 class="tit" style="text-align:center">Solicitud enviada</h3>' +
     '<p class="sub" style="text-align:center">Se abrió WhatsApp con tu solicitud lista. ' +
-    'Si no se abrió, escribile a ' + esc(nombreJoan()) + ' directamente.</p>' +
+    'Si no se abrió, escribinos directamente.</p>' +
     '<div class="aviso">Pediste <b>' + COP(s.capital) + '</b> para pagar <b>' + COP(s.total_a_pagar) +
     '</b> el ' + fmtFecha(s.fecha_corte) + '.</div>' +
     '<button class="btn sec" style="margin-top:14px" onclick="irA(\'inicio\')">Volver al inicio</button>' +
@@ -873,7 +877,7 @@ function vistaGarantia() {
   var h = '<div class="card laca"><div class="etq">Tu garantía hoy</div>' +
     '<div class="cifra">' + COP(S.garantia) + '</div>' +
     fila('Ganada pagando', COP(g.acumulada || 0)) +
-    fila('Que te presta Joan por tus datos', COP(g.cupon || 0)) +
+    fila('Que te prestamos por tus datos', COP(g.cupon || 0)) +
     (g.referidos ? fila('Por la gente que trajiste', COP(g.referidos)) : '') +
     '<div class="sep"></div>' +
     fila('Con eso podés pedir', COP(S.cupo)) +
@@ -887,7 +891,7 @@ function vistaGarantia() {
   var enCamino = M.garantiaPorDatos(conNuevos).total - yaTiene.total;
 
   h += '<div class="card"><h3 class="tit">Completá tu perfil</h3>' +
-    '<p class="sub">Joan te presta garantía por cada dato que le des. Con todo completo son ' +
+    '<p class="sub">Te prestamos garantía por cada dato que nos des. Con todo completo son ' +
     COP(M.CUPON_KYC_MAXIMO) + ', y eso es cupo desde el primer día.</p>' +
     '<div class="cifra sm">' + COP(yaTiene.total) +
       '<span class="muted" style="font-size:15px;font-weight:400"> de ' + COP(M.CUPON_KYC_MAXIMO) + '</span></div>' +
@@ -905,7 +909,7 @@ function vistaGarantia() {
       return '<div class="dato' + (NUEVOS[d.id] ? ' ok' : '') + '">' +
         '<span class="tick">' + (NUEVOS[d.id] ? '✓' : '') + '</span>' +
         '<span class="txt"><span class="nm" style="font-size:14px;font-weight:600">' + esc(d.etiqueta) + '</span>' +
-        '<span class="ay">' + esc(NUEVOS[d.id] ? 'Listo para mandarle a Joan' : d.ayuda) + '</span></span>' +
+        '<span class="ay">' + esc(NUEVOS[d.id] ? 'Listo para mandarlo' : d.ayuda) + '</span></span>' +
         '<span class="vl">+' + COPc(d.valor) + '</span></div>';
     }).join('') + '</div>' +
     '<button class="btn" style="margin-top:16px" onclick="abrirPerfil()">Completar y ganar ' +
@@ -1013,7 +1017,7 @@ function insignias() {
 function abrirPerfil() {
   var faltan = M.garantiaPorDatos(S.perfil).faltantes;
   var h = '<div class="card"><h3 class="tit">Completá lo que te falta</h3>' +
-    '<p class="sub">Escribí lo que puedas. Al final se lo mandás a Joan por WhatsApp y él lo carga; ' +
+    '<p class="sub">Escribí lo que puedas. Al final lo mandás por WhatsApp y lo cargamos; ' +
     'ahí tu cupo sube de verdad.</p>' +
     faltan.map(function (d) {
       if (d.tipo === 'foto' || d.tipo === 'mapa') {
@@ -1032,7 +1036,7 @@ function abrirPerfil() {
         'inputmode="' + (d.tipo === 'numero' ? 'numeric' : 'text') + '" oninput="tocarDato(this)">';
     }).join('') +
     '<div class="aviso" id="perfilSuma" style="margin-top:16px">Todavía no has escrito nada.</div>' +
-    '<button class="btn" onclick="mandarPerfil()">Mandarle mis datos a Joan</button>' +
+    '<button class="btn" onclick="mandarPerfil()">Mandar mis datos</button>' +
     '<button class="btn sec sm" style="margin-top:10px" onclick="irA(\'garantia\')">Volver</button>' +
     '</div>';
   $('cuerpo').innerHTML = '<div class="panel">' + h + '</div>';
@@ -1045,7 +1049,7 @@ function tocarDato(el) {
   var suma = 0;
   M.DATOS_KYC.forEach(function (d) { if (NUEVOS[d.id]) suma += d.valor; });
   $('perfilSuma').innerHTML = suma
-    ? 'Con lo que llevás escrito, tu garantía sube <b>' + COP(suma) + '</b> en cuanto Joan lo cargue.'
+    ? 'Con lo que llevás escrito, tu garantía sube <b>' + COP(suma) + '</b> en cuanto lo carguemos.'
     : 'Todavía no has escrito nada.';
 }
 
@@ -1058,7 +1062,7 @@ function mandarPerfil() {
     var d = M.DATOS_KYC.filter(function (x) { return x.id === id; })[0];
     return t + (d ? d.valor : 0);
   }, 0);
-  porWhatsApp('Hola ' + nombreJoan() + ', soy ' + S.nombre + '. Te mando mis datos para completar mi perfil:\n\n' +
+  porWhatsApp('Hola, soy ' + S.nombre + '. Te mando mis datos para completar mi perfil:\n\n' +
     ids.map(function (id) { return '• ' + (etq[id] || id) + ': ' + NUEVOS[id]; }).join('\n') +
     '\n\nCon esto mi garantía sube ' + COP(suma) + '.');
 }
@@ -1074,10 +1078,10 @@ function invitar() {
 function pie() {
   if (S.deEnlace) {
     return '<div class="pie">Estos son tus números al ' + fmtFecha(S.actualizado || hoyISO()) + '.<br>' +
-      'Cuando pagues o pidas otro crédito, pedile a Joan el enlace de nuevo.</div>';
+      'Cuando pagues o pidas otro crédito, pedinos el enlace de nuevo.</div>';
   }
   return '<div class="pie">' + (S.actualizado ? 'Datos al ' + fmtFecha(S.actualizado) + '.<br>' : '') +
-    'Si ves algo raro en tus números, escribile a Joan.' +
+    'Si ves algo raro en tus números, escribinos.' +
     (S.esDemo ? '' : '<br><a href="#" onclick="salir();return false" style="color:inherit">Salir</a>') +
     '</div>';
 }
@@ -1091,7 +1095,7 @@ function salir() {
 /* ======================= CONFIGURACIÓN ======================= */
 function pantallaConfig() {
   document.body.innerHTML =
-    '<div class="cab laca"><div class="wrap"><div class="marca"><span class="pin">J</span> Joan te presta</div>' +
+    '<div class="cab laca"><div class="wrap"><div class="marca"><span class="pin">P</span> PlataDeuna</div>' +
     '<h1>Conectar la base</h1></div></div>' +
     '<div class="wrap"><div class="card">' +
     '<p class="sub" style="margin:0">Pegá los dos datos de Supabase (Settings → API). ' +

@@ -1,5 +1,5 @@
 -- ===========================================================================
--- Joan te presta · socios — base para que el cliente vea su historial
+-- PlataDeuna · socios — base para que el cliente vea su historial
 --
 -- CÓMO CORRERLO (una sola vez):
 --   1. Entrá a supabase.com y creá un proyecto NUEVO para esto. No reutilices

@@ -1,5 +1,5 @@
 /* ============================================================================
- * Joan te presta — Motor de reglas v1
+ * PlataDeuna — Motor de reglas v1
  * Fase 2 del orden de build (§12): motor puro. Sin UI, sin base de datos,
  * sin dependencias externas.
  *

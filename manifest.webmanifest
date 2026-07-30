@@ -1,7 +1,7 @@
 {
-  "name": "Joan te presta · CRM",
-  "short_name": "Joan te presta",
-  "description": "CRM de préstamos: clientes, créditos, cobros por WhatsApp, fotos y ubicaciones.",
+  "name": "PlataDeuna · Panel",
+  "short_name": "PlataDeuna",
+  "description": "Panel de socios: clientes, créditos, cobros por WhatsApp, fotos y ubicaciones.",
   "start_url": "crm.html",
   "scope": "./",
   "display": "standalone",

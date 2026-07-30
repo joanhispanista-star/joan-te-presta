@@ -4,7 +4,9 @@
 
    Estrategia: la página y el motor van "red primero" (así una versión nueva
    llega apenas hay señal), y lo demás "caché primero" (los iconos no cambian). */
-const CACHE = 'socio-v4';
+/* v5: cambió la marca a PlataDeuna y los iconos pasaron de la J a la P. Los iconos van
+   caché primero, así que sin subir este número el celular seguiría mostrando la J vieja. */
+const CACHE = 'socio-v5';
 const BASE = new URL('./', self.location).pathname;
 const ARCHIVOS = [
   'socio.html', 'motor.js', 'socio.webmanifest',

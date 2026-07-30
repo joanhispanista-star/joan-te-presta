@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Joan te presta · CRM</title>
+<title>PlataDeuna · Panel</title>
 <meta name="theme-color" content="#D81E2C">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Joan te presta">
+<meta name="apple-mobile-web-app-title" content="PlataDeuna">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
@@ -200,7 +200,7 @@
 
 <div class="app" id="app" style="display:none">
   <aside class="side">
-    <div class="brand"><span class="seal">J</span><div class="bt"><div class="l1">Joan te presta</div><div class="l2">CRM</div></div></div>
+    <div class="brand"><span class="seal">P</span><div class="bt"><div class="l1">PlataDeuna</div><div class="l2">Panel</div></div></div>
     <div class="sep"></div>
     <button class="navbtn on" data-v="dash"><span class="ic">📊</span> Tablero</button>
     <button class="navbtn" data-v="cred"><span class="ic">💵</span> Créditos</button>
@@ -349,7 +349,7 @@ function cargar(){
   let d={}; try{ d=JSON.parse(localStorage.getItem(KEY)||'{}'); }catch(e){}
   d.socios=d.socios||d.clientes||[]; d.prestamos=d.prestamos||[]; d.papelera=d.papelera||[];
   d.plantillas=Object.assign({},...Object.keys(PLANTILLAS_DEF).map(k=>({[k]:PLANTILLAS_DEF[k].m})),d.plantillas||{});
-  d.config=Object.assign({costoBasePct:20,tasaUsuraEA:0,pin:'1234',negocio:'Joan',whatsapp:''},d.config||{});
+  d.config=Object.assign({costoBasePct:20,tasaUsuraEA:0,pin:'1234',negocio:'PlataDeuna',whatsapp:''},d.config||{});
   d.contadores=Object.assign({cliente:0,credito:0},d.contadores||{});
   d.socios.forEach(s=>{ s.gestiones=s.gestiones||[]; s.referencia=s.referencia||{nombre:'',telefono:''}; if(s.whatsappIgual===undefined)s.whatsappIgual=true;
     if(s.cedulaFrenteFoto===undefined)s.cedulaFrenteFoto=s.cedulaFoto||null; if(s.cedulaReversoFoto===undefined)s.cedulaReversoFoto=null; if(s.selfieFoto===undefined)s.selfieFoto=null;
@@ -467,7 +467,7 @@ function plantillaPara(p){ const e=estadoPrestamo(p);
   if(e==='proximo')return diasPara(p)>=2?'recordatorio2':'recordatorio1'; return 'venceHoy'; }
 function waNum(s){ return (s.whatsappIgual?s.telefono:(s.whatsappNumero||s.telefono))||''; }
 function aplicarVars(txt,p,s,enlace){ return txt
-  .replaceAll('{nombre}',(s.nombre||'').split(' ')[0]||s.nombre||'').replaceAll('{negocio}',DB.config.negocio||'Joan')
+  .replaceAll('{nombre}',(s.nombre||'').split(' ')[0]||s.nombre||'').replaceAll('{negocio}',DB.config.negocio||'PlataDeuna')
   .replaceAll('{monto}',COP(p?capitalActual(p):0)).replaceAll('{saldo}',COP(p?totalCiclo(p):0))
   .replaceAll('{prorroga}',COP(p?K(p):0)).replaceAll('{fecha_pago}',p?fmtFecha(p.cicloActual):'')
   .replaceAll('{dias_mora}',p?String(diasMora(p)):'0')
@@ -632,8 +632,8 @@ function esc(s){ return String(s).replace(/[\\;,\n]/g,m=>({'\\':'\\\\',';':'\\;'
 function exportarICS(){
   let ev=''; function add(uid,iso,sum,desc){ const a=iso.replace(/-/g,''),n=isoLocal(new Date(new Date(iso+'T00:00:00').getTime()+86400000)).replace(/-/g,'');
     ev+='BEGIN:VEVENT\r\nUID:'+uid+'@joancrm\r\nDTSTART;VALUE=DATE:'+a+'\r\nDTEND;VALUE=DATE:'+n+'\r\nSUMMARY:'+esc(sum)+'\r\nDESCRIPTION:'+esc(desc||'')+'\r\nEND:VEVENT\r\n'; }
-  DB.prestamos.forEach(p=>{ add(p.id+'-d',p.fechaDesembolso,'💵 Desembolso '+p.socioNombre+' '+COP(p.capital),'Joan te presta'); if(!p.pagado)add(p.id+'-v',p.cicloActual,'⏰ Cobro '+p.socioNombre+' '+COP(totalCiclo(p)),'Prórroga posible: '+COP(K(p))); });
-  const ics='BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Joan te presta//CRM//ES\r\nCALSCALE:GREGORIAN\r\n'+ev+'END:VCALENDAR';
+  DB.prestamos.forEach(p=>{ add(p.id+'-d',p.fechaDesembolso,'💵 Desembolso '+p.socioNombre+' '+COP(p.capital),(DB.config.negocio||'PlataDeuna')); if(!p.pagado)add(p.id+'-v',p.cicloActual,'⏰ Cobro '+p.socioNombre+' '+COP(totalCiclo(p)),'Prórroga posible: '+COP(K(p))); });
+  const ics='BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//PlataDeuna//CRM//ES\r\nCALSCALE:GREGORIAN\r\n'+ev+'END:VCALENDAR';
   const b=new Blob([ics],{type:'text/calendar'}),a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='joan-te-presta-calendario.ics'; a.click();
   alert('Listo. En Google Calendar: Configuración → Importar y exportar → Importar, y sube este archivo.');
 }
@@ -641,7 +641,7 @@ function exportarICS(){
 /* ===== PLANTILLAS ===== */
 const PLT_VARS=['nombre','negocio','monto','saldo','prorroga','fecha_pago','dias_mora','enlace'];
 function aplicarVarsDemo(txt){ return (txt||'')
-  .replaceAll('{nombre}','María').replaceAll('{negocio}',DB.config.negocio||'Joan')
+  .replaceAll('{nombre}','María').replaceAll('{negocio}',DB.config.negocio||'PlataDeuna')
   .replaceAll('{monto}','$400.000').replaceAll('{saldo}','$480.000')
   .replaceAll('{prorroga}','$80.000').replaceAll('{fecha_pago}','30 de junio de 2026')
   .replaceAll('{dias_mora}','3').replaceAll('{enlace}',URL_APP_DEF+'#…'); }
@@ -798,7 +798,7 @@ function nuevoCredito(preId){
   const pre=preId?DB.socios.find(x=>x.id===preId):null;
   openModal(pre?'Nuevo crédito · '+codCliente(pre)+' '+pre.nombre:'Nuevo crédito',`
     <div class="sub-h">Pega el mensaje de WhatsApp (opcional)</div>
-    <textarea class="pastebox" id="qPaste" placeholder="Ej:&#10;Hola Joan, soy Carlos Rincón 311 245 7788&#10;correo carlos@gmail.com&#10;Necesito 400.000"></textarea>
+    <textarea class="pastebox" id="qPaste" placeholder="Ej:&#10;Hola, soy Carlos Rincón 311 245 7788&#10;correo carlos@gmail.com&#10;Necesito 400.000"></textarea>
     <button class="btn btn-negro btn-sm" style="margin-top:10px" onclick="parsearPegado()">Leer y prellenar</button>
     <div id="qParsed" style="margin-top:12px;display:none;font-size:13px;background:#fafafa;border:1px solid var(--linea);border-radius:10px;padding:12px"></div>
     <div class="sub-h">Datos del crédito</div>
@@ -982,7 +982,7 @@ function migrarSocio(s){
   return {
     // Para que las solicitudes y los datos que mande el cliente te lleguen a vos
     // y no tenga que buscarte el chat.
-    negocio:{ nombre:DB.config.negocio||'Joan', whatsapp:String(DB.config.whatsapp||'').replace(/\D/g,'') },
+    negocio:{ nombre:DB.config.negocio||'PlataDeuna', whatsapp:String(DB.config.whatsapp||'').replace(/\D/g,'') },
     comunidad:fotoComunidad(),
     socio:{codigo:codCliente(s)},
     garantia:{ total:g.total, acumulada:g.acumulada, cupon:g.cupon, referidos:g.referidos, nivel,
@@ -1298,7 +1298,7 @@ function pedirDatos(id){
   const kyc=MotorReglas.garantiaPorDatos(datosKycDe(s));
   if(!kyc.faltantes.length) return alert(s.nombre+' ya tiene el perfil completo.');
   const nom=(s.nombre||'').split(' ')[0];
-  const msg='Hola '+nom+' 🙂 Te escribe '+(DB.config.negocio||'Joan')+'. Te cuento algo que te sirve: '
+  const msg='Hola '+nom+' 🙂 Te escribe '+(DB.config.negocio||'PlataDeuna')+'. Te cuento algo que te sirve: '
     +'con los datos que ya tenés cargados llevás '+COP(kyc.total)+' de garantía, y si me pasás lo que falta '
     +'te subo '+COP(MotorReglas.CUPON_KYC_MAXIMO-kyc.total)+' más, que es más cupo para cuando lo necesites.\n\n'
     +'Me faltaría:\n'+kyc.faltantes.map(f=>'• '+f.etiqueta+' ('+COP(f.valor)+')').join('\n')
@@ -1438,11 +1438,11 @@ function sincronizarSocios(){
   })
   .catch(()=>{ est.textContent='No hubo conexión. Revisá el internet y volvé a intentar.'; });
 }
-function guardarCfg(){ DB.config.negocio=gv('cfgNeg')||'Joan'; DB.config.costoBasePct=TASA_FIJA_PCT; DB.config.tasaUsuraEA=Number(gv('cfgUsura'))||0; DB.config.pin=gv('cfgPin')||'1234'; DB.config.whatsapp=gv('cfgWa').replace(/\D/g,''); guardar(); render(); alert('Ajustes guardados.'); }
+function guardarCfg(){ DB.config.negocio=gv('cfgNeg')||'PlataDeuna'; DB.config.costoBasePct=TASA_FIJA_PCT; DB.config.tasaUsuraEA=Number(gv('cfgUsura'))||0; DB.config.pin=gv('cfgPin')||'1234'; DB.config.whatsapp=gv('cfgWa').replace(/\D/g,''); guardar(); render(); alert('Ajustes guardados.'); }
 function exportar(){ const b=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'}),a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='respaldo-joan-te-presta.json'; a.click(); }
 function importar(e){ const f=e.target.files[0]; if(!f)return; const inp=e.target; const r=new FileReader();
   r.onload=()=>{ try{ const d=JSON.parse(r.result); const socios=d.socios||d.clientes, prest=d.prestamos;
-    if(!Array.isArray(socios)&&!Array.isArray(prest)){ alert('Ese archivo no parece un respaldo de Joan te presta.'); inp.value=''; return; }
+    if(!Array.isArray(socios)&&!Array.isArray(prest)){ alert('Ese archivo no parece un respaldo de PlataDeuna.'); inp.value=''; return; }
     const nS=(socios||[]).length, nP=(prest||[]).length;
     if(!confirm('Esto REEMPLAZA todos los datos actuales por el respaldo:\n• '+nS+' cliente(s)\n• '+nP+' crédito(s)\n\n¿Continuar? Si no está seguro, primero exporte un respaldo del estado actual.')){ inp.value=''; return; }
     localStorage.setItem(KEY,JSON.stringify(d)); DB=cargar(); render(); alert('Respaldo importado: '+nS+' cliente(s) y '+nP+' crédito(s).');
