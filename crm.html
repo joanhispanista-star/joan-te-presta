@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>PlataDeuna · Panel</title>
-<meta name="theme-color" content="#D81E2C">
+<meta name="theme-color" content="#0C0A0B">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -16,12 +16,28 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <style>
+  /* La misma paleta que la app del socio (socios/socio.html). Tres reglas, y de ahí
+     sale todo lo demás:
+       · el ROJO es solo la marca y el gesto de avanzar — nunca un estado ni una cifra;
+       · los estados van en ÁMBAR, del más tibio al más fuerte;
+       · el ORO es el acento del dinero y de los filetes sobre la laca negra. No hay verde.
+     Los nombres de las variables se dejaron como estaban para no reescribir 115 usos;
+     lo que cambió es a qué color apunta cada una. */
   :root{
-    --negro:#17181c;--negro-2:#24262e;--negro-3:#2f323c;
-    --rojo:#D81E2C;--rojo-osc:#A8121E;--rojo-claro:#fbe7e9;--rojo-tint:#fdf2f3;
-    --blanco:#ffffff;--hueso:#f3f2f1;--gris:#6c6f76;--gris-claro:#9a9da4;
-    --wa:#25D366;--linea:rgba(23,24,28,.1);--linea-2:rgba(23,24,28,.06);--r:13px;
-    --verde:#1f8a4c;--verde-tint:#e2efe7;--ambar:#b7791f;--ambar-tint:#fdf2d9;
+    --negro:#0C0A0B;--negro-2:#1A1618;--negro-3:#2A2325;      /* laca negra */
+    --rojo:#D81F26;--rojo-osc:#A8161C;--rojo-claro:#F7E2E0;--rojo-tint:#FCF4F2;
+    /* --gris-claro es la leyenda de 11px bajo cada cifra. A #9A8F89 daba 3,15:1 sobre
+       blanco (no pasa AA); a #7A6F6A da 4,87:1 y sigue leyéndose como un gris secundario. */
+    --blanco:#ffffff;--hueso:#F6F3F0;--gris:#6E6460;--gris-claro:#7A6F6A;
+    --linea:#E9E3DD;--linea-2:#F1ECE7;--r:16px;
+    /* El --oro es el de la app y se usa igual que allá: SOLO en gráfico (filetes,
+       bordes, barras). Sobre papel blanco da 3,3:1 de contraste, que no alcanza para
+       letra chica, así que el oro escrito va en --oro-texto (5,5:1, sí pasa). */
+    --oro:#B98322;--oro-texto:#8A6114;--oro-laca:#E9BE68;--blanco-laca:#FBF7F4;
+    --ambar:#9A5B12;--ambar-tint:#FBF0DE;--ambar-medio:#F3E2C4;
+    /* Quedaron apuntando al ámbar y al rojo: antes eran un verde botella y el verde de
+       WhatsApp. En este sistema no hay verde, y mandar por WhatsApp es avanzar. */
+    --verde:var(--ambar);--verde-tint:var(--ambar-tint);--wa:var(--rojo);
   }
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:'Inter',system-ui,sans-serif;background:var(--hueso);color:var(--negro);-webkit-font-smoothing:antialiased}
@@ -32,31 +48,44 @@
 
   /* PIN */
   .gate{position:fixed;inset:0;background:var(--negro);display:grid;place-items:center;z-index:100;overflow:hidden}
-  .gate::before{content:"JOAN";position:absolute;font-family:'Archivo Black';font-size:34vw;color:transparent;-webkit-text-stroke:2px rgba(216,30,44,.13);top:50%;left:50%;transform:translate(-50%,-50%);white-space:nowrap;pointer-events:none}
+  /* Monograma de fondo. Antes era la palabra "JOAN" a 34vw. */
+  .gate::before{content:"P";position:absolute;font-family:Georgia,'Times New Roman',serif;font-size:52vw;color:transparent;-webkit-text-stroke:2px rgba(233,190,104,.10);top:50%;left:50%;transform:translate(-50%,-50%);white-space:nowrap;pointer-events:none;line-height:1}
   .gate-card{background:var(--blanco);border-radius:18px;padding:38px;width:340px;text-align:center;box-shadow:0 30px 80px -28px #000;position:relative;z-index:2}
-  .gate-card .mk{font-family:'Archivo Black';font-size:38px;color:var(--negro);line-height:.9}
-  .gate-card .mk em{color:var(--rojo);font-style:normal}
-  .gate-card .tag{font-size:13px;color:var(--gris);margin:6px 0 22px;font-weight:600;letter-spacing:.02em}
+  .gate-card .mk{display:flex;align-items:center;justify-content:center;gap:11px;
+    font-family:Georgia,'Times New Roman',serif;font-size:29px;color:var(--negro);line-height:1}
+  .gate-card .mk .sello{width:40px;height:40px;border-radius:11px;background:var(--rojo);color:#fff;
+    display:grid;place-items:center;font-size:22px;font-weight:700;flex:none}
+  .gate-card .tag{font-size:12px;color:var(--gris);margin:8px 0 22px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
   .gate-card input{width:100%;text-align:center;font-family:'JetBrains Mono';font-size:24px;letter-spacing:.4em;padding:12px;border:2px solid var(--linea);border-radius:10px;background:#fff}
-  .gate-card input:focus{outline:none;border-color:var(--rojo)}
+  .gate-card input:focus{outline:none;border-color:var(--oro);box-shadow:0 0 0 3px rgba(185,131,34,.14)}
   .gate-card button{width:100%;margin-top:14px;background:var(--rojo);border:none;padding:13px;border-radius:10px;font-weight:700;font-size:15px;color:#fff}
   .gate-err{color:var(--rojo);font-size:12.5px;margin-top:10px;min-height:16px;font-weight:600}
 
   .app{display:grid;grid-template-columns:228px 1fr;min-height:100vh}
-  .side{background:var(--negro);color:#dfe0e3;padding:18px 14px;display:flex;flex-direction:column;gap:3px;position:sticky;top:0;height:100vh;overflow:hidden}
+  /* La barra lateral es la misma "laca negra" de la app: degradado radial, banda
+     diagonal y un filete de oro en el borde. */
+  .side{color:var(--blanco-laca);padding:18px 14px;display:flex;flex-direction:column;gap:3px;position:sticky;top:0;height:100vh;overflow:hidden;
+    background-color:var(--negro);      /* debajo del degradado, por si no pinta */
+    background-image:
+      linear-gradient(103deg, transparent 32%, rgba(255,255,255,.05) 45%, transparent 60%),
+      radial-gradient(140% 110% at 16% -25%, #2A2224 0%, #14100F 45%, #0A0809 100%)}
+  .side::after{content:'';position:absolute;top:0;bottom:0;right:0;width:1px;pointer-events:none;
+    background:linear-gradient(to bottom, transparent, rgba(233,190,104,.55) 18%, rgba(233,190,104,.55) 82%, transparent)}
   .side .brand{display:flex;align-items:center;gap:11px;padding:6px 6px 4px;position:relative;z-index:2}
-  .side .brand .seal{width:40px;height:40px;border-radius:11px;background:var(--rojo);color:#fff;display:grid;place-items:center;font-family:'Archivo Black';font-size:20px;flex:none;box-shadow:0 6px 16px -6px var(--rojo)}
-  .side .brand .bt .l1{font-family:'Archivo Black';font-size:16px;color:#fff;line-height:1}
-  .side .brand .bt .l2{font-size:11px;color:var(--rojo);font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-top:3px}
-  .side .sep{height:1px;background:rgba(255,255,255,.08);margin:12px 4px}
-  .navbtn{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;background:none;border:none;color:rgba(223,224,227,.72);font-size:14px;font-weight:600;text-align:left;width:100%;transition:.13s;position:relative;z-index:2}
-  .navbtn:hover{background:rgba(255,255,255,.07);color:#fff}
-  .navbtn.on{background:var(--rojo);color:#fff}
+  .side .brand .seal{width:40px;height:40px;border-radius:11px;background:var(--rojo);color:#fff;display:grid;place-items:center;font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:700;flex:none;box-shadow:0 6px 16px -6px var(--rojo)}
+  .side .brand .bt .l1{font-family:Georgia,'Times New Roman',serif;font-size:18px;color:var(--blanco-laca);line-height:1}
+  .side .brand .bt .l2{font-size:11px;color:rgba(233,190,104,.85);font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-top:4px}
+  .side .sep{height:1px;background:rgba(255,255,255,.12);margin:12px 4px}
+  .navbtn{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;background:none;border:none;color:rgba(251,247,244,.62);font-size:14px;font-weight:600;text-align:left;width:100%;transition:.13s;position:relative;z-index:2}
+  .navbtn:hover{background:rgba(255,255,255,.07);color:var(--blanco-laca)}
+  /* Igual que en la app: la pestaña activa se marca con un filete rojo, no pintándola entera. */
+  .navbtn.on{background:rgba(255,255,255,.09);color:var(--blanco-laca)}
+  .navbtn.on::before{content:'';position:absolute;left:0;top:9px;bottom:9px;width:3px;border-radius:0 3px 3px 0;background:var(--rojo)}
   .navbtn .ic{font-size:16px;width:19px;text-align:center}
-  .side .joanmark{position:absolute;bottom:54px;left:-6px;font-family:'Archivo Black';font-size:62px;color:transparent;-webkit-text-stroke:1.5px rgba(255,255,255,.07);transform:rotate(-90deg);transform-origin:left bottom;pointer-events:none;letter-spacing:2px}
+  .side .marcagua{position:absolute;bottom:54px;left:-6px;font-family:Georgia,'Times New Roman',serif;font-size:62px;color:transparent;-webkit-text-stroke:1.5px rgba(233,190,104,.13);transform:rotate(-90deg);transform-origin:left bottom;pointer-events:none;letter-spacing:2px}
   .side .horario{margin-top:auto;font-size:11px;border-radius:10px;padding:9px 10px;line-height:1.4;position:relative;z-index:2}
-  .horario.ok{background:rgba(255,255,255,.08);color:#cfd2d6;border-left:3px solid var(--wa)}
-  .horario.no{background:rgba(216,30,44,.16);color:#f3c2c6;border-left:3px solid var(--rojo)}
+  .horario.ok{background:rgba(255,255,255,.08);color:rgba(251,247,244,.72);border-left:3px solid rgba(233,190,104,.85)}
+  .horario.no{background:rgba(233,190,104,.13);color:#F2D9A8;border-left:3px solid var(--oro-laca)}
   .horario b{display:block;font-size:11.5px;margin-bottom:2px}
 
   .main{padding:24px 30px;overflow-x:hidden}
@@ -67,7 +96,7 @@
   .btn{display:inline-flex;align-items:center;gap:7px;border:none;font-weight:700;font-size:14px;padding:11px 18px;border-radius:10px;transition:.13s}
   .btn-rojo{background:var(--rojo);color:#fff}.btn-rojo:hover{background:var(--rojo-osc)}
   .btn-negro{background:var(--negro);color:#fff}.btn-negro:hover{background:var(--negro-2)}
-  .btn-wa{background:var(--wa);color:#06381c}.btn-wa:hover{filter:brightness(1.05)}
+  .btn-wa{background:var(--wa);color:#fff}.btn-wa:hover{background:var(--rojo-osc)}
   .btn-ghost{background:#fff;border:1.5px solid var(--linea);color:var(--negro)}.btn-ghost:hover{border-color:var(--rojo);color:var(--rojo)}
   .btn-sm{padding:7px 12px;font-size:13px;border-radius:8px}
   .view{display:none}.view.on{display:block}
@@ -78,10 +107,13 @@
   .kpi .et{font-size:11.5px;color:var(--gris);font-weight:600}
   .kpi .nm{font-family:'JetBrains Mono';font-weight:700;font-size:21px;margin-top:7px}
   .kpi .x{font-size:11px;margin-top:4px;color:var(--gris-claro)}
-  .kpi.gan{border-top-color:var(--rojo)}.kpi.gan .nm{color:var(--rojo)}
-  .kpi.alert{border-top-color:var(--rojo);background:var(--rojo-tint)}.kpi.alert .nm{color:var(--rojo)}
-  .kpi.dark{background:var(--negro);border-color:var(--negro);border-top-color:var(--rojo)}.kpi.dark .et,.kpi.dark .x{color:#b9bcc2}.kpi.dark .nm{color:#fff}
-  .kpi.verde{border-top-color:var(--verde)}.kpi.verde .nm{color:var(--verde)}
+  /* Las cifras nunca van en rojo: la ganancia va en ORO y lo que alerta, en ÁMBAR. */
+  .kpi.gan{border-top-color:var(--oro)}.kpi.gan .nm{color:var(--oro-texto)}
+  /* Dentro de la tarjeta ámbar la leyenda va en ámbar: el gris no alcanza contraste
+     sobre ese fondo, y además queda más coherente. */
+  .kpi.alert{border-top-color:var(--ambar);background:var(--ambar-tint)}.kpi.alert .nm,.kpi.alert .x{color:var(--ambar)}
+  .kpi.dark{background:var(--negro);border-color:var(--negro);border-top-color:var(--oro-laca)}.kpi.dark .et,.kpi.dark .x{color:rgba(251,247,244,.62)}.kpi.dark .nm{color:var(--blanco-laca)}
+  .kpi.verde{border-top-color:var(--oro)}.kpi.verde .nm{color:var(--oro-texto)}
   .kpi-title{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--gris);font-weight:800;margin:4px 0 10px}
 
   .card{background:#fff;border:1px solid var(--linea);border-radius:var(--r);overflow:hidden;margin-bottom:20px}
@@ -91,53 +123,58 @@
   table{width:100%;border-collapse:collapse}
   th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--gris);font-weight:700;padding:10px 18px;border-bottom:1px solid var(--linea)}
   td{padding:11px 18px;border-bottom:1px solid var(--linea-2);font-size:14px;vertical-align:middle}
-  tr:last-child td{border-bottom:none}tr:hover td{background:var(--rojo-tint)}
+  tr:last-child td{border-bottom:none}tr:hover td{background:var(--hueso)}
   .num{font-family:'JetBrains Mono';font-weight:700}.muted{color:var(--gris);font-size:12.5px}
-  .gano{color:var(--rojo);font-family:'JetBrains Mono';font-weight:700}
+  .gano{color:var(--oro-texto);font-family:'JetBrains Mono';font-weight:700}
 
+  /* Los estados van del neutro tibio al ámbar fuerte. Ninguno en rojo: en este sistema
+     el rojo es la marca y el botón que avanza, así que un estado en rojo se leería
+     como algo en lo que hay que hacer clic. */
   .chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:999px;white-space:nowrap}
-  .chip.al-dia{background:#eceef0;color:#3a3d44}
-  .chip.proximo{background:#e6e8ec;color:#2f323c}
-  .chip.hoy{background:var(--negro);color:#fff}
-  .chip.mora{background:var(--rojo);color:#fff}
-  .chip.prorroga{background:#2f323c;color:#fff}
-  .chip.pagado{background:#f0f0f1;color:var(--gris)}
-  .chip.riesgo-bajo{background:var(--verde-tint);color:#0d3b22}
-  .chip.riesgo-medio{background:var(--ambar-tint);color:#5c3d05}
-  .chip.riesgo-alto{background:var(--rojo);color:#fff}
-  .chip.riesgo-nuevo{background:#eceef0;color:#3a3d44}
+  .chip.al-dia{background:#EFEAE5;color:#4A423E}
+  .chip.proximo{background:#E7E0DA;color:#2A2325}
+  .chip.hoy{background:var(--negro);color:var(--blanco-laca)}
+  .chip.mora{background:var(--ambar);color:#fff}
+  .chip.prorroga{background:#2A2325;color:var(--blanco-laca)}
+  .chip.pagado{background:#F1ECE7;color:var(--gris)}
+  .chip.riesgo-bajo{background:#EFEAE5;color:#4A423E}
+  .chip.riesgo-medio{background:var(--ambar-tint);color:var(--ambar)}
+  .chip.riesgo-alto{background:var(--ambar);color:#fff}
+  .chip.riesgo-nuevo{background:#EFEAE5;color:#4A423E}
   tfoot td{font-weight:800;background:var(--hueso);border-top:2px solid var(--negro);border-bottom:none}
-  .ea-bad{color:var(--rojo);font-weight:700}.ea-ok{color:var(--gris)}.warn-ico{cursor:help}
+  .ea-bad{color:var(--ambar);font-weight:700}.ea-ok{color:var(--gris)}.warn-ico{cursor:help}
   .empty{padding:44px 20px;text-align:center;color:var(--gris)}.empty .ic{font-size:32px;opacity:.45}
 
-  .modal{position:fixed;inset:0;background:rgba(23,24,28,.6);display:none;place-items:center;z-index:50;padding:20px}
+  .modal{position:fixed;inset:0;background:rgba(12,10,11,.62);display:none;place-items:center;z-index:50;padding:20px}
   .modal.on{display:grid}
   .modal-card{background:#fff;border-radius:16px;width:100%;max-width:600px;max-height:92vh;overflow-y:auto;box-shadow:0 40px 90px -30px #000}
   .modal-h{padding:17px 22px;border-bottom:1px solid var(--linea);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#fff;z-index:2}
   .modal-h h3{font-size:18px;font-weight:800}.modal-h .x{background:none;border:none;font-size:22px;color:var(--gris)}
   .modal-b{padding:22px}
   .field{margin-bottom:14px;display:flex;flex-direction:column;gap:6px}
-  .field label{font-size:12.5px;font-weight:600;color:#3a3d44}
+  .field label{font-size:12.5px;font-weight:600;color:#4A423E}
   .field input,.field select,.field textarea{font-size:14.5px;padding:10px 12px;border:1.5px solid var(--linea);border-radius:9px;background:#fff;color:var(--negro)}
   .field textarea{resize:vertical;min-height:80px;line-height:1.5}
-  .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--rojo);box-shadow:0 0 0 3px rgba(216,30,44,.12)}
+  /* El foco va en oro, no en rojo: escribir en un campo no es avanzar todavía. */
+  .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--oro);box-shadow:0 0 0 3px rgba(185,131,34,.14)}
   .field .help{font-size:11.5px;color:var(--gris)}
   .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .sub-h{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--rojo);font-weight:800;margin:20px 0 10px;border-top:1px solid var(--linea);padding-top:16px}
+  .sub-h{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--oro-texto);font-weight:800;margin:20px 0 10px;border-top:1px solid var(--linea);padding-top:16px}
   .sub-h:first-child{border:none;padding-top:0;margin-top:0}
-  .calc{background:var(--rojo-tint);border:1px dashed var(--rojo);border-radius:10px;padding:13px;margin:4px 0 14px}
+  .calc{background:var(--hueso);border:1px dashed var(--oro);border-radius:10px;padding:13px;margin:4px 0 14px}
   .calc-row{display:flex;justify-content:space-between;padding:4px 0;font-size:13.5px}.calc-row .v{font-family:'JetBrains Mono';font-weight:700}
   .info-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px dashed var(--linea);font-size:14px;gap:12px}.info-row .k{color:var(--gris);flex:none}.info-row .vv{text-align:right;word-break:break-word}
   .alerta{border-radius:9px;padding:10px 13px;font-size:13px;margin-bottom:14px;line-height:1.45}
-  .alerta.warn{background:var(--rojo-claro);color:#8a1018;border:1px solid rgba(216,30,44,.25)}
-  .alerta.info{background:#f0f0f1;color:#3a3d44;border:1px solid var(--linea)}
-  .preview{background:#e9f7ee;border:1px solid rgba(37,211,102,.3);border-radius:10px;padding:13px;font-size:13.5px;line-height:1.55;white-space:pre-wrap;color:#0d3b22;margin-top:8px}
+  .alerta.warn{background:var(--ambar-tint);color:var(--ambar);border:1px solid var(--ambar-medio)}
+  .alerta.info{background:#F1ECE7;color:#4A423E;border:1px solid var(--linea)}
+  /* La vista previa del mensaje: papel con un filete de oro al costado, como una cita. */
+  .preview{background:var(--hueso);border:1px solid var(--linea);border-left:3px solid var(--oro);border-radius:10px;padding:13px;font-size:13.5px;line-height:1.55;white-space:pre-wrap;color:var(--negro);margin-top:8px}
   .pastebox{min-height:96px;font-size:14px;line-height:1.5;padding:11px;border:1.5px solid var(--linea);border-radius:10px;background:#fff;width:100%;resize:vertical}
 
   .up-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
   .up-row .up{min-height:94px;padding:10px}
   .up-row .up .lbl{font-size:11px}
-  .up{border:1.5px dashed var(--gris-claro);border-radius:11px;padding:14px;text-align:center;cursor:pointer;background:#fafafa;position:relative;min-height:110px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px}
+  .up{border:1.5px dashed var(--gris-claro);border-radius:11px;padding:14px;text-align:center;cursor:pointer;background:#FBF9F7;position:relative;min-height:110px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px}
   .up:hover{border-color:var(--rojo)}.up.ok{border-style:solid;border-color:var(--negro)}
   .up img{position:absolute;inset:6px;width:calc(100% - 12px);height:calc(100% - 12px);object-fit:cover;border-radius:8px}
   .up input{display:none}.up .ic{font-size:22px}
@@ -148,40 +185,41 @@
 
   .plt{background:#fff;border:1px solid var(--linea);border-radius:11px;padding:16px;margin-bottom:13px}
   .plt h4{font-size:14.5px;margin-bottom:4px}.plt .et{font-size:12px;color:var(--gris);margin-bottom:9px}
-  .plt textarea{width:100%;min-height:72px;font-size:13.5px;line-height:1.5;padding:10px;border:1.5px solid var(--linea);border-radius:8px;resize:vertical;background:#fafafa}
-  .plt textarea:focus{outline:none;border-color:var(--rojo);box-shadow:0 0 0 3px rgba(216,30,44,.12)}
+  .plt textarea{width:100%;min-height:72px;font-size:13.5px;line-height:1.5;padding:10px;border:1.5px solid var(--linea);border-radius:8px;resize:vertical;background:#FBF9F7}
+  .plt textarea:focus{outline:none;border-color:var(--oro);box-shadow:0 0 0 3px rgba(185,131,34,.14)}
   .plt-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px}
   .plt-vars{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
   .varchip{font-family:'JetBrains Mono';font-size:11px;font-weight:700;color:var(--gris);background:var(--hueso);border:1px solid var(--linea);border-radius:999px;padding:3px 9px;transition:.12s}
-  .varchip:hover{border-color:var(--rojo);color:var(--rojo);background:#fff}
-  .plt-prev{margin-top:10px;background:#e9f7ee;border:1px solid rgba(37,211,102,.3);border-radius:9px;padding:10px 12px;font-size:13.5px;line-height:1.5;color:#0d3b22;white-space:pre-wrap}
-  .plt-prev .pl{display:block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#1f8a4c;margin-bottom:4px;opacity:.85}
+  .varchip:hover{border-color:var(--oro);color:var(--oro-texto);background:#fff}
+  .plt-prev{margin-top:10px;background:var(--hueso);border:1px solid var(--linea);border-left:3px solid var(--oro);border-radius:9px;padding:10px 12px;font-size:13.5px;line-height:1.5;color:var(--negro);white-space:pre-wrap}
+  .plt-prev .pl{display:block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--oro-texto);margin-bottom:4px;opacity:.85}
 
   .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:12px;flex-wrap:wrap}
   .cal-head h2{font-family:'Archivo Black';font-size:19px}
   .cal-nav{display:flex;gap:6px}
   .cal-nav button{background:#fff;border:1.5px solid var(--linea);border-radius:9px;width:38px;height:38px;font-size:16px}
-  .cal-nav button:hover{border-color:var(--rojo);color:var(--rojo)}
+  .cal-nav button:hover{border-color:var(--oro);color:var(--oro-texto)}
   .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
   .cal-dow{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--gris);font-weight:700;text-align:center;padding:6px 0}
-  .cal-day{background:#fafafa;border:1px solid var(--linea);border-radius:10px;min-height:82px;padding:7px 8px;cursor:pointer;transition:.12s;position:relative;display:flex;flex-direction:column;gap:3px}
-  .cal-day:hover{border-color:var(--rojo);background:#fff}
+  .cal-day{background:#FBF9F7;border:1px solid var(--linea);border-radius:10px;min-height:82px;padding:7px 8px;cursor:pointer;transition:.12s;position:relative;display:flex;flex-direction:column;gap:3px}
+  .cal-day:hover{border-color:var(--oro);background:#fff}
   .cal-day.empty{background:transparent;border:none;cursor:default}
-  .cal-day.quincena{background:var(--rojo-tint);border-color:var(--rojo)}
+  /* Las quincenas se marcan en oro: es un día señalado, no una alarma. */
+  .cal-day.quincena{background:var(--hueso);border-color:var(--oro)}
   .cal-day.hoy{box-shadow:0 0 0 2px var(--negro)}
   .cal-day .dn{font-family:'JetBrains Mono';font-weight:700;font-size:13px}
-  .cal-day .dn small{font-weight:400;color:var(--rojo);font-size:9px;display:block;letter-spacing:.03em}
+  .cal-day .dn small{font-weight:400;color:var(--oro-texto);font-size:9px;display:block;letter-spacing:.03em}
   .cal-ev{font-size:10.5px;border-radius:5px;padding:1px 5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .cal-ev.des{background:#e6e8ec;color:#2f323c}
-  .cal-ev.ven{background:var(--rojo);color:#fff}
-  .cal-ev.pag{background:#e2efe7;color:#226047}
-  .cal-ev.pro{background:#2f323c;color:#fff}
+  .cal-ev.des{background:#E7E0DA;color:#2A2325}
+  .cal-ev.ven{background:var(--ambar);color:#fff}
+  .cal-ev.pag{background:#EFEAE5;color:#4A423E}
+  .cal-ev.pro{background:#2A2325;color:var(--blanco-laca)}
   .cal-more{font-size:10px;color:var(--gris)}
 
   .cfg{max-width:560px}
   @media(max-width:880px){
     .app{grid-template-columns:1fr}.side{position:static;height:auto;flex-direction:row;flex-wrap:wrap}
-    .side .brand{width:100%}.side .joanmark{display:none}.side .horario{margin:8px 0 0}.side .sep{width:100%}
+    .side .brand{width:100%}.side .marcagua{display:none}.side .horario{margin:8px 0 0}.side .sep{width:100%}
     .kpis{grid-template-columns:1fr 1fr}.kpis2{grid-template-columns:1fr 1fr}.main{padding:16px}
     .two{grid-template-columns:1fr}.up-row{grid-template-columns:1fr}
     .cal-day{min-height:60px}.cal-ev{display:none}.cal-day .dot{width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:2px}
@@ -193,7 +231,7 @@
 <body>
 
 <div class="gate" id="gate">
-  <div class="gate-card"><div class="mk">JO<em>A</em>N</div><div class="tag">te presta</div>
+  <div class="gate-card"><div class="mk"><span class="sello">P</span>PlataDeuna</div><div class="tag">Panel</div>
     <input type="password" id="pinInput" inputmode="numeric" maxlength="6" placeholder="••••" aria-label="PIN de acceso">
     <button id="pinBtn">Entrar</button><div class="gate-err" id="pinErr"></div></div>
 </div>
@@ -210,7 +248,7 @@
     <button class="navbtn" data-v="cal"><span class="ic">📅</span> Calendario</button>
     <button class="navbtn" data-v="plantillas"><span class="ic">💬</span> Plantillas</button>
     <button class="navbtn" data-v="cfg"><span class="ic">⚙️</span> Ajustes</button>
-    <div class="joanmark">JOAN</div>
+    <div class="marcagua">PLATA</div>
     <div class="horario" id="horarioBox"></div>
   </aside>
 
@@ -800,7 +838,7 @@ function nuevoCredito(preId){
     <div class="sub-h">Pega el mensaje de WhatsApp (opcional)</div>
     <textarea class="pastebox" id="qPaste" placeholder="Ej:&#10;Hola, soy Carlos Rincón 311 245 7788&#10;correo carlos@gmail.com&#10;Necesito 400.000"></textarea>
     <button class="btn btn-negro btn-sm" style="margin-top:10px" onclick="parsearPegado()">Leer y prellenar</button>
-    <div id="qParsed" style="margin-top:12px;display:none;font-size:13px;background:#fafafa;border:1px solid var(--linea);border-radius:10px;padding:12px"></div>
+    <div id="qParsed" style="margin-top:12px;display:none;font-size:13px;background:#FBF9F7;border:1px solid var(--linea);border-radius:10px;padding:12px"></div>
     <div class="sub-h">Datos del crédito</div>
     <div class="field"><label>Nombre del cliente</label><input id="qNombre" value="${pre?pre.nombre:''}"></div>
     <div class="two"><div class="field"><label>Celular</label><input id="qTel" inputmode="numeric" value="${pre?(pre.telefono||''):''}"></div>
@@ -1388,7 +1426,10 @@ function probarSupabase(){
   const c=sbCfg(), est=document.getElementById('sbEstado');
   const decir=(icono,txt)=>{ est.innerHTML=icono+' '+txt; };
   if(!c.url||!c.anon){ return decir('⚠️','Faltan la URL y la llave. Pegalas arriba y tocá “Guardar conexión”.'); }
-  if(!c.clave){ return decir('⚠️','Falta tu clave de sincronización, la que pusiste en la última línea de supabase.sql.'); }
+  if(!c.clave){ return decir('⚠️','Falta tu clave de sincronización, la que guardaste en la base con supabase.sql.'); }
+  // El SQL exige 12 caracteres como mínimo. Decirlo acá evita una vuelta entera al servidor
+  // para terminar con un “la clave no coincide” que no explica nada.
+  if(c.clave.length<12){ return decir('⚠️','Tu clave de sincronización es muy corta: la base exige <b>12 caracteres o más</b>. Poné una más larga acá y la misma en la base.'); }
   decir('⏳','Probando…');
   const cab={'Content-Type':'application/json',apikey:c.anon,Authorization:'Bearer '+c.anon};
 
@@ -1407,7 +1448,7 @@ function probarSupabase(){
   })
   .then(r=>{
     if(r.status===404) throw {paso:'La función <i>sincronizar_socios</i> no existe. Corré el archivo <b>socios/supabase.sql</b> completo, no solo una parte.'};
-    if(!r.ok&&r.t.indexOf('clave')>=0) throw {paso:'Tu clave de sincronización no coincide con la que quedó en la base. Volvé a correr la última línea del SQL con la clave que estás escribiendo acá.'};
+    if(!r.ok&&r.t.indexOf('clave')>=0) throw {paso:'Tu clave no coincide con la de la base, o todavía no la pusiste allá (sale de fábrica sin definir). En Supabase → SQL Editor corré esta línea sola, con tu clave de verdad:<br><code>update public.config_privada set valor = \'TU-CLAVE\' where clave = \'clave_sync\';</code><br>Tiene que ser exactamente la misma que escribiste acá arriba.'};
     if(!r.ok) throw {paso:'Al escribir respondió '+r.status+': '+r.t.slice(0,140)};
     decir('✅','<b>Todo listo.</b> Las dos funciones responden y tu clave es la correcta. Ya podés tocar “Subir historiales”.');
   })
@@ -1439,7 +1480,7 @@ function sincronizarSocios(){
   .catch(()=>{ est.textContent='No hubo conexión. Revisá el internet y volvé a intentar.'; });
 }
 function guardarCfg(){ DB.config.negocio=gv('cfgNeg')||'PlataDeuna'; DB.config.costoBasePct=TASA_FIJA_PCT; DB.config.tasaUsuraEA=Number(gv('cfgUsura'))||0; DB.config.pin=gv('cfgPin')||'1234'; DB.config.whatsapp=gv('cfgWa').replace(/\D/g,''); guardar(); render(); alert('Ajustes guardados.'); }
-function exportar(){ const b=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'}),a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='respaldo-joan-te-presta.json'; a.click(); }
+function exportar(){ const b=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'}),a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='respaldo-platadeuna.json'; a.click(); }
 function importar(e){ const f=e.target.files[0]; if(!f)return; const inp=e.target; const r=new FileReader();
   r.onload=()=>{ try{ const d=JSON.parse(r.result); const socios=d.socios||d.clientes, prest=d.prestamos;
     if(!Array.isArray(socios)&&!Array.isArray(prest)){ alert('Ese archivo no parece un respaldo de PlataDeuna.'); inp.value=''; return; }

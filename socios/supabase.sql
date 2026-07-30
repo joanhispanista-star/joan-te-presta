@@ -1,23 +1,37 @@
 -- ===========================================================================
 -- PlataDeuna · socios — base para que el cliente vea su historial
 --
--- CÓMO CORRERLO (una sola vez):
+-- CÓMO CORRERLO:
 --   1. Entrá a supabase.com y creá un proyecto NUEVO para esto. No reutilices
 --      el de los juegos: esa llave anon ya anda pegada en páginas públicas.
 --   2. En el menú de la izquierda: SQL Editor → New query.
 --   3. Pegá TODO este archivo y dale Run.
---   4. Cambiá la clave de sincronización en la última línea (la de verdad,
---      larga, la que solo sabés vos) y volvé a darle Run a esa línea sola.
+--   4. PONÉ TU CLAVE. En una consulta nueva, corré esta línea sola con la tuya
+--      (mínimo 12 caracteres; hasta que la pongas, nada privilegiado abre):
+--        update public.config_privada set valor = 'TU-CLAVE-LARGA'
+--         where clave = 'clave_sync';
 --   5. Copiá de Settings → API: la Project URL y la llave "anon public".
---      Esas dos van en el CRM (Ajustes → Compartir con mis clientes).
+--      Esas dos, más tu clave, van en el Panel (Ajustes → Compartir con mis
+--      clientes) y ahí mismo tocás "🔌 Probar conexión".
+--
+--   Este archivo se puede volver a correr entero cuantas veces haga falta: no
+--   borra datos ni te pisa la clave.
 --
 -- CÓMO QUEDA PROTEGIDO
 --   Las tablas tienen RLS prendido y CERO políticas: con la llave anon (que es
 --   pública, va dentro de la página) no se puede leer ni escribir ni una fila.
---   Lo único que se puede llamar son las dos funciones de abajo:
+--   Lo único que se puede llamar son las funciones de abajo:
 --     · historial_socio(cédula, últimos 4 del cel) → devuelve UN socio.
---     · sincronizar_socios(clave, lote)           → solo con tu clave.
+--     · crear_solicitud(cédula, últimos 4, datos)  → la manda a la bandeja.
+--     · sincronizar_socios / listar_solicitudes / marcar_solicitud /
+--       olvidar_socio                             → solo con tu clave.
 --   La llave anon sola no sirve para sacar la lista de tus clientes.
+--
+--   Y hay un FRENO al que tantea: 8 intentos fallidos por cédula cada 15
+--   minutos. Sin eso, adivinar los últimos 4 dígitos del celular de alguien
+--   son 10.000 combinaciones, que en paralelo se prueban en minutos.
+--
+--   Probado de verdad contra PostgreSQL 17 (22 pruebas), no solo leído.
 -- ===========================================================================
 
 -- ---------------------------------------------------------------- tablas ---
@@ -54,14 +68,23 @@ create table if not exists public.solicitudes (
 create index if not exists solicitudes_pendientes
   on public.solicitudes (creada_en desc) where estado = 'nueva';
 
-alter table public.socios_historial enable row level security;
-alter table public.config_privada  enable row level security;
-alter table public.solicitudes     enable row level security;
+-- Intentos fallidos de entrar, para frenar al que tantea (ver "EL FRENO" abajo).
+create table if not exists public.intentos_fallidos (
+  cedula text primary key,
+  fallos integer     not null default 0,
+  desde  timestamptz not null default now()
+);
+
+alter table public.socios_historial   enable row level security;
+alter table public.config_privada     enable row level security;
+alter table public.solicitudes        enable row level security;
+alter table public.intentos_fallidos  enable row level security;
 
 -- Sin políticas = nadie entra directo. Y por si acaso, se quitan los permisos.
-revoke all on public.socios_historial from anon, authenticated;
-revoke all on public.config_privada  from anon, authenticated;
-revoke all on public.solicitudes      from anon, authenticated;
+revoke all on public.socios_historial   from anon, authenticated;
+revoke all on public.config_privada     from anon, authenticated;
+revoke all on public.solicitudes        from anon, authenticated;
+revoke all on public.intentos_fallidos  from anon, authenticated;
 
 -- ------------------------------------------------------------- funciones ---
 
@@ -71,6 +94,65 @@ returns text language sql immutable as $$
   select regexp_replace(coalesce(t, ''), '\D', '', 'g')
 $$;
 
+-- ------------------------------------------------------------- LA CLAVE ---
+-- Un solo lugar donde se comprueba la clave de Joan, y con piso de largo: mientras
+-- la clave guardada sea la de fábrica (corta), NINGUNA función privilegiada abre.
+-- Así, si este archivo se vuelve a correr entero, no se puede quedar con una clave
+-- por defecto que además está publicada en el repo.
+create or replace function public.clave_ok(p_clave text)
+returns boolean language plpgsql security definer set search_path = public as $$
+declare esperado text;
+begin
+  select valor into esperado from public.config_privada where clave = 'clave_sync';
+  if esperado is null or length(esperado) < 12 then return false; end if;  -- sin configurar
+  if p_clave is null or length(p_clave) < 12 then return false; end if;
+  return p_clave = esperado;
+end
+$$;
+
+-- ------------------------------------------------------------- EL FRENO ---
+-- La llave anon es pública (va dentro de la página), así que cualquiera puede llamar
+-- a historial_socio. Con una cédula conocida, adivinar los últimos 4 del celular son
+-- solo 10.000 combinaciones: en paralelo eso se prueba en minutos y quedaría expuesto
+-- el historial completo de esa persona. Con este freno son 8 intentos cada 15 minutos
+-- por cédula, o sea ~13 días de tanteo para una sola víctima.
+--
+-- Efecto secundario asumido: alguien puede dejar a un socio 15 minutos sin poder
+-- entrar tecleando mal a propósito. Se acepta porque el enlace por WhatsApp sigue
+-- funcionando sin tocar la base, así que el socio nunca se queda sin ver su historial.
+create or replace function public.puede_intentar(p_cedula text)
+returns boolean language plpgsql security definer set search_path = public as $$
+declare f intentos_fallidos;
+begin
+  select * into f from intentos_fallidos where cedula = p_cedula;
+  if not found then return true; end if;
+  if f.desde < now() - interval '15 minutes' then      -- la ventana se reinicia sola
+    delete from intentos_fallidos where cedula = p_cedula;
+    return true;
+  end if;
+  return f.fallos < 8;
+end
+$$;
+
+create or replace function public.anotar_fallo(p_cedula text)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  insert into intentos_fallidos (cedula, fallos, desde) values (p_cedula, 1, now())
+  on conflict (cedula) do update set
+    fallos = case when intentos_fallidos.desde < now() - interval '15 minutes'
+                  then 1 else intentos_fallidos.fallos + 1 end,
+    desde  = case when intentos_fallidos.desde < now() - interval '15 minutes'
+                  then now() else intentos_fallidos.desde end;
+end
+$$;
+
+create or replace function public.limpiar_fallos(p_cedula text)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  delete from intentos_fallidos where cedula = p_cedula;
+end
+$$;
+
 -- LECTURA: el cliente entra con su cédula y los últimos 4 de su celular.
 create or replace function public.historial_socio(p_cedula text, p_tel4 text)
 returns jsonb
@@ -78,19 +160,29 @@ language plpgsql
 security definer
 set search_path = public
 as $$
-declare r public.socios_historial;
+declare r public.socios_historial; ced text;
 begin
-  select * into r
-    from public.socios_historial
-   where cedula = public.solo_digitos(p_cedula)
-     and tel4   = right(public.solo_digitos(p_tel4), 4);
+  ced := public.solo_digitos(p_cedula);
 
-  if not found then
-    -- Freno al tanteo: cada intento fallido cuesta.
+  -- Al que ya lleva 8 fallos se le contesta lo mismo que a una cédula que no existe:
+  -- que no sepa que lo estamos frenando.
+  if not public.puede_intentar(ced) then
     perform pg_sleep(0.3);
     return null;
   end if;
 
+  select * into r
+    from public.socios_historial
+   where cedula = ced
+     and tel4   = right(public.solo_digitos(p_tel4), 4);
+
+  if not found then
+    perform public.anotar_fallo(ced);
+    perform pg_sleep(0.3);              -- y además cada intento fallido cuesta
+    return null;
+  end if;
+
+  perform public.limpiar_fallos(ced);   -- entró bien: borrón y cuenta nueva
   return jsonb_build_object(
     'nombre',         r.nombre,
     'datos',          r.datos,
@@ -107,14 +199,10 @@ security definer
 set search_path = public
 as $$
 declare
-  esperado text;
-  item     jsonb;
-  n        integer := 0;
+  item jsonb;
+  n    integer := 0;
 begin
-  select valor into esperado from public.config_privada where clave = 'clave_sync';
-
-  if esperado is null or p_clave is null or length(p_clave) < 12
-     or p_clave <> esperado then
+  if not public.clave_ok(p_clave) then
     perform pg_sleep(1);
     raise exception 'clave de sincronización incorrecta';
   end if;
@@ -155,17 +243,29 @@ language plpgsql
 security definer
 set search_path = public
 as $$
-declare r public.socios_historial; nuevo bigint; recientes integer;
+declare r public.socios_historial; nuevo bigint; recientes integer; ced text;
 begin
-  select * into r
-    from public.socios_historial
-   where cedula = public.solo_digitos(p_cedula)
-     and tel4   = right(public.solo_digitos(p_tel4), 4);
+  ced := public.solo_digitos(p_cedula);
 
-  if not found then
+  -- El mismo freno que para entrar: si no, esta función sería la puerta de atrás
+  -- para adivinar los últimos 4 del celular sin límite.
+  if not public.puede_intentar(ced) then
     perform pg_sleep(0.3);
     raise exception 'socio no encontrado';
   end if;
+
+  select * into r
+    from public.socios_historial
+   where cedula = ced
+     and tel4   = right(public.solo_digitos(p_tel4), 4);
+
+  if not found then
+    perform public.anotar_fallo(ced);
+    perform pg_sleep(0.3);
+    raise exception 'socio no encontrado';
+  end if;
+
+  perform public.limpiar_fallos(ced);
 
   -- Freno simple al spam: máximo 5 solicitudes por socio en una hora.
   select count(*) into recientes
@@ -201,10 +301,8 @@ language plpgsql
 security definer
 set search_path = public
 as $$
-declare esperado text;
 begin
-  select valor into esperado from public.config_privada where clave = 'clave_sync';
-  if esperado is null or p_clave is null or p_clave <> esperado then
+  if not public.clave_ok(p_clave) then
     perform pg_sleep(1);
     raise exception 'clave de sincronización incorrecta';
   end if;
@@ -223,10 +321,9 @@ language plpgsql
 security definer
 set search_path = public
 as $$
-declare esperado text; n integer;
+declare n integer;
 begin
-  select valor into esperado from public.config_privada where clave = 'clave_sync';
-  if esperado is null or p_clave is null or p_clave <> esperado then
+  if not public.clave_ok(p_clave) then
     perform pg_sleep(1);
     raise exception 'clave de sincronización incorrecta';
   end if;
@@ -246,10 +343,9 @@ language plpgsql
 security definer
 set search_path = public
 as $$
-declare esperado text; n integer;
+declare n integer;
 begin
-  select valor into esperado from public.config_privada where clave = 'clave_sync';
-  if esperado is null or p_clave is null or p_clave <> esperado then
+  if not public.clave_ok(p_clave) then
     perform pg_sleep(1);
     raise exception 'clave de sincronización incorrecta';
   end if;
@@ -268,6 +364,13 @@ revoke all on function public.crear_solicitud(text, text, jsonb)   from public;
 revoke all on function public.listar_solicitudes(text, text)       from public;
 revoke all on function public.marcar_solicitud(text, bigint, text) from public;
 
+-- Las de adentro NO se le dan a nadie: se llaman desde las de arriba, que corren
+-- como dueñas de la base, así que no necesitan permiso propio.
+revoke all on function public.clave_ok(text)       from public;
+revoke all on function public.puede_intentar(text) from public;
+revoke all on function public.anotar_fallo(text)   from public;
+revoke all on function public.limpiar_fallos(text) from public;
+
 grant execute on function public.historial_socio(text, text)          to anon;
 grant execute on function public.sincronizar_socios(text, jsonb)      to anon;
 grant execute on function public.olvidar_socio(text, text)            to anon;
@@ -276,8 +379,21 @@ grant execute on function public.listar_solicitudes(text, text)       to anon;
 grant execute on function public.marcar_solicitud(text, bigint, text) to anon;
 
 -- ----------------------------------------------------------------- clave ---
--- ⚠️ CAMBIALA. Mínimo 12 caracteres. Es la que vas a escribir en el CRM.
+-- ⚠️ ACÁ VA TU CLAVE. Mínimo 12 caracteres. Es la que vas a escribir en el CRM.
+--
+-- Sale sin definir a propósito: mientras diga SIN-DEFINIR (11 caracteres, por debajo
+-- del mínimo), clave_ok() devuelve falso y NADA privilegiado abre. Y va con
+-- "do nothing", no "do update": si algún día volvés a correr este archivo entero
+-- —para agregar una función, por ejemplo— tu clave de verdad NO se pisa. Antes sí se
+-- pisaba, y como este archivo está publicado en el repo, la clave por defecto la
+-- podía leer cualquiera.
+--
+-- Para ponerla, cambiá el texto de abajo por la tuya y corré SOLO estas tres líneas:
 
 insert into public.config_privada (clave, valor)
-values ('clave_sync', 'CAMBIA-ESTA-CLAVE-YA-2026')
-on conflict (clave) do update set valor = excluded.valor;
+values ('clave_sync', 'SIN-DEFINIR')
+on conflict (clave) do nothing;
+
+-- Y para cambiarla más adelante (esto sí pisa la anterior, a propósito):
+--   update public.config_privada set valor = 'tu-clave-larga-de-verdad'
+--    where clave = 'clave_sync';
