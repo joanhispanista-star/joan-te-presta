@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="es-CO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tu Garantía · Tu historial es tu garantía</title>
+<meta name="description" content="Crédito por quincena para gente que trabaja. Cada peso que pagas se te vuelve garantía: pides más y, cuando la tengas, más barato. Solo se entra con código de invitación.">
+<meta name="theme-color" content="#0C0A0B">
+<meta name="robots" content="index,follow">
+<link rel="apple-touch-icon" href="app/icono-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="app/icono-192.png">
+
+<!-- La tarjeta que se ve al compartir el enlace por WhatsApp. Este negocio corre por
+     WhatsApp: un enlace sin tarjeta llega como texto pelado, que es justo como llegan
+     las estafas. Con tarjeta, quien lo recibe ve la marca antes de tocar nada.
+     OJO: las rutas de og:image y og:url tienen que ser ABSOLUTAS — WhatsApp no
+     resuelve rutas relativas. Al cambiar de dominio hay que actualizarlas. -->
+<link rel="canonical" href="https://tugarantia.co/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Tu Garantía">
+<meta property="og:locale" content="es_CO">
+<meta property="og:url" content="https://tugarantia.co/">
+<meta property="og:title" content="Tu historial es tu garantía">
+<meta property="og:description" content="Crédito por quincena para gente que trabaja. Sin fiador. Cada peso que pagas se te vuelve garantía. Solo con invitación.">
+<meta property="og:image" content="https://tugarantia.co/portada.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Tu Garantía — Tu historial es tu garantía">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Tu historial es tu garantía">
+<meta name="twitter:description" content="Crédito por quincena para gente que trabaja. Sin fiador. Solo con invitación.">
+<meta name="twitter:image" content="https://tugarantia.co/portada.png">
+<style>
+/* ===========================================================================
+   La misma casa que la app: laca negra, papel blanco y tres colores con un
+   oficio cada uno.
+     · AMARILLO — lo que el socio construyó. Solo sobre la laca.
+     · AZUL     — el préstamo con garantía, y lo que explica.
+     · ROJO     — la marca y el gesto de avanzar. Nunca un estado.
+     · ÁMBAR    — los estados y las advertencias. Solo sobre papel.
+   El amarillo y el ámbar no comparten superficie nunca, así que no se confunden.
+
+   Una sola cara a propósito: es la fachada de un negocio, no un documento que
+   se lea en modo oscuro. La laca ES el fondo, no un tema.
+   =========================================================================== */
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --laca:#0C0A0B; --papel:#FFFFFF; --hueso:#F6F3F0;
+  --amarillo:#F5C542; --amarillo-suave:rgba(245,197,66,.16);
+  --azul:#1B4FD8; --azul-laca:#7FA8FF; --azul-tinte:#EDF2FE;
+  --rojo:#D81F26; --rojo-osc:#A8161C; --rojo-tinte:#FCF4F2;
+  --ambar:#9A5B12; --ambar-tinte:#FAF2E4;
+  /* --gris-claro era #8A817C y daba 3,45:1 sobre el hueso: por debajo del 4,5:1 que
+     pide AA para texto normal, y lo usan los rótulos de sección y el pie. En una
+     página que lee gente en un celular barato, al sol, eso no es un tecnicismo. */
+  --tinta:#0C0A0B; --gris:#5C5450; --gris-claro:#6E6460;
+  --linea:#E4DDD6; --linea-laca:rgba(251,247,244,.14);
+  --blanco-laca:#FBF7F4;
+  --serif:Georgia,'Times New Roman',serif;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  --e1:4px; --e2:8px; --e3:12px; --e4:20px; --e5:32px; --e6:52px;
+  /* 16px es el radio de tarjeta de las dos apps. Si la web usa otro, se nota:
+     el cliente pasa de la web a la app en el mismo minuto. */
+  --r:16px;
+}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--hueso);color:var(--tinta);font-family:var(--sans);
+  font-size:17px;line-height:1.65;overflow-x:hidden}
+.wrap{max-width:960px;margin:0 auto;padding:0 var(--e4)}
+.angosto{max-width:62ch}
+h1,h2,h3{font-family:var(--serif);font-weight:400;margin:0;text-wrap:balance;letter-spacing:-.01em}
+p{margin:0}
+a{color:inherit}
+.banda{padding:var(--e6) 0}
+.laca{background:var(--laca);color:var(--blanco-laca)}
+.laca .tenue{color:rgba(251,247,244,.66)}
+.tenue{color:var(--gris)}
+.et{font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--gris-claro)}
+.laca .et{color:var(--amarillo)}
+.pila{display:flex;flex-direction:column;gap:var(--e4)}
+.pila-s{display:flex;flex-direction:column;gap:var(--e3)}
+
+/* -------------------------------------------------- marca y cabecera */
+.tope{position:sticky;top:0;z-index:20;background:var(--laca);
+  border-bottom:1px solid var(--linea-laca)}
+.tope .wrap{display:flex;align-items:center;gap:var(--e3);
+  min-height:60px;justify-content:space-between}
+/* El min-height no es capricho: un enlace de 32px en un celular se falla al tocarlo.
+   44px es el mínimo con el que un dedo acierta. */
+.marca{display:flex;align-items:center;gap:10px;text-decoration:none;min-height:44px}
+/* El sello va ROJO con la G blanca, igual que dentro de las dos apps. La tentación era
+   ponerlo amarillo —queda más bonito sobre la laca— pero el amarillo está reservado para
+   lo que el socio construyó, y una marca no es algo que él construyó. El ícono instalado
+   sí es amarillo sobre negro, y eso es a propósito: ahí el color distingue la app del
+   cliente de la de Joan en la pantalla de inicio del teléfono. */
+.sello{width:32px;height:32px;border-radius:9px;background:var(--rojo);color:#fff;
+  display:grid;place-items:center;font-family:var(--serif);font-size:20px;font-weight:700;
+  flex:none;line-height:1}
+.marca b{font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--blanco-laca)}
+
+/* -------------------------------------------------- botones */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  min-height:48px;padding:0 22px;border-radius:11px;border:0;cursor:pointer;
+  font-family:var(--sans);font-size:16px;font-weight:700;text-decoration:none;
+  transition:background .15s,transform .06s}
+.btn-rojo{background:var(--rojo);color:#fff}
+.btn-rojo:hover{background:var(--rojo-osc)}
+.btn-rojo:active{transform:translateY(1px)}
+.btn-linea{background:transparent;color:var(--blanco-laca);
+  box-shadow:inset 0 0 0 1px rgba(251,247,244,.32);min-height:44px;font-weight:600}
+.btn-linea:hover{box-shadow:inset 0 0 0 1px rgba(251,247,244,.62)}
+.btn:focus-visible{outline:3px solid var(--amarillo);outline-offset:2px}
+a:focus-visible,button:focus-visible{outline:3px solid var(--amarillo);outline-offset:2px}
+.laca a:focus-visible{outline-color:var(--amarillo)}
+
+/* -------------------------------------------------- portada */
+.portada{padding:var(--e6) 0 calc(var(--e6) + 8px)}
+/* La serif va explícita: .frase no siempre es un h1/h2, y el titular de la portada
+   es justo el sitio donde no se puede perder la voz de la marca. */
+.frase{font-family:var(--serif);font-weight:400;letter-spacing:-.015em;text-wrap:balance}
+.portada .frase{font-size:clamp(34px,7.2vw,60px);line-height:1.05;color:var(--blanco-laca)}
+.portada .frase i{font-style:normal;color:var(--amarillo)}
+.portada .bajo{font-size:19px;margin-top:var(--e4);max-width:54ch}
+.acciones{display:flex;flex-wrap:wrap;gap:var(--e3);margin-top:var(--e5)}
+.solo-invita{display:inline-flex;align-items:center;gap:9px;margin-top:var(--e4);
+  font-size:14px;color:rgba(251,247,244,.72)}
+.punto{width:7px;height:7px;border-radius:50%;background:var(--amarillo);flex:none}
+
+/* -------------------------------------------------- la escalera */
+.tabla-caja{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:var(--e3);
+  border:1px solid var(--linea-laca);border-radius:var(--r)}
+table{border-collapse:collapse;width:100%;min-width:560px;font-variant-numeric:tabular-nums}
+th,td{padding:13px 16px;text-align:right;white-space:nowrap;
+  border-bottom:1px solid var(--linea-laca);font-size:15px}
+th{font-size:11px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;
+  color:rgba(251,247,244,.55)}
+th:first-child,td:first-child{text-align:left}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:last-child td{font-weight:700}
+.gan{color:var(--amarillo);font-weight:700}
+.niv{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:rgba(251,247,244,.62)}
+.niv.oro{color:var(--amarillo)}
+
+/* -------------------------------------------------- los dos productos */
+.dos{display:grid;grid-template-columns:1fr 1fr;gap:var(--e4);margin-top:var(--e4)}
+.prod{background:var(--papel);border-radius:var(--r);padding:var(--e4);
+  display:flex;flex-direction:column;gap:var(--e3)}
+.prod.q{box-shadow:inset 0 0 0 1px var(--rojo)}
+.prod.r{box-shadow:inset 0 0 0 1px var(--azul)}
+.prod .tag{font-size:11px;font-weight:700;letter-spacing:.11em;text-transform:uppercase}
+.prod.q .tag{color:var(--rojo)}
+.prod.r .tag{color:var(--azul)}
+.prod .tasa{font-family:var(--serif);font-size:30px;line-height:1}
+.prod dl{margin:0;display:flex;flex-direction:column;gap:var(--e2)}
+.prod .fila{display:flex;justify-content:space-between;gap:var(--e3);
+  font-size:15px;padding-bottom:var(--e2);border-bottom:1px solid var(--linea)}
+.prod .fila:last-child{border-bottom:0;padding-bottom:0}
+.prod .fila dt{color:var(--gris)}
+.prod .fila dd{margin:0;font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+.prod .nota{font-size:14.5px;color:var(--gris);line-height:1.55}
+.prod.q .nota b{color:var(--rojo)}
+.prod.r .nota b{color:var(--azul)}
+
+/* -------------------------------------------------- avisos */
+.aviso{border-radius:var(--r);padding:var(--e4);font-size:15.5px;line-height:1.6}
+.aviso.ambar{background:var(--ambar-tinte);color:var(--tinta);
+  box-shadow:inset 0 0 0 1px rgba(154,91,18,.3)}
+.aviso.ambar b{color:var(--ambar)}
+.aviso.azul{background:var(--azul-tinte);box-shadow:inset 0 0 0 1px rgba(27,79,216,.22)}
+.aviso.azul b{color:var(--azul)}
+
+/* -------------------------------------------------- pasos y datos */
+.pasos{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--e4);margin-top:var(--e4);
+  counter-reset:p}
+.paso{counter-increment:p}
+.paso .n{font-family:var(--serif);font-size:15px;width:30px;height:30px;border-radius:50%;
+  display:grid;place-items:center;background:var(--amarillo-suave);color:var(--ambar);
+  font-weight:700;margin-bottom:var(--e3)}
+.paso .n::before{content:counter(p)}
+.paso h3{font-size:17px;margin-bottom:var(--e1)}
+.paso p{font-size:15px;color:var(--gris);line-height:1.55}
+
+.dato-lista{display:flex;flex-wrap:wrap;gap:var(--e2);margin-top:var(--e3)}
+.dato{font-size:14px;padding:6px 12px;border-radius:999px;background:var(--papel);
+  border:1px solid var(--linea);color:var(--gris)}
+
+/* -------------------------------------------------- cierre */
+.cierre .frase{font-size:clamp(27px,5vw,40px);line-height:1.15;color:var(--blanco-laca)}
+.pie{padding:var(--e5) 0;font-size:14px;color:var(--gris-claro);
+  border-top:1px solid var(--linea)}
+.pie a{color:var(--gris)}
+.pie .filas{display:flex;flex-wrap:wrap;gap:var(--e3) var(--e5);justify-content:space-between}
+
+@media (max-width:720px){
+  body{font-size:16px}
+  .banda{padding:var(--e5) 0}
+  .dos,.pasos{grid-template-columns:1fr}
+  .portada .bajo{font-size:17px}
+  .acciones .btn{width:100%}
+
+  /* En el celular se caen "Cuesta" y "Nivel". No es por espacio: es que si la tabla
+     hay que deslizarla, la columna amarilla —que es TODO el argumento— nace fuera de
+     pantalla y el lector no se entera de que existe. Con cuatro columnas entra
+     entera y lo primero que se ve es lo que se está construyendo. El costo igual
+     está dicho, en letras, en la sección de "lo que cuesta". */
+  table{min-width:0}
+  th,td{padding:11px 8px;font-size:14.5px}
+  /* Los títulos son más anchos que las cifras que encabezan ("Ya puedes pedir" mide
+     más que "$177.000"), así que son ELLOS los que empujaban la tabla fuera de
+     pantalla. Dejándolos partir en dos líneas, cada columna se ajusta al número. */
+  th{white-space:normal;letter-spacing:.06em;line-height:1.25}
+  .col-extra{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<header class="tope">
+  <div class="wrap">
+    <a class="marca" href="#"><span class="sello">G</span><b>Tu Garantía</b></a>
+    <a class="btn btn-linea" href="#entrar">Ya tengo código</a>
+  </div>
+</header>
+
+<main>
+
+  <!-- ===================== PORTADA ===================== -->
+  <section class="laca portada">
+    <div class="wrap">
+      <h1 class="frase">Tu historial<br>es <i>tu garantía</i>.</h1>
+      <p class="bajo tenue">Crédito por quincena para gente que trabaja. Sin fiador, sin
+        codeudor, sin dejar nada empeñado. Cada peso que pagas se te vuelve garantía, y esa
+        garantía es la que te deja pedir más — y, cuando ya la tengas, pedir más barato.</p>
+      <div class="acciones">
+        <a class="btn btn-rojo" href="#escalera">Ver cómo crece</a>
+        <a class="btn btn-linea" href="#entrar">Pedir una invitación</a>
+      </div>
+      <p class="solo-invita"><span class="punto" aria-hidden="true"></span>
+        Solo se entra con código de invitación. No hay registro abierto.</p>
+    </div>
+  </section>
+
+  <!-- ===================== EL PROBLEMA ===================== -->
+  <section class="banda">
+    <div class="wrap angosto pila">
+      <p class="et">Para quién es</p>
+      <h2 style="font-size:clamp(25px,4.6vw,34px)">Te pagan el 15 y el 30. A veces la plata no
+        llega hasta la otra quincena.</h2>
+      <p class="tenue">No es mala administración: es que el sueldo entra dos veces al mes y los
+        problemas no preguntan la fecha. La cuota del colegio, el mercado, una droga, el bus.
+        Tu Garantía presta contra tu quincena y se cobra en la fecha de tu quincena — el 15 o el
+        último día del mes, el día que a ti te pagan.</p>
+      <p class="tenue">Y algo que aquí no pasa: <b>atrasarte no te tumba.</b> No bajas de nivel,
+        no pierdes la garantía que llevas, y puedes volver a pedir. Lo que pagas sigue sumando
+        aunque lo pagues tarde.</p>
+    </div>
+  </section>
+
+  <!-- ===================== LA ESCALERA ===================== -->
+  <section class="laca banda" id="escalera">
+    <div class="wrap pila">
+      <div class="angosto pila-s">
+        <p class="et">Lo que te construyes</p>
+        <h2 style="font-size:clamp(25px,4.6vw,34px);color:var(--blanco-laca)">Esto no es una
+          promesa. Es la aritmética.</h2>
+        <p class="tenue">Empiezas con <b style="color:var(--amarillo)">$100.000</b> de garantía
+          que te presta la plataforma solo por darnos tus datos. De ahí en adelante, el
+          <b>90% de cada costo que pagas</b> se te vuelve garantía tuya. Cinco créditos pagados
+          a tiempo se ven así:</p>
+      </div>
+
+      <p class="tenue" style="font-size:14.5px;max-width:60ch">Cinco créditos pagados en fecha.
+        Las cifras salen del mismo motor que hace las cuentas en la app — no son un ejemplo
+        bonito.</p>
+
+      <div class="tabla-caja">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">N°</th>
+              <th scope="col">Pides</th>
+              <th scope="col" class="col-extra">Cuesta</th>
+              <th scope="col">Tu garantía</th>
+              <th scope="col" class="col-extra">Nivel</th>
+              <th scope="col">Ya puedes pedir</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>1º</td><td>$100.000</td><td class="col-extra">$20.000</td><td class="gan">$118.000</td><td class="niv col-extra">Bronce</td><td>$177.000</td></tr>
+            <tr><td>2º</td><td>$150.000</td><td class="col-extra">$30.000</td><td class="gan">$145.000</td><td class="niv col-extra">Plata</td><td>$290.000</td></tr>
+            <tr><td>3º</td><td>$250.000</td><td class="col-extra">$50.000</td><td class="gan">$190.000</td><td class="niv col-extra">Plata</td><td>$380.000</td></tr>
+            <tr><td>4º</td><td>$400.000</td><td class="col-extra">$80.000</td><td class="gan">$262.000</td><td class="niv col-extra">Plata</td><td>$524.000</td></tr>
+            <tr><td>5º</td><td>$600.000</td><td class="col-extra">$120.000</td><td class="gan">$370.000</td><td class="niv oro col-extra">Oro</td><td>$925.000</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p class="tenue angosto" style="margin-top:var(--e2)">De esos $370.000, hay
+        <b style="color:var(--amarillo)">$270.000 que te ganaste tú</b> pagando. Los otros
+        $100.000 son los que te prestamos al principio. La diferencia importa, y ahora verás
+        por qué.</p>
+    </div>
+  </section>
+
+  <!-- ===================== LOS DOS CRÉDITOS ===================== -->
+  <section class="banda">
+    <div class="wrap pila">
+      <div class="angosto pila-s">
+        <p class="et">Los dos créditos</p>
+        <h2 style="font-size:clamp(25px,4.6vw,34px)">Cuando ya tienes garantía ganada, eliges.</h2>
+        <p class="tenue">El de siempre es rápido y hace crecer tu cupo. El otro es mucho más
+          barato pero casi no te hace crecer. Ninguno de los dos es el bueno: depende de para
+          qué necesitas la plata.</p>
+      </div>
+
+      <div class="dos">
+        <article class="prod q">
+          <p class="tag">Crédito quincenal</p>
+          <p class="tasa">20% <span style="font-size:16px;color:var(--gris)">del monto</span></p>
+          <dl>
+            <div class="fila"><dt>Plazo</dt><dd>Hasta tu quincena</dd></div>
+            <div class="fila"><dt>Pides hasta</dt><dd>$925.000</dd></div>
+            <div class="fila"><dt>Si pides $600.000</dt><dd>cuesta $120.000</dd></div>
+            <div class="fila"><dt>Tu garantía sube</dt><dd>+$108.000</dd></div>
+          </dl>
+          <p class="nota">Cuesta más, pero <b>es el que te hace crecer</b>. Cada crédito
+            quincenal que pagas te sube el cupo del siguiente.</p>
+        </article>
+
+        <article class="prod r">
+          <p class="tag">Préstamo con garantía</p>
+          <p class="tasa">5% <span style="font-size:16px;color:var(--gris)">al mes</span></p>
+          <dl>
+            <div class="fila"><dt>Plazo</dt><dd>De 1 a 6 meses</dd></div>
+            <div class="fila"><dt>Pides hasta</dt><dd>$270.000</dd></div>
+            <div class="fila"><dt>$270.000 a 6 meses</dt><dd>$58.500 al mes</dd></div>
+            <div class="fila"><dt>Tu garantía sube</dt><dd>+$16.200</dd></div>
+          </dl>
+          <p class="nota">Cuesta $81.000 en total, no $120.000 cada quincena. Pero
+            <b>casi no crece tu garantía</b>, y mientras lo estás pagando tu cupo quincenal
+            baja.</p>
+        </article>
+      </div>
+
+      <div class="aviso azul angosto">
+        Lo decimos claro porque después nadie se puede sentir engañado: el préstamo con garantía
+        <b>solo lo respalda la garantía que te ganaste pagando</b>, no los $100.000 que te
+        prestamos al entrar. Y mientras lo pagas, esa garantía queda comprometida — tu cupo
+        quincenal baja hasta que termines.
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== LO QUE CUESTA ===================== -->
+  <section class="banda" style="background:var(--papel)">
+    <div class="wrap angosto pila">
+      <p class="et">Lo que cuesta, sin letra chica</p>
+      <h2 style="font-size:clamp(23px,4.2vw,30px)">El costo es plano y no cambia nunca.</h2>
+      <p class="tenue">El crédito quincenal cuesta el 20% de lo que pidas, y ese porcentaje
+        <b>no sube ni baja</b>: ni por tu historial, ni por el monto, ni por la fecha. Si pides
+        $200.000, devuelves $240.000. Sin cuotas de manejo, sin seguros, sin papeleo, sin
+        estudio de crédito.</p>
+      <p class="tenue">Si te atrasas, cada día suma un 1% sobre el capital. Si no alcanzas a
+        pagar todo el día del corte, puedes dejar una prórroga o pedir un plan de pagos en tres
+        cuotas — y las dos cosas también te suman garantía.</p>
+      <div class="aviso ambar">
+        <b>Antes de pedir, haz la cuenta.</b> Un crédito de quince días al 20% es plata cara:
+        es para resolver algo puntual entre quincenas, no para vivir de él. Si ya tienes tres
+        deudas encima, esto no te va a ayudar — te va a hundir. Prefiero decírtelo aquí que
+        cobrártelo después.
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== LO QUE PEDIMOS ===================== -->
+  <section class="banda">
+    <div class="wrap pila">
+      <div class="angosto pila-s">
+        <p class="et">Cómo funciona</p>
+        <h2 style="font-size:clamp(25px,4.6vw,34px)">Tres pasos, y el primero te da plata.</h2>
+      </div>
+      <div class="pasos">
+        <div class="paso">
+          <div class="n" aria-hidden="true"></div>
+          <h3>Nos das tus datos</h3>
+          <p>Cada dato que entregas te sube la garantía de arranque. Completos, llegas a
+            $100.000 sin haber pagado un peso todavía.</p>
+          <div class="dato-lista">
+            <span class="dato">Cédula</span><span class="dato">Celular</span>
+            <span class="dato">Dónde vives</span><span class="dato">Una referencia</span>
+            <span class="dato">Foto de la cédula</span>
+          </div>
+        </div>
+        <div class="paso">
+          <div class="n" aria-hidden="true"></div>
+          <h3>Pides desde el celular</h3>
+          <p>Calculas antes de pedir: ves cuánto te cuesta, qué día se paga y cuánta garantía te
+            va a dejar. Después mandas la solicitud.</p>
+        </div>
+        <div class="paso">
+          <div class="n" aria-hidden="true"></div>
+          <h3>Pagas y creces</h3>
+          <p>El 90% de lo que pagas en costos se te vuelve garantía. Pagando en fecha suma el
+            doble que pagando tarde.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== ENTRAR ===================== -->
+  <section class="laca banda cierre" id="entrar">
+    <div class="wrap pila">
+      <div class="angosto pila-s">
+        <p class="et">Cómo entrar</p>
+        <p class="frase">Solo con invitación.</p>
+        <p class="tenue">No hay registro abierto y no va a haberlo. Se entra con un código que
+          entregamos uno por uno, a gente de la que alguien responde. Si te lo dieron, tienes un
+          código que se ve así: <b style="color:var(--amarillo);font-family:var(--serif)">TG-4K7M-92XP</b>.</p>
+        <p class="tenue">Si no tienes código y quieres uno, escríbenos por WhatsApp y cuéntanos
+          quién te recomendó. No es un trámite: es una conversación.</p>
+      </div>
+      <!-- ⚠️ JOAN: aquí falta tu número. El enlace dice wa.me/57XXXXXXXXXX y hoy NO lleva
+           a ninguna parte: abre WhatsApp sin destinatario. Reemplaza las diez X por tu
+           celular, sin espacios ni guiones (el 57 de Colombia ya está puesto). Es el único
+           sitio de toda la página donde hay que tocar algo, y es el botón por el que entra
+           todo cliente nuevo. -->
+      <div class="acciones">
+        <a class="btn btn-rojo" href="app/socio.html">Entrar con mi código</a>
+        <a class="btn btn-linea" href="https://wa.me/57XXXXXXXXXX?text=Hola%2C%20quiero%20una%20invitaci%C3%B3n%20para%20Tu%20Garant%C3%ADa">Pedir una invitación</a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="pie">
+  <div class="wrap filas">
+    <p>© 2026 Tu Garantía · Colombia</p>
+    <p><a href="legal/terminos.html">Términos y condiciones</a> ·
+       <a href="legal/privacidad.html">Política de datos personales</a></p>
+  </div>
+  <div class="wrap" style="margin-top:var(--e3)">
+    <p style="max-width:62ch">No somos un banco ni una entidad vigilada por la Superintendencia
+      Financiera. No captamos dinero del público. Tus datos no se venden ni se comparten con
+      fines comerciales.</p>
+  </div>
+</footer>
+
+</body>
+</html>

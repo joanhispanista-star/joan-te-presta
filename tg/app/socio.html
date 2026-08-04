@@ -1,0 +1,2587 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+<title>Tu Garantía · Mi cuenta de socio</title>
+<meta name="theme-color" content="#0C0A0B">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Tu Garantía">
+<link rel="manifest" href="app.webmanifest">
+<link rel="apple-touch-icon" href="icono-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icono-192.png">
+<style>
+/* ==========================================================================
+ * LA LEY DE LA PALETA — 2 de agosto de 2026
+ *
+ * Dos materiales y tres colores. Los materiales no son color: son el soporte,
+ * y son lo que le da a esta app el aire caro. Los colores se ganan el lugar
+ * porque cada uno tiene UN solo trabajo.
+ *
+ * LOS MATERIALES
+ *   --laca   la placa negra. Ahí vive lo que es DEL SOCIO: su garantía, su
+ *            nivel, su cupo, lo que construyó.
+ *   --papel  ahí vive todo lo demás.
+ *   --fondo  hueso, el fondo de la página.
+ *
+ * AMARILLO — lo que el socio construyó
+ *   Su garantía, su nivel, su cupo, lo que lleva ganado. Es el color del
+ *   logro. --amarillo SOLO existe sobre la laca. Sobre papel solo puede
+ *   pisar --amarillo-tinta, y solo como texto.
+ *
+ * AZUL — el préstamo con garantía, y lo que explica
+ *   Lo calmado, lo largo, lo respaldado. El producto de 6 meses al 5% es azul
+ *   de punta a punta: su botón, su tarjeta, sus cifras, su calendario. Y el
+ *   azul es también el color de lo que informa y acompaña: avisos que no son
+ *   alarma, explicaciones, ayudas.
+ *
+ * ROJO — la marca, el gesto de avanzar, y el crédito quincenal
+ *   El rojo es SUSTANTIVO. Es la marca (el pin de la Q, la barrita de la
+ *   pestaña activa) y es el botón que hace avanzar. Y ahora además es el
+ *   color del crédito quincenal: lo rápido, lo de quince días, lo que cuesta
+ *   20% y hace crecer. El rojo NUNCA es un estado y NUNCA es una cifra de
+ *   plata.
+ *
+ * LOS ESTADOS SIGUEN EN ÁMBAR
+ *   Mora, atraso, vencimiento, "no te alcanza": ámbar quemado, siempre. Lo
+ *   que impide que el ámbar y el amarillo se confundan no es el tono, es el
+ *   MATERIAL:
+ *
+ *       el amarillo SOLO existe sobre la laca negra;
+ *       el ámbar SOLO existe sobre papel.
+ *
+ *   Nunca se ven en la misma superficie, así que nunca se confunden. Si
+ *   alguna vez hace falta poner uno donde va el otro, está mal el layout, no
+ *   el color.
+ *
+ * LOS DOS MODOS
+ *   En oscuro cambia el PAPEL, nunca la marca. El rojo y el azul tienen dos
+ *   trabajos y por eso dos variables:
+ *
+ *       --rojo / --azul        el RELLENO de marca: el botón, el sello, el
+ *                              selector. Llevan letra blanca encima, así que
+ *                              son el mismo hex en los dos modos.
+ *       --rojo-texto / --azul-texto   el mismo color cuando es TEXTO o filete
+ *                              sobre el papel. En claro es la marca; en oscuro
+ *                              es la versión de laca, porque ahí el papel es
+ *                              oscuro.
+ *
+ *   El ámbar no se aclara nunca: aclarado se vuelve el amarillo y pasa a pintar
+ *   una deuda. Y como no se aclara, en oscuro no puede ser TEXTO: la cuenta no
+ *   cierra. Un ámbar que conserve 3:1 contra el amarillo no pasa de L 0,166, y
+ *   ese color, hasta sobre negro puro, llega a 4,32:1 — nunca a AA. Así que en
+ *   oscuro el ámbar se corre al FILETE, que es donde 3:1 alcanza, y adentro
+ *   escribe la tinta. Tres variables:
+ *
+ *       --ambar         el hex, intocable. Filete, regla, borde.
+ *       --ambar-papel   la superficie del aviso. En claro es papel claro; en
+ *                       oscuro se oscurece como --rojo-tinte y --azul-tinte,
+ *                       porque un aviso no puede ser lo más brillante de una
+ *                       pantalla negra: la mora acá no castiga, y el color
+ *                       tiene que decir lo mismo que el texto.
+ *       --ambar-tinta   lo que se escribe adentro. En claro, el ámbar; en
+ *                       oscuro, la tinta común, que sí llega a AA.
+ *
+ * CÓMO SE USA
+ *   Siempre por variable. Si aparece un hex suelto en el medio del archivo,
+ *   está mal. El espaciado también sale de la escala (--e1 4 / --e2 8 /
+ *   --e3 12 / --e4 20): no hay márgenes a ojo.
+ *
+ * ESTE COMENTARIO ES LA LEY. Si un día cambia el sistema, cambia acá primero.
+ * ==========================================================================*/
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  /* materiales: no son color, son el soporte */
+  --laca:#0C0A0B; --papel:#FFFFFF; --fondo:#F6F3F0; --tinta:#0C0A0B;
+  --luz:#FFFFFF; --sombra:#000000;   /* para los brillos y las sombras de la laca */
+  /* amarillo — lo que el socio construyó. SOLO sobre laca */
+  --amarillo:#F5C542; --amarillo-tinta:#7A5A10;
+  /* azul — el préstamo con garantía, y lo que explica */
+  --azul:#1B4FD8; --azul-laca:#7FA8FF; --azul-tinte:#EDF2FE;
+  --azul-texto:var(--azul);
+  /* rojo — la marca, el gesto de avanzar, y el crédito quincenal */
+  --rojo:#D81F26; --rojo-laca:#FF6B6F; --rojo-tinte:#FCF4F2;
+  --rojo-texto:var(--rojo);
+  /* estados: ámbar, y SOLO sobre papel — el suyo. En claro el papel es claro y
+     el ámbar escribe encima; en oscuro el papel se oscurece y el ámbar se corre
+     al filete (ver la ley de arriba). */
+  --ambar:#9A5B12; --ambar-papel:color-mix(in srgb, var(--ambar) 10%, var(--luz));
+  --ambar-filete:color-mix(in srgb, var(--ambar) 40%, transparent);
+  --ambar-tinta:var(--ambar);
+  --gris:#6E6460; --linea:#E9E3DD; --blanco-laca:#FBF7F4;
+  --r:16px;
+  /* espaciado por escala, nada a ojo */
+  --e1:4px; --e2:8px; --e3:12px; --e4:20px;
+  /* La placa, en una sola variable: la usan .laca y .card.laca. Antes vivía
+     solo en .laca y el fondo de .card se la comía, así que las tarjetas del
+     socio salían en papel blanco con las cifras en amarillo — ilegibles y
+     contra la ley de arriba. */
+  --placa:
+    linear-gradient(103deg, transparent 32%, color-mix(in srgb, var(--luz) 5%, transparent) 45%, transparent 60%),
+    radial-gradient(140% 110% at 16% -25%,
+      color-mix(in srgb, var(--laca) 88%, var(--luz)) 0%,
+      color-mix(in srgb, var(--laca) 97%, var(--luz)) 45%,
+      var(--laca) 100%);
+}
+/* ---------------- el modo oscuro ----------------
+   Lo que cambia en oscuro es el PAPEL, nunca la marca. El rojo del botón y del
+   sello, y el azul de su botón, se quedan en el hex de la marca en los dos
+   modos: encima llevan letra blanca, y aclararlos la dejaba en 2,8:1. Lo que sí
+   necesita aclararse es el rojo y el azul cuando son TEXTO, porque en oscuro el
+   papel es oscuro: para eso están --rojo-texto y --azul-texto, que en claro son
+   la marca y en oscuro son la versión de laca. Y el ámbar tampoco se aclara: si
+   se aclara choca con el amarillo (eran el mismo color, 1,10:1). Pero traerse su
+   papel CLARO a la pantalla negra dejaba el aviso de mora como una plancha de
+   286x135 sobre un fondo rgb(11,10,10): la única superficie clara de Inicio, un
+   fogonazo de noche, y encima le daba al atraso un peso que el producto no le da
+   —adentro dice "no bajas de nivel, no pierdes garantía"—. Así que el papel del
+   ámbar se oscurece como --rojo-tinte y --azul-tinte, la tinta de adentro pasa a
+   --tinta (14:1) y el ámbar se queda donde 3:1 le alcanza: el filete y la regla
+   del borde. Sigue sin aclararse, sigue a 3,34:1 del amarillo. */
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  --tinta:#EDE7E4; --papel:#151113; --fondo:#0B0A0A; --linea:#262021; --gris:#9C918B;
+  --rojo-tinte:#241416; --rojo-texto:var(--rojo-laca);
+  --azul-tinte:#101A2E; --azul-texto:var(--azul-laca);
+  /* La tinta amarilla del modo oscuro es un aclarado de --amarillo (#F5C542),
+     no el oro viejo: aquel #E9BE68 era del logo anterior y no pinta más acá. */
+  --amarillo-tinta:#F8D471;
+  --ambar-papel:color-mix(in srgb, var(--ambar) 10%, var(--papel));
+  --ambar-filete:var(--ambar); --ambar-tinta:var(--tinta);
+} }
+:root[data-theme="dark"]{
+  --tinta:#EDE7E4; --papel:#151113; --fondo:#0B0A0A; --linea:#262021; --gris:#9C918B;
+  --rojo-tinte:#241416; --rojo-texto:var(--rojo-laca);
+  --azul-tinte:#101A2E; --azul-texto:var(--azul-laca);
+  --amarillo-tinta:#F8D471;
+  --ambar-papel:color-mix(in srgb, var(--ambar) 10%, var(--papel));
+  --ambar-filete:var(--ambar); --ambar-tinta:var(--tinta);
+}
+:root[data-theme="light"]{
+  --laca:#0C0A0B; --papel:#FFFFFF; --fondo:#F6F3F0; --tinta:#0C0A0B;
+  --luz:#FFFFFF; --sombra:#000000;
+  --amarillo:#F5C542; --amarillo-tinta:#7A5A10;
+  --azul:#1B4FD8; --azul-laca:#7FA8FF; --azul-tinte:#EDF2FE; --azul-texto:var(--azul);
+  --rojo:#D81F26; --rojo-laca:#FF6B6F; --rojo-tinte:#FCF4F2; --rojo-texto:var(--rojo);
+  --ambar:#9A5B12; --ambar-papel:color-mix(in srgb, var(--ambar) 10%, var(--luz));
+  --ambar-filete:color-mix(in srgb, var(--ambar) 40%, transparent);
+  --ambar-tinta:var(--ambar);
+  --gris:#6E6460; --linea:#E9E3DD; --blanco-laca:#FBF7F4;
+}
+
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--fondo); color:var(--tinta);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI Variable Text","Segoe UI",Roboto,system-ui,sans-serif;
+  font-size:15px; line-height:1.5;
+  padding-bottom:calc(64px + env(safe-area-inset-bottom));
+}
+h1,h2,h3{margin:0;font-family:ui-serif,"New York","Iowan Old Style",Georgia,"Times New Roman",serif;
+  font-weight:600;letter-spacing:-.01em;text-wrap:balance}
+.wrap{max-width:520px;margin:0 auto;padding:0 16px}
+.muted{color:var(--gris)}
+.oculto{display:none!important}
+
+/* ---------------- la laca ---------------- */
+.laca{
+  position:relative; isolation:isolate; border-radius:var(--r);
+  color:var(--blanco-laca); -webkit-font-smoothing:antialiased;
+  background:var(--placa);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--luz) 13%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, var(--sombra) 55%, transparent),
+    0 18px 38px -20px color-mix(in srgb, var(--laca) 45%, transparent);
+}
+.laca::after{                       /* el filete de amarillo que se apaga en los extremos */
+  content:''; position:absolute; left:var(--e4); right:var(--e4); bottom:0; height:1px;
+  background:linear-gradient(90deg, transparent,
+    color-mix(in srgb, var(--amarillo) 55%, transparent) 20%,
+    color-mix(in srgb, var(--amarillo) 95%, transparent) 50%,
+    color-mix(in srgb, var(--amarillo) 55%, transparent) 80%, transparent);
+}
+.laca::before{                      /* grano, contra el banding del degradado */
+  content:''; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+  opacity:.045; mix-blend-mode:overlay; background-size:140px 140px;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/></filter><rect width='140' height='140' filter='url(%23n)'/></svg>");
+}
+.laca .muted{color:color-mix(in srgb, var(--blanco-laca) 62%, transparent)}
+.laca .fila{border-color:color-mix(in srgb, var(--luz) 12%, transparent)}
+.laca .fila .k{color:color-mix(in srgb, var(--blanco-laca) 62%, transparent)}
+.lustre{position:absolute;inset:0;overflow:hidden;border-radius:inherit;pointer-events:none;z-index:2}
+.lustre i{position:absolute;top:-30%;bottom:-30%;width:38%;transform:skewX(-14deg);
+  background:linear-gradient(90deg,transparent,color-mix(in srgb, var(--luz) 10%, transparent),transparent);
+  animation:lustre 1.1s cubic-bezier(.25,.8,.25,1) .2s both}
+@keyframes lustre{from{transform:translateX(-40%) skewX(-14deg)}to{transform:translateX(140%) skewX(-14deg)}}
+@media (prefers-reduced-motion:reduce){.lustre{display:none}}
+
+/* ---------------- cabecera ---------------- */
+.cab{padding:calc(env(safe-area-inset-top) + 18px) 0 20px; border-radius:0 0 var(--r) var(--r)}
+/* "Tu Garantía" va SIEMPRE con las dos palabras, también en caja alta. En Colombia
+   "garantía" sola es lo que el prestamista EXIGE (fiador, prenda); el posesivo es lo
+   que da vuelta el sentido: acá la garantía es del socio. Nunca partir la marca ni
+   dejar el "Garantía" suelto. Con el tracking abierto el bloque respira y se lee como
+   sello, no como texto. */
+.marca{display:flex;align-items:center;gap:var(--e2);font-size:13px;letter-spacing:.14em;
+  text-transform:uppercase;font-weight:700;color:color-mix(in srgb, var(--blanco-laca) 72%, transparent)}
+.pin{width:24px;height:24px;border-radius:7px;background:var(--rojo);color:var(--luz);
+  display:grid;place-items:center;font-weight:800;font-size:13px;letter-spacing:0}
+.cab h1{font-size:21px;margin-top:var(--e3);color:var(--blanco-laca)}
+.chip-nivel{display:inline-flex;align-items:center;gap:var(--e2);margin-top:var(--e2);
+  padding:var(--e1) var(--e3);border-radius:999px;
+  font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--amarillo);border:1px solid color-mix(in srgb, var(--amarillo) 45%, transparent)}
+/* la marca discreta de que estos datos salieron del Panel de este equipo */
+.pto{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--azul-texto);flex:none}
+.laca .pto,.pto.laca{background:var(--azul-laca)}
+
+/* ---------------- tarjetas ---------------- */
+.card{background:var(--papel);border:1px solid var(--linea);border-radius:var(--r);
+  padding:var(--e4);margin-top:var(--e3)}
+.card.laca{border:0;background:var(--placa);color:var(--blanco-laca)}
+.card.pegado{padding-left:0;padding-right:0;overflow:hidden}
+.card.quincenal{border-left:3px solid var(--rojo-texto)}
+.card.respaldo{border-left:3px solid var(--azul-texto)}
+.etq{font-size:11px;text-transform:uppercase;letter-spacing:.12em;font-weight:700;color:var(--gris)}
+.etq.q{color:var(--rojo-texto)} .etq.r{color:var(--azul-texto)}
+.laca .etq{color:color-mix(in srgb, var(--amarillo) 85%, transparent)}
+.cifra{font-size:34px;font-weight:800;letter-spacing:-.03em;line-height:1.05;margin-top:6px;
+  font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+.cifra.sm{font-size:24px;font-weight:700}
+.cifra.oro{color:var(--amarillo)}
+.cifra.azul{color:var(--azul-texto)}
+/* Lo que el socio construyó cuando la fila cae SOBRE PAPEL. Es la misma cifra
+   que sobre la laca va en .oro, pero ahí el amarillo no puede pisar: la ley
+   solo le deja la tinta amarilla. El significado no cambia con la pantalla —
+   si es lo construido, se ve construido en todas. */
+.oro-tinta{color:var(--amarillo-tinta)}
+h3.tit{font-size:18px}
+.sub{font-size:14px;color:var(--gris);margin:var(--e2) 0 0}
+.fila{display:flex;justify-content:space-between;align-items:baseline;gap:var(--e3);padding:var(--e3) 0;
+  border-bottom:1px solid var(--linea)}
+.fila:last-child{border-bottom:0}
+.fila .k{color:var(--gris);font-size:14px}
+.fila .v{font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+.fila .v.oro{color:var(--amarillo)}
+.fila .v.azul,.fila .v.comprometida{color:var(--azul-laca)}
+.fila .v.prestada{color:color-mix(in srgb, var(--amarillo) 62%, transparent)}
+.sep{height:1px;background:var(--linea);margin:16px 0}
+.laca .sep{background:color-mix(in srgb, var(--luz) 12%, transparent)}
+
+/* ---------------- barra ---------------- */
+.barra{height:var(--e2);border-radius:99px;background:var(--linea);overflow:hidden;margin-top:var(--e2)}
+.laca .barra{background:color-mix(in srgb, var(--luz) 16%, transparent)}
+.barra i{display:block;height:100%;border-radius:99px;background:var(--azul-texto);
+  transition:width .7s cubic-bezier(.2,.8,.2,1)}
+.laca .barra i{background:var(--amarillo)}
+.laca .barra i.prestada{background:color-mix(in srgb, var(--amarillo) 62%, transparent)}
+.laca .barra i.comprometida{background:var(--azul-laca)}
+@media (prefers-reduced-motion:reduce){.barra i{transition:none}}
+
+/* ---------------- botones y campos ---------------- */
+.btn{display:block;width:100%;padding:15px;border:0;border-radius:14px;font-size:16px;
+  font-weight:600;font-family:inherit;cursor:pointer;background:var(--rojo);color:var(--luz);
+  text-align:center;text-decoration:none;transition:transform .12s;min-height:44px}
+.btn:active{transform:scale(.985)}
+.btn.azul{background:var(--azul);color:var(--luz)}
+.btn.sec{background:transparent;color:var(--tinta);border:1px solid var(--linea)}
+.laca .btn.sec{color:var(--blanco-laca);border-color:color-mix(in srgb, var(--luz) 25%, transparent)}
+.btn.sm{padding:var(--e3);font-size:14px;min-height:44px}
+.btn.arriba{margin-top:var(--e4)}
+label{display:block;font-size:13px;font-weight:600;margin:16px 0 6px}
+input[type=text],input[type=number],input[type=email],select,textarea{
+  width:100%;padding:14px;border:1px solid var(--linea);border-radius:14px;font-size:16px;
+  font-family:inherit;background:var(--papel);color:var(--tinta)}
+input:focus,select:focus{outline:2px solid var(--rojo-texto);outline-offset:2px}
+/* foco de teclado: lo tenían solo los campos; ahora lo tiene todo lo tocable */
+:where(button,a,summary,[tabindex]):focus-visible{
+  outline:2px solid var(--rojo-texto); outline-offset:2px; border-radius:8px}
+.laca :where(button,a,summary):focus-visible{outline-color:var(--rojo-laca)}
+input[type=range]{width:100%;accent-color:var(--rojo-texto);height:44px;padding:0;border:0;background:none}
+input[type=range].azul{accent-color:var(--azul-texto)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
+  width:28px;height:28px;border-radius:50%;background:var(--rojo-texto);border:0}
+input[type=range].azul::-webkit-slider-thumb{background:var(--azul-texto)}
+input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:99px;background:var(--linea)}
+
+/* ---------------- casillas de autorización (habeas data) ------------------
+   Toda la fila es tocable, no solo el cuadrito: un checkbox de 18px en un celular
+   se falla, y este es el que decide si la persona puede abrir su cuenta. El
+   cuadrito va a 22px y la fila entera pasa de 44 de alto. */
+.permiso{display:flex;gap:12px;align-items:flex-start;margin:16px 0 0;padding:13px;
+  border:1px solid var(--linea);border-radius:14px;cursor:pointer;
+  font-size:14px;font-weight:400;line-height:1.5}
+.permiso:has(input:checked){border-color:var(--azul-texto);background:var(--azul-tinte)}
+.permiso input{width:22px;height:22px;flex:none;margin:1px 0 0;accent-color:var(--rojo);cursor:pointer}
+.permiso:focus-within{outline:3px solid var(--amarillo);outline-offset:2px}
+.permiso .muted{display:block;margin-top:4px}
+
+/* ---------------- avisos: neutro, azul que explica, ámbar que avisa ------- */
+.aviso{border-radius:14px;padding:14px;font-size:14px;margin-top:14px;line-height:1.5;
+  border:1px solid var(--linea)}
+.aviso.info{border-color:color-mix(in srgb, var(--azul-texto) 25%, transparent);
+  background:var(--azul-tinte); color:var(--tinta)}
+.aviso.info b{color:var(--azul-texto)}
+/* El aviso de estado se trae su propio papel, y ese papel sigue al modo, igual
+   que el del aviso azul de acá arriba: claro en claro, oscuro en oscuro. Lo que
+   NO sigue al modo es el ámbar, que no se aclara nunca. Por eso en oscuro el
+   ámbar deja de escribir y pasa a marcar: la regla de 3px del borde izquierdo,
+   que a 3:1 contra su papel se ve de sobra, mientras adentro escribe --tinta.
+   El aviso queda dicho igual —una superficie templada con el canto en ámbar—
+   sin ser la cosa más brillante de una pantalla negra. */
+.aviso.ambar{border-color:var(--ambar-filete);border-left:3px solid var(--ambar);
+  background:var(--ambar-papel); color:var(--ambar-tinta)}
+.aviso.ambar b{color:var(--ambar-tinta)}
+.laca .aviso{border-color:color-mix(in srgb, var(--luz) 16%, transparent);
+  background:color-mix(in srgb, var(--luz) 5%, transparent);color:var(--blanco-laca)}
+.cinta{font-size:12px;color:var(--gris);text-align:center;padding:var(--e2) 16px 0}
+.pill{display:inline-block;padding:var(--e1) 11px;border-radius:999px;font-size:11px;font-weight:700;
+  letter-spacing:.06em;text-transform:uppercase;border:1px solid var(--linea);color:var(--gris)}
+/* La píldora sigue al aviso: mismo papel, mismo filete, misma tinta. Si no,
+   en oscuro quedaba un confeti claro al lado de un aviso templado. */
+.pill.ambar{border-color:var(--ambar-filete);
+  background:var(--ambar-papel);color:var(--ambar-tinta)}
+
+/* ---------------- calculadora ---------------- */
+/* el selector de producto: rojo el de quince días, azul el de seis meses */
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:var(--e2);margin-bottom:var(--e4)}
+.seg button{min-height:56px;padding:var(--e2) var(--e1);border:1px solid var(--linea);
+  border-radius:12px;background:var(--fondo);color:var(--gris);font-family:inherit;
+  cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:2px;text-align:center;transition:background-color .12s}
+.seg button b{font-size:13px;font-weight:700;line-height:1.2}
+.seg button i{font-style:normal;font-size:11px;font-weight:600;line-height:1.2}
+.seg button.on.q{background:var(--rojo);color:var(--luz);border-color:var(--rojo)}
+.seg button.on.r{background:var(--azul);color:var(--luz);border-color:var(--azul)}
+.seg button[aria-disabled="true"]{opacity:.55}
+@media (prefers-reduced-motion:reduce){.seg button{transition:none}}
+.chips{display:flex;gap:var(--e2);flex-wrap:wrap;margin-top:var(--e3)}
+.chip{min-height:44px;display:inline-flex;align-items:center;padding:0 var(--e3);
+  border-radius:999px;border:1px solid var(--linea);background:transparent;
+  color:var(--tinta);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;
+  font-variant-numeric:tabular-nums}
+.chip.pz{min-width:44px;justify-content:center}
+/* El chip elegido se INVIERTE contra la tarjeta en la que vive, no contra un
+   negro fijo: en claro queda tinta con letra papel (chip negro, letra blanca) y
+   en oscuro al revés. Con --laca fijo, en oscuro el chip quedaba negro sobre
+   una tarjeta casi negra y con la letra en el mismo #151113: 1,05:1, y el socio
+   no veía cuál monto había escogido. Es el mismo giro que hace .dato.ok .tick. */
+.chip.on{background:var(--tinta);color:var(--papel);border-color:var(--tinta)}
+/* El chip azul se invierte igual: en claro es el azul de marca con letra
+   blanca; en oscuro, azul de laca con letra papel, o el relleno se perdía
+   contra la tarjeta (2,8:1) y tampoco se veía cuál plazo estaba elegido. */
+.chip.on.azul{background:var(--azul-texto);color:var(--papel);border-color:var(--azul-texto)}
+.etq.suelta{margin-top:var(--e4);display:block}
+details{margin-top:var(--e3);border-top:1px solid var(--linea);padding-top:var(--e3)}
+summary{cursor:pointer;font-size:14px;font-weight:600;color:var(--gris);list-style:none;
+  min-height:44px;display:flex;align-items:center}
+summary::-webkit-details-marker{display:none}
+summary::after{content:' ↓';color:var(--gris)}
+details[open] summary::after{content:' ↑'}
+
+/* ------- la comparación: dos lados enfrentados, cada uno con su color ------ */
+.dual{display:grid;grid-template-columns:1fr 1fr}
+.dual>div{padding:var(--e4) var(--e3)}
+.dual>div:first-child{border-right:1px solid var(--linea)}
+.dual .cifra.sm{font-size:22px;letter-spacing:-.02em;margin-top:var(--e1)}
+.dual .lin{font-size:12px;color:var(--gris);margin-top:var(--e1)}
+.dual .det{font-size:13px;margin-top:var(--e3);line-height:1.45}
+.dual .flojo{opacity:.55}
+.dual .rayita{height:1px;background:var(--linea);margin:var(--e3) 0}
+.remate{background:var(--fondo);padding:var(--e3) var(--e4);font-size:14px;line-height:1.55;
+  border-top:1px solid var(--linea)}
+.remate .q{color:var(--rojo-texto)} .remate .r{color:var(--azul-texto)}
+/* La comparación vive SOBRE LACA, y no por gusto: sus dos barras miden
+   garantía, la garantía es amarilla y el amarillo solo existe sobre la laca.
+   Sobre papel las barras salían azules —una de ellas colgando del lado rojo— y
+   el color hacía el trabajo del otro producto. Acá abajo va lo que la laca
+   necesita para que el rojo y el azul de los rótulos no se apaguen. */
+.card.laca .dual>div:first-child{border-right-color:color-mix(in srgb, var(--luz) 12%, transparent)}
+.laca .dual .lin{color:color-mix(in srgb, var(--blanco-laca) 62%, transparent)}
+.laca .dual .rayita{background:color-mix(in srgb, var(--luz) 12%, transparent)}
+.laca .dual .det b.oro{color:var(--amarillo)}
+.laca .etq.q{color:var(--rojo-laca)} .laca .etq.r{color:var(--azul-laca)}
+.laca .remate{background:color-mix(in srgb, var(--luz) 6%, transparent);
+  border-top-color:color-mix(in srgb, var(--luz) 12%, transparent);color:var(--blanco-laca)}
+.laca .remate .q{color:var(--rojo-laca)} .laca .remate .r{color:var(--azul-laca)}
+
+/* ---------------- escalera ---------------- */
+.crece{display:flex;align-items:flex-end;gap:6px;height:96px;margin-top:20px}
+.crece div{flex:1;background:var(--tinta);border-radius:4px 4px 2px 2px;min-height:4px;position:relative;
+  transition:height .6s cubic-bezier(.2,.8,.2,1)}
+.crece div:last-child{background:var(--rojo-texto)}
+.crece div span{position:absolute;top:-16px;left:0;right:0;text-align:center;font-size:9.5px;
+  color:var(--gris);font-weight:600;font-variant-numeric:tabular-nums}
+.crece-pie{display:flex;gap:6px;margin-top:6px}
+.crece-pie span{flex:1;text-align:center;font-size:10px;color:var(--gris)}
+
+/* ---------------- niveles y datos ---------------- */
+.nivel,.dato{display:flex;align-items:center;gap:var(--e3);padding:var(--e3) 0;
+  min-height:44px;border-bottom:1px solid var(--linea)}
+.nivel:last-child,.dato:last-child{border-bottom:0}
+.nivel .txt,.dato .txt{flex:1;min-width:0}
+.nivel .nm{font-weight:600;font-size:14px}
+/* La ayuda va DEBAJO del nombre del dato, no pegada a su derecha. Son <span>,
+   o sea inline, y en un inline el margin de arriba no hace nada: por eso se leía
+   "Tu correoOpcional pero suma". Con display:block la línea baja y el --e1
+   empieza a existir. Vale para las siete filas del perfil y para los niveles. */
+.nivel .rq,.dato .ay{display:block;font-size:12px;color:var(--gris);margin-top:var(--e1)}
+.nivel .cp,.dato .vl{font-weight:600;font-size:14px;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.nivel.aqui{border-left:2px solid var(--amarillo-tinta);padding-left:var(--e3);margin-left:-14px}
+.dato .tick{width:22px;height:22px;border-radius:50%;flex:none;display:grid;place-items:center;
+  font-size:11px;border:1px solid var(--linea);color:var(--gris)}
+.dato.ok .tick{background:var(--tinta);border-color:var(--tinta);color:var(--papel)}
+.dato.ok .vl{color:var(--gris)}
+
+/* ---------------- historial ---------------- */
+.credito{border:1px solid var(--linea);border-radius:14px;padding:14px;margin-top:10px}
+.credito .top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.credito .cod{font-size:11px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--gris)}
+.credito .gan{margin-top:10px;padding-top:10px;border-top:1px solid var(--linea);font-size:13px;
+  display:flex;justify-content:space-between}
+.insignias{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.ins{display:flex;align-items:center;gap:7px;padding:8px 12px;border:1px solid var(--linea);
+  border-radius:999px;font-size:12.5px;font-weight:600}
+.ins em{font-style:normal;font-size:15px}
+.ins.proxima{border-style:dashed;color:var(--gris);font-weight:400}
+
+/* ---------------- nav ---------------- */
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;
+  background:var(--papel);border-top:1px solid var(--linea);
+  padding-bottom:env(safe-area-inset-bottom)}
+.nav button{flex:1;border:0;background:transparent;font-family:inherit;cursor:pointer;
+  padding:14px 2px;min-height:48px;color:var(--gris);font-size:12px;font-weight:600;position:relative}
+.nav button.on{color:var(--tinta)}
+.nav button.on::after{content:'';position:absolute;left:50%;transform:translateX(-50%);
+  bottom:8px;width:18px;height:2px;border-radius:2px;background:var(--rojo)}
+
+.panel{animation:sube .3s cubic-bezier(.2,.8,.2,1)}
+@keyframes sube{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.panel{animation:none}}
+.pie{text-align:center;font-size:12px;color:var(--gris);margin:22px 0 8px;line-height:1.6}
+.cargando{text-align:center;padding:70px 0;color:var(--gris)}
+</style>
+</head>
+<body>
+
+<!-- ======================= ENTRAR ======================= -->
+<div id="pEntrar">
+  <div class="cab laca"><div class="lustre"><i></i></div><div class="wrap">
+    <div class="marca"><span class="pin">G</span> Tu Garantía</div>
+    <h1>Mi cuenta de socio</h1>
+  </div></div>
+  <div class="wrap" id="entrarCuerpo"></div>
+</div>
+
+<div id="pCargando" class="oculto"><div class="cargando">Buscando tu historial…</div></div>
+
+<!-- ======================= CUENTA ======================= -->
+<div id="pCuenta" class="oculto">
+  <div class="cab laca"><div class="lustre"><i></i></div><div class="wrap">
+    <div class="marca"><span class="pin">G</span> Tu Garantía</div>
+    <h1 id="uNombre">—</h1>
+    <div class="chip-nivel" id="uNivel">—</div>
+  </div></div>
+  <div class="wrap"><div id="cuerpo"></div></div>
+  <nav class="nav" id="nav">
+    <button data-t="inicio" class="on">Inicio</button>
+    <button data-t="calc">Calculadora</button>
+    <button data-t="garantia">Mi garantía</button>
+    <button data-t="historial">Historial</button>
+  </nav>
+</div>
+
+<script src="motor.js"></script>
+<script src="puente.js"></script>
+<script>
+'use strict';
+
+var CFG_POR_DEFECTO = { url: '', anon: '' };
+var CFG = (function () {
+  try { var g = JSON.parse(localStorage.getItem('socio_cfg') || 'null');
+        if (g && g.url && g.anon) return g; } catch (e) {}
+  return CFG_POR_DEFECTO;
+})();
+
+var M = window.MotorReglas;
+var $ = function (id) { return document.getElementById(id); };
+var COP = function (n) { return '$' + Math.round(n || 0).toLocaleString('es-CO'); };
+var COPc = function (n) {
+  n = Math.round(n || 0);
+  if (n >= 1000000) return '$' + (n / 1000000).toFixed(n % 1000000 ? 1 : 0) + 'M';
+  if (n >= 1000) return '$' + Math.round(n / 1000) + 'k';
+  return '$' + n;
+};
+var esc = function (s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function (m) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]; });
+};
+var pct = function (t) { return Math.round(t * 100) + '%'; };
+
+function hoyISO() { return fechaRel(0); }
+function fechaRel(dias) {
+  var x = new Date(); x.setDate(x.getDate() + dias);
+  return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0');
+}
+function fmtFecha(iso) {
+  if (!iso) return '—';
+  var p = String(iso).slice(0, 10).split('-');
+  var mes = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  return Number(p[2]) + ' ' + mes[Number(p[1]) - 1] + ' ' + p[0];
+}
+function fila(k, v) { return '<div class="fila"><span class="k">' + esc(k) + '</span><span class="v">' + esc(v) + '</span></div>'; }
+
+/* Los días de atraso de un corte que puede no venir. El motor pide una fecha
+   ISO de verdad y lanza con null o con basura; en el historial hay créditos
+   viejos sin corte, y una excepción acá dejaba la pestaña entera en blanco. */
+function diasDeAtraso(corte) {
+  if (!/^\d{4}-\d{2}-\d{2}/.test(String(corte || ''))) return 0;
+  return Math.max(0, M.diasDeMora(String(corte).slice(0, 10), hoyISO()));
+}
+
+/* ============== A QUIÉN LE ESCRIBE EL SOCIO, Y DE PARTE DE QUIÉN ==============
+
+   EL ATAQUE QUE ESTO EVITA
+   El enlace de WhatsApp (#d=...) trae un paquete en base64 con el historial del
+   socio. Ese paquete NO está firmado y no puede estarlo: firmar de verdad pide
+   un secreto, y un secreto no puede vivir dentro de una página pública — quien
+   abre la página se lo lleva. Cualquiera puede armar un paquete a mano.
+   Si el número de WhatsApp y el nombre del negocio salieran de ahí, un estafador
+   armaría un enlace a la página VERDADERA de Joan, con el nombre de Joan y SU
+   propio número adentro, se lo mandaría a un cliente, y el cliente —viendo la
+   página buena, con la marca buena— le mandaría su solicitud, su cédula y sus
+   datos al estafador creyendo que le escribe a Joan.
+
+   LA SOLUCIÓN, QUE NO ES CRIPTOGRÁFICA
+   El número y el nombre no salen del paquete: salen de acá, de la propia página.
+   El atacante controla el hash de la URL; la página servida desde el sitio de
+   Joan no la controla. Con eso el agujero queda cerrado sin ningún secreto.
+
+   PARA CAMBIAR EL NÚMERO se edita esta línea y nada más. Con el número vacío,
+   WhatsApp abre con el mensaje escrito y le pide al socio que elija el chat:
+   es un paso más, pero nunca lo manda al chat equivocado. */
+var NEGOCIO_OFICIAL = { nombre: 'Tu Garantía', whatsapp: '' };
+
+/* El contacto de confianza. Del paquete del enlace no sale NUNCA. De las otras
+   dos fuentes sí, porque no las controla un tercero: la nube es el Supabase de
+   Joan y el Panel es el localStorage de este mismo origen, que solo escribe
+   crm.html — ahí Joan configura su número y sigue mandando él.
+   Si esa fuente no trae nada, o si el socio entró por un enlace, manda la
+   página. Un enlace jamás puede aportar un destino. */
+function contactoOficial() {
+  var n = (S && !S.deEnlace && S.negocio) ? S.negocio : null;
+  return {
+    nombre: (n && n.nombre) || NEGOCIO_OFICIAL.nombre || 'Tu Garantía',
+    whatsapp: (n && n.whatsapp) || NEGOCIO_OFICIAL.whatsapp || ''
+  };
+}
+
+function porWhatsApp(texto) {
+  var n = String(contactoOficial().whatsapp || '').replace(/\D/g, '');
+  var destino = n ? (n.length <= 10 ? '57' + n : n) : '';
+  window.open('https://wa.me/' + destino + '?text=' + encodeURIComponent(texto), '_blank', 'noopener');
+}
+/* La marca. Se llama así por historia; devuelve el nombre del negocio. */
+function nombreJoan() { return contactoOficial().nombre; }
+
+/* ===================== SOCIOS DE PRUEBA ===================== */
+var DEMOS = (function () {
+  var cred = [{ codigo: 'CR-0009', capital: 600000, costo: 120000, desembolso: fechaRel(-23),
+                corte: fechaRel(-9), pagado: false, abonado: 0, prorrogas: 0, garantia: 0 }];
+  var cobrado = 0, puntuales = 0;
+  for (var i = 1; i <= 8; i++) {
+    var cap = 100000 + i * 25000, costo = Math.round(cap * 0.20);
+    var tarde = (i === 8), pro = (i === 6) ? Math.round(cap * 0.20) : 0;
+    cred.push({ codigo: 'CR-' + String(9 - i).padStart(4, '0'), capital: cap, costo: costo,
+      desembolso: fechaRel(-30 * i - 14), corte: fechaRel(-30 * i),
+      pagado: true, fecha_pagado: fechaRel(-30 * i + (tarde ? 6 : -1)),
+      abonado: cap + costo + pro, prorrogas: pro ? 1 : 0,
+      garantia: M ? M.acumularGarantia(costo + pro, !tarde) : 0 });
+    cobrado += (M ? M.acumularGarantia(costo + pro, !tarde) : 0);
+    if (!tarde) puntuales++;
+  }
+  var datosAna = { nombre: 'Ana Ruiz', cedula: '52111222', celular: '3001112233', whatsapp: true,
+    ciudad: 'Bogotá Kennedy', direccion: 'Cra 78 #38-12', foto_cedula_frente: 'si', foto_cedula_reverso: 'si' };
+  var datosLuis = { nombre: 'Luis Gómez', cedula: '79333444', celular: '3004445566', whatsapp: true };
+  /* Los cupones salen del motor, nunca a mano: si mañana cambia la tabla de
+     datos, estos socios de prueba cambian solos y no quedan mintiendo. */
+  var cuponAna = M ? M.garantiaPorDatos(datosAna).total : 0;
+  var cuponLuis = M ? M.garantiaPorDatos(datosLuis).total : 0;
+  var ganLuis = M ? M.acumularGarantia(40000, true) : 0;
+
+  /* ---- La cuenta de Joan, para que se vea como socio ----
+     10 créditos, todos pagados en fecha. 1.800.000 de capital, 360.000 de
+     costos, 324.000 de garantía ganada (el 90%) + 100.000 de cupón = 424.000.
+     Platino, cupo 1.272.000, préstamo con garantía hasta 324.000. */
+  var montosJoan = [300000, 300000, 200000, 200000, 200000, 200000, 100000, 100000, 100000, 100000];
+  var credJoan = [], ganadaJoan = 0;
+  for (var j = 0; j < montosJoan.length; j++) {
+    var capJ = montosJoan[j];
+    var costoJ = Math.round(capJ * 0.20);
+    var ganJ = M ? M.acumularGarantia(costoJ, true) : 0;   // 0,90 → 54.000 / 36.000 / 18.000
+    ganadaJoan += ganJ;
+    credJoan.push({
+      codigo: 'CR-' + String(10 - j).padStart(4, '0'),
+      capital: capJ, costo: costoJ,
+      desembolso: fechaRel(-15 * (j + 1) - 12),
+      corte: fechaRel(-15 * (j + 1)),
+      pagado: true,
+      fecha_pagado: fechaRel(-15 * (j + 1) - 1),   // un día antes del corte: puntual
+      abonado: capJ + costoJ, prorrogas: 0, garantia: ganJ
+    });
+  }
+  var datosJoan = {
+    nombre: 'Joan Hispanista', cedula: '79111000', celular: '3001112026', whatsapp: true,
+    correo: 'joan@tugarantia.co', ciudad: 'Bogotá Chapinero', direccion: 'Cll 63 #11-20',
+    vivienda: 'apartamento 402', pago: 'Nequi 3001112026', celular2: '6012223344',
+    referencia: 'Marta Ruiz 3009998877', ubicacion: { lat: 4.65, lng: -74.06, acc: 20 },
+    foto_cedula_frente: 'si', foto_cedula_reverso: 'si', foto_selfie: 'si'
+  };
+  var cuponJoan = M ? M.garantiaPorDatos(datosJoan).total : 0;
+
+  return [
+    { cedula: '52111222', tel4: '2233', nombre: 'Ana Ruiz',
+      datos: {
+        negocio: { nombre: 'Tu Garantía', whatsapp: '' },
+        comunidad: { socios: 34, creditos_pagados: 218, garantia_construida: 9840000,
+                     prestado: 52400000, puntualidad: 87, desde: fechaRel(-540) },
+        socio: { codigo: 'CL-0007' },
+        garantia: { total: cobrado + cuponAna + 10000, acumulada: cobrado, cupon: cuponAna, referidos: 10000,
+          nivel: 'oro', pagados_a_tiempo: puntuales, racha: 7, meses_sin_mora: 7, creditos_total: 9,
+          comprometida: 0 },
+        perfil: { datos: datosAna },
+        referidos: { total: 3, pagaron: 2, lista: [{ nombre: 'Luis', pago: true }, { nombre: 'Sandra', pago: true }, { nombre: 'Pedro', pago: false }] },
+        creditos: cred,
+        resumen: { total_prestado: 2300000, primer_credito: fechaRel(-254) }
+      } },
+    { cedula: '79333444', tel4: '5566', nombre: 'Luis Gómez',
+      datos: {
+        negocio: { nombre: 'Tu Garantía', whatsapp: '' },
+        comunidad: { socios: 34, creditos_pagados: 218, garantia_construida: 9840000,
+                     prestado: 52400000, puntualidad: 87, desde: fechaRel(-540) },
+        socio: { codigo: 'CL-0008' },
+        garantia: { total: ganLuis + cuponLuis, acumulada: ganLuis, cupon: cuponLuis, referidos: 0,
+          nivel: 'bronce', pagados_a_tiempo: 1, racha: 1, meses_sin_mora: 1, creditos_total: 2,
+          comprometida: 0 },
+        perfil: { datos: datosLuis },
+        referidos: { total: 0, pagaron: 0, lista: [] },
+        creditos: [
+          { codigo: 'CR-0011', capital: 250000, costo: 50000, desembolso: fechaRel(-6),
+            corte: fechaRel(7), pagado: false, abonado: 0, prorrogas: 0, garantia: 0 },
+          { codigo: 'CR-0010', capital: 200000, costo: 40000, desembolso: fechaRel(-40),
+            corte: fechaRel(-26), pagado: true, fecha_pagado: fechaRel(-26), abonado: 240000,
+            prorrogas: 0, garantia: ganLuis }
+        ],
+        resumen: { total_prestado: 450000, primer_credito: fechaRel(-40) }
+      } },
+    { cedula: '79111000', tel4: '2026', nombre: 'Joan Hispanista',
+      datos: {
+        negocio: { nombre: 'Tu Garantía', whatsapp: '' },
+        comunidad: { socios: 34, creditos_pagados: 218, garantia_construida: 9840000,
+                     prestado: 52400000, puntualidad: 87, desde: fechaRel(-540) },
+        socio: { codigo: 'CL-0001' },
+        garantia: { total: ganadaJoan + cuponJoan, acumulada: ganadaJoan, cupon: cuponJoan, referidos: 0,
+          nivel: 'platino', pagados_a_tiempo: 10, racha: 10, meses_sin_mora: 6,
+          creditos_total: 10, comprometida: 0 },
+        perfil: { datos: datosJoan },
+        referidos: { total: 0, pagaron: 0, lista: [] },
+        creditos: credJoan,
+        respaldados: [],
+        resumen: { total_prestado: 1800000, primer_credito: fechaRel(-162) }
+      } }
+  ];
+})();
+function buscarDemo(cedula, tel4) {
+  for (var i = 0; i < DEMOS.length; i++) {
+    if (DEMOS[i].cedula === cedula && DEMOS[i].tel4 === tel4) {
+      return { nombre: DEMOS[i].nombre, datos: DEMOS[i].datos, actualizado_en: null };
+    }
+  }
+  return null;
+}
+
+/* ============ HISTORIAL QUE VIENE DENTRO DEL ENLACE ============ */
+function desdeEnlace() {
+  var m = /[#&]d=([A-Za-z0-9\-_]+)/.exec(location.hash || '');
+  if (!m) return null;
+  try {
+    var s = m[1].replace(/-/g, '+').replace(/_/g, '/');
+    var bin = atob(s), by = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) by[i] = bin.charCodeAt(i);
+    var paq = JSON.parse(new TextDecoder().decode(by));
+    if (!paq || !paq.d) return null;
+    /* El paquete se queda SIN contacto, acá en la puerta. Cualquiera puede
+       armar un #d= a mano —no está firmado ni puede estarlo, ver
+       NEGOCIO_OFICIAL— así que si trajera un número de WhatsApp, un estafador
+       mandaría un enlace a la página verdadera de Joan con su propio número
+       adentro y el cliente le escribiría a él. Números y cifras del socio sí
+       vienen del paquete: mentir ahí solo se engaña a sí mismo. El destino no.
+       Se borra en vez de ignorarse para que ningún código de mañana lo lea. */
+    delete paq.d.negocio;
+    return { nombre: paq.n, datos: paq.d, actualizado_en: paq.f || null, deEnlace: true };
+  } catch (e) { return null; }
+}
+
+/* ============================ ESTADO ============================ */
+var S = null, TAB = 'inicio', MONTO = 300000, NUEVOS = {};
+/* Qué producto está mirando en la calculadora. El quincenal sale por defecto:
+   es el de todos los días. El de garantía hay que ir a buscarlo. */
+var MODO = 'quincenal', PLAZO = 3;
+
+function mostrar(cual) {
+  ['pEntrar', 'pCargando', 'pCuenta'].forEach(function (p) { $(p).classList.toggle('oculto', p !== cual); });
+  window.scrollTo(0, 0);
+}
+
+/* ================= EL PANEL DE ESTE MISMO EQUIPO =================
+   El Panel de Joan y esta app se sirven del mismo origen, así que comparten
+   localStorage: acá se leen sus clientes de verdad, sin nube y sin enlaces.
+
+   SOLO LECTURA. Esa llave es la cartera real de Joan. Acá no hay ni puede
+   haber un setItem ni un removeItem: si esto escribe, le borra los clientes.
+
+   En el celular de un cliente esa llave está vacía, así que no se filtra nada,
+   y aun en el equipo de Joan sigue haciendo falta cédula + 4 dígitos: no se
+   puede listar a nadie. */
+var LLAVE_PANEL = 'joan_socios_v1';
+var P = window.PuenteTuGarantia || null;
+
+function leerPanel() {
+  try {
+    if (!P) return null;
+    if (location.protocol === 'file:') return null;
+    var crudo = localStorage.getItem(LLAVE_PANEL);
+    if (!crudo) return null;
+    return P.normalizar(JSON.parse(crudo));
+  } catch (e) { return null; }
+}
+/* El enlace que abre el Panel: #p=cedula-4dígitos. Va en el hash a propósito,
+   porque el hash no sale del navegador; un ?p= quedaría en los registros del
+   servidor. Y solo sirve donde vive el Panel: en el celular de un cliente esa
+   llave está vacía. */
+function desdePanel() {
+  var m = /[#&]p=(\d{5,15})-(\d{4})\b/.exec(location.hash || '');
+  return m ? buscarEnPanel(m[1], m[2]) : null;
+}
+function buscarEnPanel(ced, tel) {
+  try {
+    var db = leerPanel(); if (!db) return null;
+    var s = P.buscarSocio(db, ced, tel); if (!s) return null;
+    return { nombre: s.nombre || 'Socio', datos: P.migrarSocio(db, s),
+             actualizado_en: null, origen: 'panel', cedula: ced, tel4: tel };
+  } catch (e) { return null; }
+}
+
+/* ============================ ENTRAR ============================
+   Tres fuentes, siempre en este orden: la nube, el Panel de este equipo, y los
+   socios de prueba. Si una no está disponible se salta, no se cae. */
+function buscarEnNube(ced, tel) {
+  if (!CFG.url || !CFG.anon) return Promise.resolve({ dato: null, falloRed: false });
+  return fetch(CFG.url.replace(/\/+$/, '') + '/rest/v1/rpc/historial_socio', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', apikey: CFG.anon, Authorization: 'Bearer ' + CFG.anon },
+    body: JSON.stringify({ p_cedula: ced, p_tel4: tel })
+  }).then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('http ' + r.status)); })
+    .then(function (j) { return { dato: j || null, falloRed: false }; })
+    .catch(function () { return { dato: null, falloRed: true }; });
+}
+
+function entrar() {
+  var ced = ($('inCedula').value || '').replace(/\D/g, '');
+  var tel = ($('inTel').value || '').replace(/\D/g, '').slice(-4);
+  $('errEntrar').classList.add('oculto');
+  if (ced.length < 5) return fallo('Escribe tu número de cédula completo.');
+  if (tel.length < 4) return fallo('Necesito los últimos 4 números de tu celular.');
+  mostrar('pCargando');
+
+  buscarEnNube(ced, tel).then(function (n) {
+    if (n.dato) { n.dato.cedula = ced; n.dato.tel4 = tel; n.dato.origen = 'nube'; return abrir(n.dato, false); }
+
+    var p = buscarEnPanel(ced, tel);
+    if (p) return abrir(p, false);
+
+    var d = buscarDemo(ced, tel);
+    if (d) { d.cedula = ced; d.tel4 = tel; d.origen = 'demo'; return abrir(d, true); }
+
+    /* Nunca se dice "la cédula existe pero el celular no coincide": eso
+       convertiría la app en un oráculo de cédulas. */
+    fallo(n.falloRed
+      ? 'No pude conectarme. Revisa que tengas internet y vuelve a intentar.'
+      : 'No encontré esa cédula con ese celular. Revisa los números, y si siguen sin salir escríbenos.' +
+        (location.protocol === 'file:'
+          ? ' Si estás abriendo esto como archivo, ábrelo desde la dirección web: así las dos páginas se ven entre sí.'
+          : ''));
+  });
+
+  function fallo(msg) { $('errEntrar').textContent = msg; $('errEntrar').classList.remove('oculto'); mostrar('pEntrar'); }
+}
+
+/* ================= LA PANTALLA DE ENTRAR ================= */
+function pintarEntrar() {
+  $('entrarCuerpo').innerHTML =
+    '<div class="card">' +
+      '<h3 class="tit">Entra con tus datos</h3>' +
+      '<p class="sub">Los mismos que diste cuando abriste tu crédito.</p>' +
+      '<label for="inCedula">Tu cédula</label>' +
+      '<input id="inCedula" type="text" inputmode="numeric" autocomplete="off" placeholder="Ej: 52111222">' +
+      '<label for="inTel">Últimos 4 números de tu celular</label>' +
+      '<input id="inTel" type="text" inputmode="numeric" autocomplete="off" maxlength="4" placeholder="Ej: 2233">' +
+      '<button class="btn arriba" id="btnEntrar">Ver mi cuenta</button>' +
+      '<div id="errEntrar" class="aviso ambar oculto"></div>' +
+      '<div id="avisoDemo" class="aviso oculto"></div>' +
+    '</div>' +
+    '<div class="card">' +
+      '<h3 class="tit">¿Todavía no eres socio?</h3>' +
+      '<p class="sub">Se entra solo por invitación. Si alguien te pasó un código, escríbelo aquí.</p>' +
+      '<button class="btn sec arriba" onclick="abrirRegistro()">Tengo un código de invitación</button>' +
+    '</div>' +
+    '<div class="pie">Tus datos solo los ves tú, con tu cédula y tu celular.<br>' +
+      '¿No te reconoce? Escríbenos y lo revisamos.</div>';
+  $('btnEntrar').addEventListener('click', entrar);
+  $('inCedula').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('inTel').focus(); });
+  $('inTel').addEventListener('keydown', function (e) { if (e.key === 'Enter') entrar(); });
+  if (!CFG.url || !CFG.anon) {
+    $('avisoDemo').innerHTML = '<b>Modo de prueba.</b> Todavía no está conectada la base, así que hay ' +
+      'socios de ejemplo:' +
+      '<div style="margin-top:var(--e2)"><b>Ana Ruiz</b> — cédula <b>52111222</b>, celular <b>2233</b></div>' +
+      '<div><b>Luis Gómez</b> — cédula <b>79333444</b>, celular <b>5566</b></div>' +
+      '<div><b>Joan</b> — cédula <b>79111000</b>, celular <b>2026</b></div>';
+    $('avisoDemo').classList.remove('oculto');
+  }
+}
+
+/* ============ ENTRAR POR INVITACIÓN ============
+   Nadie crea cuenta solo. Un código sirve para una persona. Acá solo se
+   revisa la FORMA del código: si existe y si ya se usó lo sabe la nube o lo
+   sabe Joan, nunca este teléfono. */
+function abrirRegistro() {
+  $('entrarCuerpo').innerHTML = '<div class="card">' +
+    '<h3 class="tit">Tengo un código</h3>' +
+    /* Acá NO va el nombre de la marca. "en Tu Garantía" se lee "en tu garantía",
+       o sea en el saldo del socio, y la frase queda diciendo otra cosa. La voz
+       de toda la app es la primera del plural: te abrimos, lo revisamos. */
+    '<p class="sub">Escribe el código que te pasaron y tus datos. Con eso te abrimos la cuenta.</p>' +
+    '<label for="inCodigo">Tu código</label>' +
+    '<input id="inCodigo" type="text" autocomplete="off" autocapitalize="characters" ' +
+      /* El maxlength sale del motor, no a mano: el prefijo pasó de 'QNC' (3) a 'TG' (2)
+         y un 13 fijo dejaba teclear un carácter de más. */
+      'spellcheck="false" maxlength="' + (M.PREFIJO_CODIGO.length + M.LARGO_CODIGO + 2) +
+      '" placeholder="' + M.PREFIJO_CODIGO + '-XXXX-XXXX" oninput="tecleaCodigo(this)">' +
+    '<label for="regNombre">Tu nombre completo</label>' +
+    '<input id="regNombre" type="text" autocomplete="name" placeholder="Ej: Ana Ruiz">' +
+    '<label for="regCedula">Tu cédula</label>' +
+    '<input id="regCedula" type="text" inputmode="numeric" autocomplete="off" placeholder="Ej: 52111222">' +
+    '<label for="regTel">Tu celular</label>' +
+    '<input id="regTel" type="text" inputmode="numeric" autocomplete="off" placeholder="Ej: 3001112233">' +
+    '<button class="btn arriba" onclick="pedirCuenta()">Pedir mi cuenta</button>' +
+    '<div id="errRegistro" class="aviso ambar oculto"></div>' +
+    '<button class="btn sec sm" style="margin-top:var(--e3)" onclick="pintarEntrar()">Volver</button>' +
+    '</div>' +
+    '<div class="pie">El código te lo pasa quien ya es socio, o nos lo pides a nosotros.</div>';
+  window.scrollTo(0, 0);
+}
+
+/* Se formatea solo mientras escribe: así el guion no lo tiene que poner él. */
+function tecleaCodigo(el) {
+  var t = (el.value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (t.indexOf(M.PREFIJO_CODIGO) === 0) t = t.slice(M.PREFIJO_CODIGO.length);
+  t = t.slice(0, M.LARGO_CODIGO);
+  el.value = t ? M.PREFIJO_CODIGO + '-' + (t.length > 4 ? t.slice(0, 4) + '-' + t.slice(4) : t) : '';
+}
+
+function pedirCuenta() {
+  var err = $('errRegistro');
+  var falla = function (m) { err.className = 'aviso ambar'; err.innerHTML = m; };
+  var cod = $('inCodigo').value || '';
+  var nom = ($('regNombre').value || '').trim();
+  var ced = ($('regCedula').value || '').replace(/\D/g, '');
+  var tel = ($('regTel').value || '').replace(/\D/g, '');
+
+  if (!M.codigoInvitacionValido(cod)) {
+    return falla('<b>Ese código no es válido.</b> Fíjate que no falte ni sobre una letra; los códigos ' +
+      'son de ' + M.LARGO_CODIGO + ' caracteres, como ' + M.PREFIJO_CODIGO + '-A3F7-K92M.');
+  }
+  if (nom.length < 3) return falla('Escribe tu nombre completo.');
+  if (ced.length < 5) return falla('Escribe tu número de cédula completo.');
+  if (tel.length < 7) return falla('Escribe tu número de celular completo.');
+
+  var codigo = M.normalizarCodigoInvitacion(cod);
+  err.className = 'aviso oculto';
+
+  if (CFG.url && CFG.anon) {
+    return fetch(CFG.url.replace(/\/+$/, '') + '/rest/v1/rpc/canjear_invitacion', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey: CFG.anon, Authorization: 'Bearer ' + CFG.anon },
+      body: JSON.stringify({ p_codigo: codigo, p_cedula: ced, p_telefono: tel, p_nombre: nom })
+    }).then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('http ' + r.status)); })
+      .then(function (j) {
+        if (j && j.ok) return registroListo(codigo, nom, ced, tel, 'nube');
+        var motivo = (j && j.motivo) || 'no_existe';
+        /* No se distingue "no existe" de "anulada": si no, la app se vuelve un
+           adivinador de códigos. */
+        falla(motivo === 'usada'
+          ? '<b>Ese código ya lo usó otra persona.</b> Cada código sirve para uno solo. Pídele otro a quien te invitó.'
+          : motivo === 'vencida'
+            ? '<b>Ese código ya venció.</b> Pídele uno nuevo a quien te invitó.'
+            : motivo === 'datos'
+              ? 'Revisa tu cédula y tu celular: alguno quedó incompleto.'
+              : '<b>No encuentro ese código.</b> Revisa que esté completo y vuelve a probar.');
+      })
+      .catch(function () { registroListo(codigo, nom, ced, tel, 'sin_conexion'); });
+  }
+  registroListo(codigo, nom, ced, tel, 'local');
+}
+
+var TEXTO_REGISTRO = '';
+function registroListo(codigo, nom, ced, tel, via) {
+  TEXTO_REGISTRO = 'Hola, me invitaron a ' + nombreJoan() + ' y quiero abrir mi cuenta:\n\n' +
+    '• Nombre: ' + nom + '\n• Cédula: ' + ced + '\n• Celular: ' + tel + '\n• Código: ' + codigo +
+    '\n\nGracias.';
+  var enNube = via === 'nube';
+  var h = '<div class="card">' +
+    '<h3 class="tit" style="text-align:center">Listo</h3>' +
+    '<p class="sub" style="text-align:center">' +
+      (enNube
+        ? 'Ya tenemos tu solicitud.'
+        : 'Manda esto por WhatsApp a ' + esc(nombreJoan()) + ' y te abrimos la cuenta.') + '</p>' +
+    (via === 'sin_conexion'
+      ? '<div class="aviso ambar">No pude conectarme, pero puedes mandárnoslo directo por WhatsApp.</div>'
+      : '') +
+    '<div class="aviso info">' +
+      (enNube
+        ? 'Te vamos a escribir por WhatsApp para terminar de abrirte la cuenta. Guarda tu cédula y los ' +
+          'últimos 4 de tu celular: con eso entras.'
+        : 'Tu código: <b>' + esc(codigo) + '</b>') + '</div>' +
+    '<button class="btn arriba" onclick="porWhatsApp(TEXTO_REGISTRO)">Escribirle por WhatsApp</button>' +
+    (enNube ? '' : '<div class="muted" style="font-size:12px;margin-top:var(--e2);text-align:center">' +
+      'El código lo revisamos cuando te creamos la cuenta.</div>') +
+    '<button class="btn sec sm" style="margin-top:var(--e3)" onclick="pintarEntrar()">Volver</button>' +
+    '</div>';
+  $('entrarCuerpo').innerHTML = h;
+  window.scrollTo(0, 0);
+}
+
+/* ==================== PREPARAR AL SOCIO ==================== */
+function abrir(resp, esDemo) {
+  var d = resp.datos || {};
+  var g = d.garantia || {};
+  var creditos = (d.creditos || []).slice();
+  var respaldados = (d.respaldados || []).slice();
+
+  var nivel = M.evaluarNivel(Number(g.pagados_a_tiempo || 0), Number(g.racha || 0),
+                             Number(g.meses_sin_mora || 0), g.nivel || 'bronce');
+
+  /* Las dos garantías. El paquete ya trae el cupón y los referidos en pesos,
+     así que el desglose se arma con esos mismos pesos y no se recalcula: si se
+     recalculara habría dos verdades sobre la misma plata. */
+  var abiertos = respaldados.filter(function (r) { return !r.pagado; });
+  var comprometidaCruda = Number(g.comprometida != null ? g.comprometida
+    : abiertos.reduce(function (t, r) { return t + Number(r.saldo_capital || 0); }, 0)) || 0;
+  var ganada = Math.max(0, Number(g.acumulada || 0));
+  var gd = {
+    cupon: Number(g.cupon || 0),
+    referidos: Number(g.referidos || 0),
+    /* Las dos partes tienen que sumar el total SIEMPRE, así que la prestada se
+       saca por resta: si un ajuste se comió parte del cupón, se nota acá y no
+       queda una cifra que no cuadra con la de arriba. */
+    prestada: Math.max(0, Number(g.total || 0) - ganada),
+    ganada: ganada,
+    comprometida: Math.min(comprometidaCruda, ganada),
+    total: Number(g.total || 0)
+  };
+  gd.ganada_libre = gd.ganada - gd.comprometida;
+  gd.base_cupo = Math.max(0, gd.total - gd.comprometida);
+
+  S = {
+    nombre: resp.nombre || 'Socio',
+    codigo: (d.socio && d.socio.codigo) || '',
+    cedula: resp.cedula || '', tel4: resp.tel4 || '',
+    esDemo: !!esDemo, deEnlace: !!resp.deEnlace, actualizado: resp.actualizado_en,
+    origen: resp.origen || (esDemo ? 'demo' : (resp.deEnlace ? 'enlace' : 'nube')),
+    g: g,
+    gd: gd,
+    comprometida: gd.comprometida,
+    garantia: Number(g.total || 0),
+    nivel: nivel,
+    cupo: M.calcularCupo(gd.base_cupo, nivel),
+    maxRespaldado: Math.min(gd.ganada_libre, M.CUPO_MAXIMO),
+    creditos: creditos,
+    respaldados: respaldados,
+    respaldadoActivo: abiertos[0] || null,
+    activo: creditos.filter(function (c) { return !c.pagado; })[0] || null,
+    pagados: creditos.filter(function (c) { return c.pagado; }),
+    perfil: (d.perfil && d.perfil.datos) || {},
+    referidos: d.referidos || { total: 0, pagaron: 0, lista: [] },
+    resumen: d.resumen || {},
+    /* Solo se lee cuando la fuente es de confianza: quien decide es
+       contactoOficial(), no esta línea. Del enlace llega siempre vacío. */
+    negocio: d.negocio || { nombre: NEGOCIO_OFICIAL.nombre, whatsapp: NEGOCIO_OFICIAL.whatsapp },
+    comunidad: d.comunidad || null
+  };
+  NUEVOS = {};
+  MODO = 'quincenal'; PLAZO = 3;
+  /* Abre en un monto donde los DOS productos están VIVOS. Si el arranque pasa
+     la garantía ganada, la comparación —que es lo primero que el socio mira
+     para elegir— nace con el lado azul desteñido y un "no te alcanza", incluso
+     al socio de nivel más alto. Así que el techo de apertura es lo menor entre
+     su cupo, su respaldo máximo y 500.000, redondeado hacia abajo al escalón
+     del control para que la cifra y el pulgar no digan cosas distintas.
+     El piso lo pone limitesCalc, que ya sabe cederle al socio de cupo chico. */
+  var lIni = limitesCalc();
+  var techoIni = Math.min(S.cupo || 300000, 500000);
+  if (S.maxRespaldado > 0) techoIni = Math.min(techoIni, S.maxRespaldado);
+  MONTO = Math.max(lIni.min, Math.floor(techoIni / lIni.paso) * lIni.paso);
+
+  $('uNombre').textContent = S.nombre.split(' ').slice(0, 2).join(' ');
+  $('uNivel').innerHTML = esc('Socio ' + nivel + ' · ' + COP(S.garantia)) +
+    (S.origen === 'panel'
+      ? '<span class="pto" title="Datos leídos del Panel de este dispositivo"></span>' : '');
+  irA('inicio');
+  mostrar('pCuenta');
+}
+
+/* La entrada que entiende el motor. El cupón sale de los datos que el socio
+   tiene cargados y los referidos de los que ya pagaron: es la misma cuenta que
+   hizo el Panel, no una segunda. */
+function entradaMotor() {
+  return { datos: S.perfil, referidos: Number(S.referidos.pagaron || 0),
+           acumulada: S.gd.ganada, ajuste: 0, comprometida: S.gd.comprometida };
+}
+
+function irA(tab) {
+  TAB = tab;
+  var b = $('nav').querySelectorAll('button');
+  for (var i = 0; i < b.length; i++) b[i].classList.toggle('on', b[i].dataset.t === tab);
+  $('cuerpo').innerHTML = '<div class="panel">' +
+    (tab === 'inicio' ? vistaInicio() :
+     tab === 'calc' ? vistaCalculadora() :
+     tab === 'garantia' ? vistaGarantia() : vistaHistorial()) + '</div>';
+  if (tab === 'calc') sincronizarCalc();
+  window.scrollTo(0, 0);
+}
+
+/* ============================ INICIO ============================
+   En cada pantalla manda UNA cifra. Acá manda lo que tiene que pagar este
+   corte; si no debe nada, manda su cupo. Nunca las dos grandes a la vez. */
+function proximaCuotaRespaldado() {
+  if (!S.respaldadoActivo) return null;
+  return (S.respaldadoActivo.cuotas || []).filter(function (c) { return !c.pagado; })
+    .sort(function (a, b) { return String(a.fecha).localeCompare(String(b.fecha)); })[0] || null;
+}
+
+/* El próximo corte del calendario, el 15 o el último día del mes, corrido al
+   siguiente día hábil. Sale del motor, no de una cuenta a mano.
+
+   No es lo mismo que calcularFechaCorte(hoy): esa descarta el corte que está a
+   menos de cinco días porque es la fecha en que caería un crédito NUEVO. Acá la
+   pregunta es otra —qué vence en el corte que viene—, y un corte pasado mañana
+   sigue siendo el corte que viene. */
+function proximoCorte() {
+  var hoy = hoyISO();
+  var a = Number(hoy.slice(0, 4)), m = Number(hoy.slice(5, 7)) - 1;
+  var cand = M.cortesNominalesDelMes(a, m)
+    .concat(M.cortesNominalesDelMes(m === 11 ? a + 1 : a, (m + 1) % 12));
+  for (var i = 0; i < cand.length; i++) {
+    var f = M.iso(M.siguienteDiaHabilDeCorte(cand[i]));
+    if (f >= hoy) return f;
+  }
+  return M.calcularFechaCorte(hoy);
+}
+
+function vistaInicio() {
+  var h = '';
+  if (S.esDemo) h += '<div class="cinta">Estás viendo un ejemplo: la base todavía no está conectada.</div>';
+
+  var cuota = proximaCuotaRespaldado();
+  /* "Este corte" se mide contra el corte que viene DE VERDAD, no contra el
+     corte del crédito quincenal: si no hay quincenal abierto, una cuota que
+     está a cuatro meses no vence este corte. */
+  var corteQueViene = proximoCorte();
+  var mismoCorte = !!cuota && String(cuota.fecha || '') <= corteQueViene;
+  /* El recargo de mora entra ACÁ. Es lo que tiene que pagar HOY, y esta es la
+     cifra que manda en la pantalla. Sin el recargo, esta cifra y la de la
+     tarjeta del crédito —que sí lo suma— eran dos números distintos para la
+     misma deuda a dos centímetros uno del otro: delante de un cliente eso es
+     una discusión, y le hace perder la razón a Joan aunque la tenga.
+     La verdad es una sola y es esta: lo de hoy, con mora incluida.
+
+     4-ago-2026: la cuenta la hace el MOTOR (liquidacion), no esta función. Acá
+     se sumaban capital + costo + recargo a mano y con el capital entero de
+     base, así que a un socio en plan de pagos esta cifra y la del Panel no se
+     parecían ni de lejos. */
+  var cicloAct = S.activo ? cicloDelCredito(S.activo) : null;
+  var qAct = S.activo ? liquidacion(S.activo) : null;
+  var diasMora = qAct ? qAct.dias_mora : 0;
+  var moraCredito = qAct ? qAct.recargo_mora : 0;
+  var deCredito = qAct ? qAct.total_a_pagar : 0;
+  var deCuota = mismoCorte ? Number(cuota.total || 0) : 0;
+  var aPagar = deCredito + deCuota;
+
+  if (aPagar > 0) {
+    /* La cifra que manda acá es una DEUDA, así que no va en amarillo: el
+       amarillo es lo que el socio construyó. Sobre la laca la deuda va en la
+       tinta de la placa, y el único amarillo de esta tarjeta es el cupo, que
+       eso sí se lo ganó. */
+    h += '<div class="card laca">' +
+      '<div class="etq">Este corte tienes que pagar</div>' +
+      '<div class="cifra">' + COP(aPagar) + '</div>' +
+      (deCredito && deCuota
+        ? fila((cicloAct.en_plan ? 'Tu cuota ' + cicloAct.numero + ' de ' + cicloAct.cuotas +
+                                   ' del plan de pagos' : 'Tu crédito quincenal') +
+               (moraCredito ? ', con el recargo' : ''), COP(deCredito)) +
+          fila('Cuota ' + cuota.n + ' del préstamo con garantía', COP(deCuota))
+        : '<div class="muted" style="font-size:13.5px;margin-top:var(--e2)">' +
+          (deCuota ? 'La cuota ' + cuota.n + ' de tu préstamo con garantía, el ' + fmtFecha(cuota.fecha) + '.'
+                   : moraCredito
+                     ? 'Es ' + cicloAct.nombre + ', que vencía el ' + fmtFecha(S.activo.corte) +
+                       '. Ya trae adentro el recargo de los ' + diasMora + ' días.'
+                     : 'Es ' + cicloAct.nombre + ', el ' + fmtFecha(S.activo.corte) + '.') + '</div>') +
+      '<div class="sep"></div>' +
+      '<div class="fila"><span class="k">Puedes pedir hasta</span>' +
+        '<span class="v oro">' + esc(COP(S.cupo)) + '</span></div>' +
+      '<button class="btn arriba" onclick="irA(\'calc\')">Calcular y pedir</button>' +
+      '</div>';
+  } else {
+    h += '<div class="card laca">' +
+      '<div class="etq">Puedes pedir hasta</div>' +
+      '<div class="cifra oro">' + COP(S.cupo) + '</div>' +
+      '<div class="muted" style="font-size:13.5px;margin-top:var(--e2)">' +
+      'El costo es siempre el ' + pct(M.TASA_CREDITO) + ' de lo que pidas.</div>' +
+      (S.maxRespaldado > 0
+        ? '<div class="muted" style="font-size:13.5px;margin-top:var(--e2)">' +
+          'Y con la garantía que ya te ganaste puedes pedir hasta ' + COP(S.maxRespaldado) +
+          ' al ' + pct(M.TASA_RESPALDADO_MENSUAL) + ' al mes.</div>'
+        : '') +
+      '<button class="btn arriba" onclick="irA(\'calc\')">Calcular y pedir</button>' +
+      '</div>';
+  }
+
+  h += S.activo ? tarjetaActivo(S.activo) :
+       '<div class="card"><div class="etq">Tu crédito</div>' +
+       '<p style="margin:var(--e2) 0 0">No tienes ningún crédito abierto.</p>' +
+       '<p class="sub">Tu cupo te está esperando para cuando lo necesites.</p></div>';
+
+  if (S.respaldadoActivo) h += tarjetaRespaldadoActivo(S.respaldadoActivo, cuota);
+
+  h += '<div class="card" onclick="irA(\'garantia\')" style="cursor:pointer">' +
+       '<div class="etq">Tu garantía</div>' +
+       /* Lo construido, pero sobre papel: acá el amarillo no puede pisar, pisa
+          su tinta. Blanco no, que blanco es cualquier cifra. */
+       '<div class="cifra sm oro-tinta">' + COP(S.garantia) + '</div>' +
+       '<p class="sub">Es tu historial hecho número. No se retira: es lo que te deja pedir más.</p>' +
+       '<div class="barra"><i style="width:' + progresoNivel() + '%"></i></div>' +
+       '<div class="muted" style="font-size:13px;margin-top:var(--e2)">' + textoProximoNivel() + '</div>' +
+       '</div>';
+
+  h += tarjetaComunidad();
+  return h + pie();
+}
+
+/* ========================== LA COMUNIDAD ==========================
+   No es un banco: es un grupo. Acá el socio ve que entró a algo, no que le
+   prestaron. Solo cifras del conjunto — nunca el nombre ni el monto de nadie. */
+function tarjetaComunidad() {
+  var c = S.comunidad;
+  if (!c || !c.socios) {
+    return '<div class="card" onclick="verReglas()" style="cursor:pointer">' +
+      '<div class="etq">Cómo funciona esto</div>' +
+      '<p style="margin:var(--e2) 0 0;font-size:14.5px">Las reglas del acuerdo, completas y sin letra chica.</p>' +
+      '</div>';
+  }
+  return '<div class="card" onclick="verComunidad()" style="cursor:pointer">' +
+    '<div class="etq">La comunidad</div>' +
+    '<div class="cifra sm">' + c.socios + ' socios</div>' +
+    '<p class="sub">Entre todos llevan ' + COP(c.garantia_construida) + ' de garantía construida.</p>' +
+    '<div class="muted" style="font-size:13px;margin-top:var(--e3)">Ver cómo va el grupo y las reglas →</div>' +
+    '</div>';
+}
+
+function verComunidad() {
+  var c = S.comunidad || {};
+  var h = '<div class="card laca"><div class="etq">Somos</div>' +
+    '<div class="cifra">' + (c.socios || 0) + ' socios</div>' +
+    '<div class="muted" style="font-size:13.5px;margin-top:var(--e2)">' +
+      'Esto no es un banco. Es un grupo que se presta entre sí y crece junto.</div>' +
+    (c.desde ? fila('Andando desde', fmtFecha(c.desde)) : '') +
+    '</div>';
+
+  h += '<div class="card"><h3 class="tit">Lo que llevamos entre todos</h3>' +
+    '<p class="sub">Cifras del grupo. Aquí no aparece el nombre ni el monto de nadie, ni el tuyo.</p>' +
+    fila('Garantía construida', COP(c.garantia_construida || 0)) +
+    fila('Créditos pagados', String(c.creditos_pagados || 0)) +
+    (c.puntualidad != null ? fila('Se pagan en fecha', c.puntualidad + '%') : '') +
+    '</div>';
+
+  var miParte = c.garantia_construida
+    ? Math.max(1, Math.round(Number(S.g.acumulada || 0) / c.garantia_construida * 100)) : 0;
+  h += '<div class="card"><h3 class="tit">Tu parte</h3>' +
+    fila('De lo construido, pusiste', miParte + '%') +
+    fila('Gente que trajiste', String(S.referidos.total || 0)) +
+    '<p class="sub" style="margin-top:var(--e3)">El grupo crece cuando alguien trae a alguien y esa ' +
+    'persona paga. Por eso traer gente te suma cupo: no es una comisión, es que el grupo se hizo ' +
+    'más grande.</p>' +
+    '<button class="btn sec sm" style="margin-top:var(--e3)" onclick="invitar()">Invitar a alguien</button>' +
+    '</div>';
+
+  h += '<div class="card" onclick="verReglas()" style="cursor:pointer">' +
+    '<div class="etq">Cómo funciona esto</div>' +
+    '<p style="margin:var(--e2) 0 0;font-size:14.5px">Las reglas del acuerdo, completas. Las mismas para todos.</p>' +
+    '</div>';
+
+  h += '<button class="btn sec" style="margin-top:var(--e3)" onclick="irA(\'inicio\')">Volver</button>';
+  $('cuerpo').innerHTML = '<div class="panel">' + h + '</div>';
+  window.scrollTo(0, 0);
+}
+
+/* ============ LO QUE DE VERDAD CUESTA UN PLAN DE PAGOS ============
+   4-ago-2026. Esta pantalla decía —con las palabras del motor— que el saldo se
+   puede pasar a "un plan de pagos en 3 cortes con un costo reducido del 5%", y
+   se callaba la ENTRADA. El día que el plan se pacta, el Panel cobra el costo
+   de la quincena que no se pagó (el 20% del capital) y, si el socio venía
+   atrasado, el 1% diario ya causado, que el plan tampoco borra. Sobre 600.000
+   el socio leía 60.000 y le cobraban 180.000: el triple. Y a un socio con 35
+   días encima, 330.000 solo de entrada.
+   Un socio que lee 60.000 y le cobran 180.000 no vuelve, y hace bien. Así que
+   el precio se dice entero, con la entrada adentro y el caso de la mora dicho.
+   Las cifras salen del motor —calcularCosto y construirPlanDePagos, las mismas
+   que hacen el cobro—, nunca de una multiplicación escrita en esta página: el
+   día que cambie una tasa, este texto cambia solo. */
+function ejemploPlanDePagos(capital) {
+  var k = Math.min(M.MONTO_MAXIMO_CALCULADORA,
+                   Math.max(M.MONTO_MINIMO, Math.round(Number(capital) || 0)));
+  var hoy = hoyISO();
+  var plan = M.construirPlanDePagos({ capital: k, fecha_corte: hoy }, { desde: hoy });
+  return {
+    capital: k,
+    entrada: M.calcularCosto(k),          // el costo de la quincena, que no se perdona
+    cortes: plan.cuotas.length,
+    costo_cortes: plan.total_costo,
+    costo_total: M.calcularCosto(k) + plan.total_costo
+  };
+}
+
+function bloquePlanDePagos() {
+  var c = S && S.activo;
+  var ciclo = c ? cicloDelCredito(c) : null;
+  /* Con su propia deuda si la tiene, que es la que va a entender; si ya está en
+     un plan, `capital` es el de la cuota y no sirve de ejemplo, así que manda su
+     cupo. Nunca una cifra inventada por esta página. */
+  var base = (c && ciclo && !ciclo.en_plan) ? c.capital : (S ? S.cupo : 0);
+  var e = ejemploPlanDePagos(base);
+  var dias = c ? Math.max(0, M.diasDeMora(c.corte, hoyISO())) : 0;
+  var recargo = dias > 0 ? M.recargoPorMora(e.capital, dias) : 0;
+
+  return '<div class="card"><div class="etq">El plan de pagos, con todo lo que cuesta</div>' +
+    '<p style="margin:var(--e2) 0 0;font-size:14.5px">El plan reparte lo que debes en ' + e.cortes +
+    ' cortes, y cada corte cuesta el ' + pct(M.TASA_PLAN_DE_PAGOS) + ' de lo que quede debiendo. ' +
+    'Pero ese ' + pct(M.TASA_PLAN_DE_PAGOS) + ' <b>no es todo lo que cuesta el plan</b>: el día que se ' +
+    'pacta se paga una <b>entrada</b>, que es el costo de la quincena que no alcanzaste a pagar, el ' +
+    pct(M.TASA_CREDITO) + ' del capital. Preferimos que lo sepas hoy y no el día del cobro.</p>' +
+    fila('Si debieras ' + COP(e.capital) + ', la entrada', COP(e.entrada)) +
+    fila('Los ' + e.cortes + ' cortes al ' + pct(M.TASA_PLAN_DE_PAGOS), COP(e.costo_cortes)) +
+    '<div class="fila"><span class="k">Te costaría en total</span>' +
+      '<span class="v"><b>' + esc(COP(e.costo_total)) + '</b></span></div>' +
+    '<div class="aviso ambar">Y si llegas al plan <b>ya atrasado</b>, el plan no borra el recargo: la ' +
+    'entrada lleva además el ' + pct(M.TASA_MORA_DIARIA) + ' diario de los días que lleves encima.' +
+    (recargo ? ' Con los ' + dias + ' que llevas hoy, serían ' + COP(recargo) + ' más de entrada.' : '') +
+    '</div>' +
+    '<div class="muted" style="font-size:13px;margin-top:var(--e3)">Todo lo que pagues en el plan te ' +
+    'sigue sumando garantía, igual que cualquier otro pago. Y el plan es una salida, no un castigo: ' +
+    'no bajas de nivel ni pierdes nada de lo que llevas construido.</div></div>';
+}
+
+/* Las reglas salen del motor, no de un texto suelto: si algún día cambia un
+   número, esta pantalla cambia sola. No puede quedar prometiendo otra cosa. */
+function verReglas() {
+  var r = M.reglasResumen();
+  var bloque = function (titulo, texto) {
+    return '<div class="card"><div class="etq">' + esc(titulo) + '</div>' +
+      '<p style="margin:var(--e2) 0 0;font-size:14.5px">' + esc(texto) + '</p></div>';
+  };
+  var h = '<div class="card laca"><div class="etq">El acuerdo</div>' +
+    '<h1 style="font-size:22px;margin-top:var(--e2);color:var(--blanco-laca)">Cómo funciona esto</h1>' +
+    '<div class="muted" style="font-size:13.5px;margin-top:var(--e2)">Las mismas reglas para todos los ' +
+    'socios. Están aquí para que las puedas leer cuando quieras, no solo cuando pides.</div></div>';
+
+  h += bloque('El costo', r.costo.texto);
+  h += bloque('Tu cupo crece pagando', r.garantia.texto);
+  h += bloque('Y crece dando tus datos', r.cupon.texto);
+  h += bloque('Y crece trayendo gente', r.referidos.texto);
+  if (r.respaldado) h += bloque('El préstamo con garantía', r.respaldado.texto);
+
+  h += '<div class="card"><div class="etq">Los niveles</div>' +
+    '<p class="sub">Cuánto puedes pedir es tu garantía multiplicada por el factor de tu nivel.</p>' +
+    '<div style="margin-top:var(--e2)">' + r.niveles.map(function (n) {
+      return '<div class="nivel ' + (n.nivel === S.nivel ? 'aqui' : '') + '">' +
+        '<span class="txt"><span class="nm">' + n.nivel + (n.nivel === S.nivel ? ' · aquí estás' : '') + '</span>' +
+        '<span class="rq">' + requisitoTexto({ nivel: n.nivel, requisitos: n.requisitos, factor: n.factor }) + '</span></span>' +
+        '<span class="cp">×' + n.factor + '</span></div>';
+    }).join('') + '</div>' +
+    '<div class="muted" style="font-size:13px;margin-top:var(--e3)">' + esc(r.tope.texto) + '</div></div>';
+
+  h += '<div class="card"><div class="etq">Si te atrasas</div>' +
+    '<p style="margin:var(--e2) 0 0;font-size:14.5px">' + esc(r.mora.texto) + '</p>' +
+    '<div class="aviso" style="margin-top:var(--e3)">' + esc(r.prorroga.texto) + '</div></div>';
+
+  /* Va pegado al de arriba a propósito: el texto del motor nombra el plan y su
+     5%, y el precio completo tiene que leerse en el mismo tirón, no dos
+     pantallas más allá. */
+  h += bloquePlanDePagos();
+
+  h += '<button class="btn sec" style="margin-top:var(--e3)" onclick="irA(\'inicio\')">Volver</button>';
+  $('cuerpo').innerHTML = '<div class="panel">' + h + '</div>';
+  window.scrollTo(0, 0);
+}
+
+/* Cuánto le falta para el siguiente nivel, en porcentaje y en palabras. */
+function siguienteNivel() {
+  var orden = M.NIVELES, i = orden.indexOf(S.nivel);
+  if (i < 0 || i >= orden.length - 1) return null;
+  var sig = orden[i + 1], r = M.REQUISITOS_NIVEL[sig];
+  var faltanPagos = Math.max(0, r.pagos_a_tiempo - Number(S.g.pagados_a_tiempo || 0));
+  var faltanRacha = Math.max(0, r.racha - Number(S.g.racha || 0));
+  return { nivel: sig, pagos: faltanPagos, racha: faltanRacha,
+           meses: Math.max(0, r.meses_sin_mora - Number(S.g.meses_sin_mora || 0)) };
+}
+function progresoNivel() {
+  var s = siguienteNivel();
+  if (!s) return 100;
+  var r = M.REQUISITOS_NIVEL[s.nivel];
+  var meta = Math.max(1, r.pagos_a_tiempo);
+  return Math.max(6, Math.min(100, Number(S.g.pagados_a_tiempo || 0) / meta * 100));
+}
+function textoProximoNivel() {
+  var s = siguienteNivel();
+  if (!s) return 'Estás en el nivel más alto. Tu cupo es ' + M.FACTOR_CUPO[S.nivel] + ' veces tu garantía.';
+  var partes = [];
+  if (s.pagos) partes.push(s.pagos + ' pago' + (s.pagos !== 1 ? 's' : '') + ' más');
+  if (s.racha) partes.push('racha de ' + M.REQUISITOS_NIVEL[s.nivel].racha);
+  if (s.meses) partes.push(s.meses + ' mes' + (s.meses !== 1 ? 'es' : '') + ' sin atrasarte');
+  if (!partes.length) partes.push('ya casi');
+  /* Sobre base_cupo, igual que S.cupo y que la calculadora: si tiene garantía
+     comprometida en un préstamo con garantía, el cupo del nivel siguiente no
+     puede contarla, o la misma pantalla diría dos cupos distintos. */
+  return 'Con ' + partes.join(' y ') + ' pasas a <b>' + s.nivel + '</b>, y tu cupo sube a ' +
+         COP(M.calcularCupo(S.gd.base_cupo, s.nivel)) + '.';
+}
+
+/* ============ QUÉ CICLO SE ESTÁ COBRANDO, Y A QUÉ PRECIO ============
+   4-ago-2026. Un crédito no siempre está en su quincena: cuando al socio se le
+   acaban las prórrogas pasa a un PLAN DE PAGOS, y ahí lo que se cobra es otra
+   cosa — la cuota, no el capital entero, y al 5% del saldo, no al 20%.
+
+   La app pintaba las tres cifras mezcladas: el capital entero, el costo de la
+   cuota y la etiqueta "(20%)". A un socio con 600.000 en plan le mostraba
+   "Capital $600.000 · Costo (20%) $30.000 · Recargo $60.000" cuando el Panel le
+   cobraba 250.000. Tres números, ninguno del mismo ciclo.
+
+   De acá salen la etiqueta, el porcentaje y el número de cuota, y de una sola
+   pregunta: `plan_cuotas`, que el paquete ya trae. Ninguna pantalla vuelve a
+   decidirlo por su cuenta. */
+function cicloDelCredito(c) {
+  var total = Math.max(0, Math.round(Number(c && c.plan_cuotas) || 0));
+  var pagas = Math.max(0, Math.round(Number(c && c.plan_cuotas_pagadas) || 0));
+  var enPlan = total > 0;
+  var n = enPlan ? Math.min(total, pagas + 1) : 0;
+  return {
+    en_plan: enPlan,
+    numero: n,
+    cuotas: total,
+    /* El porcentaje del producto que DE VERDAD rige. Si el paquete trae la tasa
+       de este ciclo, manda esa: lo que ya viene dicho no se adivina. Si no
+       viene, sale del motor —5% en plan, 20% en la quincena—, nunca escrita a
+       mano acá. Y se normaliza: el Panel guarda el costo como `costoPct` (20),
+       el motor lo maneja en decimal (0,20), y un 20 leído como decimal pintaría
+       "2000%". Por debajo de 1 es decimal, por encima es porcentaje: entre 0,05
+       y 5 no hay ambigüedad posible. */
+    tasa: tasaDecimal((c && c.tasa != null) ? c.tasa
+        : (enPlan ? M.TASA_PLAN_DE_PAGOS : M.TASA_CREDITO)),
+    etiqueta_capital: enPlan ? 'Capital de la cuota ' + n + ' de ' + total : 'Capital',
+    nombre: enPlan ? 'la cuota ' + n + ' de ' + total + ' de tu plan de pagos'
+                   : 'tu crédito quincenal'
+  };
+}
+
+/* Un porcentaje puede llegar en decimal (0,20, como lo maneja el motor) o en
+   entero (20, como lo guarda el Panel en `costoPct`). Entre 0,05 y 20 no hay
+   ambigüedad: por debajo de 1 es decimal, por encima es porcentaje. Si llega
+   basura manda el 20% del quincenal, que es el precio más alto de los dos:
+   equivocarse hacia abajo sería prometerle al socio algo más barato de lo que
+   va a pagar, y eso es justo lo que esta ronda vino a cerrar. */
+function tasaDecimal(t) {
+  var n = Number(t);
+  if (!isFinite(n) || n <= 0) return M.TASA_CREDITO;
+  return n > 1 ? n / 100 : n;
+}
+
+/* La liquidación de un crédito en una fecha, hecha por el MOTOR y por nadie
+   más: días de mora, recargo del 1% diario sobre el capital de este ciclo,
+   total y garantía. Antes cada pantalla sumaba capital + costo + recargo por su
+   cuenta y usaba la base que tenía a mano.
+   No puede lanzar: liquidarCredito exige capital > 0 y un capital en cero o un
+   corte sin fecha no pueden dejar al socio sin ver su cuenta. */
+function liquidacion(c, fecha) {
+  var capital = Math.max(0, Number(c && c.capital) || 0);
+  var costo = Math.max(0, Number(c && c.costo) || 0);
+  var corte = (c && /^\d{4}-\d{2}-\d{2}/.test(String(c.corte || ''))) ? String(c.corte).slice(0, 10) : null;
+  var cuando = fecha || hoyISO();
+  if (capital > 0 && corte) {
+    try {
+      return M.liquidarCredito({ capital: capital, costo: costo, fecha_corte: corte }, cuando);
+    } catch (e) {}
+  }
+  var dias = corte ? Math.max(0, M.diasDeMora(corte, cuando)) : 0;
+  return { capital: capital, costo: costo, recargo_mora: 0, dias_mora: dias,
+           pago_a_tiempo: dias === 0, costo_total_pagado: costo,
+           total_a_pagar: capital + costo,
+           garantia_generada: M.acumularGarantia(costo, dias === 0),
+           garantia_si_puntual: M.acumularGarantia(costo, true) };
+}
+
+function tarjetaActivo(c) {
+  var dias = M.diasDeMora(c.corte, hoyISO());
+  var enMora = dias > 0;
+  var ciclo = cicloDelCredito(c);
+  var q = liquidacion(c);            // capital, costo, recargo y total: del motor
+  var h = '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center">' +
+    '<div class="etq">' + (ciclo.en_plan ? 'Tu plan de pagos · cuota ' + ciclo.numero + ' de ' + ciclo.cuotas
+                                         : 'Tu crédito de ahora') + '</div>' +
+    '<span class="pill ' + (enMora ? 'ambar' : '') + '">' +
+    (enMora ? dias + ' día' + (dias !== 1 ? 's' : '') + ' de atraso' :
+     (dias === 0 ? 'Vence hoy' : 'Faltan ' + Math.abs(dias) + ' días')) + '</span></div>';
+
+  if (enMora) {
+    /* Acá NO va cifra grande. La que manda en esta pantalla es la de arriba,
+       que ya trae el recargo; esta tarjeta es el desglose de esa misma cifra,
+       para que el socio pueda seguir la cuenta línea por línea y llegue al
+       mismo total. El total se repite al pie, en el peso de una fila y sin
+       color propio: explica, no compite. */
+    h += '<div class="muted" style="font-size:13px;margin-top:var(--e2)">' +
+      'De qué está hecho lo que tienes que pagar hoy:</div>' +
+      fila(ciclo.etiqueta_capital, COP(q.capital)) +
+      fila('Costo (' + pct(ciclo.tasa) + ')', COP(q.costo)) +
+      fila('Recargo por los ' + q.dias_mora + ' días', COP(q.recargo_mora)) +
+      '<div class="fila"><span class="k">Total para saldar hoy</span>' +
+        '<span class="v"><b>' + esc(COP(q.total_a_pagar)) + '</b></span></div>' +
+      '<div class="aviso ambar"><b>Aunque te atrases, sigues siendo socio.</b><br>' +
+      'No bajas de nivel, no pierdes garantía y puedes volver a pedir. Paga lo que puedas ' +
+      'cuando puedas: todo lo que pagues sigue sumando a tu cupo.</div>';
+  } else {
+    h += '<div class="cifra sm">' + COP(q.total_a_pagar) + '</div>' +
+      '<div class="muted" style="font-size:13px">Total para saldar</div>' +
+      fila(ciclo.etiqueta_capital, COP(q.capital)) +
+      fila('Costo (' + pct(ciclo.tasa) + ')', COP(q.costo)) +
+      fila('Fecha de pago', fmtFecha(c.corte)) +
+      '<div class="aviso"><b>Si pagas en fecha, sumas el doble.</b><br>' +
+      'Pagando el ' + fmtFecha(c.corte) + ' o antes, tu cupo sube ' + COP(q.garantia_si_puntual) +
+      '. Si te atrasas igual suma, pero la mitad.</div>';
+  }
+  if (ciclo.en_plan) {
+    /* La cuota NO es la deuda: el saldo del crédito entero viene aparte en el
+       paquete y se dice, para que nadie crea que con esta cuota terminó. */
+    h += (c.saldo_capital != null ? fila('Te falta del crédito', COP(c.saldo_capital)) : '') +
+      '<div class="aviso info">Esta es la cuota ' + ciclo.numero + ' de ' + ciclo.cuotas +
+      ' de tu plan. Cada cuota cuesta el ' + pct(ciclo.tasa) +
+      ' de lo que quede debiendo, así que las de más adelante cuestan menos. ' +
+      'La entrada del plan ya la pagaste el día que lo pactamos.</div>';
+  }
+  if (c.prorrogas) h += fila('Prórrogas usadas', String(c.prorrogas));
+  h += '<button class="btn sec sm" style="margin-top:var(--e3)" onclick="recordarme()">Que mi celular me lo recuerde</button>' +
+       '<div class="muted" id="recordarPie" style="font-size:12px;margin-top:var(--e2);text-align:center">' +
+       'Te avisa dos días antes y el mismo día, aunque no tengas la app abierta.</div>';
+  return h + '</div>';
+}
+
+/* El préstamo con garantía que tiene abierto: cuánto le falta y cuándo. */
+function tarjetaRespaldadoActivo(r, cuota) {
+  var cuotas = r.cuotas || [];
+  var pagas = cuotas.filter(function (c) { return c.pagado; }).length;
+  return '<div class="card respaldo">' +
+    '<div class="etq r">Tu préstamo con garantía</div>' +
+    '<div class="cifra sm">' + COP(cuota ? cuota.total : 0) + '</div>' +
+    '<div class="muted" style="font-size:13px">' +
+      (cuota ? 'cuota ' + cuota.n + ' de ' + (cuotas.length || r.plazo_meses) + ', el ' + fmtFecha(cuota.fecha)
+             : 'ya lo terminaste') + '</div>' +
+    fila('Llevas pagadas', pagas + ' de ' + (cuotas.length || r.plazo_meses)) +
+    fila('Te falta de capital', COP(r.saldo_capital)) +
+    '<div class="aviso info">Esos ' + COP(r.saldo_capital) + ' de tu garantía están comprometidos ' +
+    'mientras lo pagas. Se sueltan solos, cuota a cuota.</div>' +
+    '</div>';
+}
+
+/* ========================= CALCULADORA =========================
+   Dos productos en un solo lugar. Sale el quincenal, que es el de todos los
+   días; el de garantía está al lado, a un toque, y solo se puede tocar si ya
+   se ganó garantía pagando. Todas las cuentas salen del motor. */
+function vistaCalculadora() {
+  var l = limitesCalc();
+  return '<div class="card">' +
+    '<div class="seg" id="calcSeg" role="tablist" aria-label="Qué quieres pedir" onkeydown="segTeclas(event)">' +
+      botonSeg('quincenal', 'q', 'Crédito quincenal', pct(M.TASA_CREDITO) + ' · hasta el corte') +
+      botonSeg('respaldado', 'r', 'Préstamo con garantía',
+               pct(M.TASA_RESPALDADO_MENSUAL) + ' al mes · ' + M.PLAZO_RESPALDADO_MIN + ' a ' +
+               M.PLAZO_RESPALDADO_MAX + ' meses') +
+    '</div>' +
+    '<h3 class="tit">¿Cuánto necesitas?</h3>' +
+    '<p class="sub" id="calcSub"></p>' +
+    /* Va en .sm a propósito: es el número que el socio MUEVE, no el que manda.
+       La cifra grande de esta pantalla es una sola, la de abajo: lo que va a
+       pagar. Dos cifras de 34px en el mismo pantallazo no hacen jerarquía,
+       hacen empate. */
+    '<div class="cifra sm" id="calcMonto">' + COP(MONTO) + '</div>' +
+    '<div class="muted" id="calcAviso" style="font-size:13px;min-height:var(--e4)"></div>' +
+    '<input type="range" id="calcRange" min="' + l.min + '" max="' + Math.max(l.min, l.max) +
+      '" step="1" value="' + MONTO + '" ' +
+      'oninput="setMonto(this.value)" aria-label="Cuánto quieres pedir">' +
+    '<div class="chips" id="calcChips"></div>' +
+    '<div id="calcPlazo"></div>' +
+    '</div>' +
+    '<div id="calcSalida"></div>' +
+    '<div id="calcComparar"></div>';
+}
+function botonSeg(modo, cls, titulo, sub) {
+  return '<button type="button" role="tab" aria-selected="false" class="' + cls + '" data-modo="' + modo + '" ' +
+    'onclick="setModo(\'' + modo + '\')"><b>' + esc(titulo) + '</b><i>' + esc(sub) + '</i></button>';
+}
+function segTeclas(e) {
+  if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+  e.preventDefault();
+  setModo(e.key === 'ArrowRight' ? 'respaldado' : 'quincenal');
+  var b = $('calcSeg').querySelector('button.on');
+  if (b) b.focus();
+}
+
+/* 3-ago-2026, pedido de Joan: los dos productos arrancan en 50.000 y la calculadora
+   no pasa de 5 millones. Los dos números salen del motor (M.MONTO_MINIMO y
+   M.MONTO_MAXIMO_CALCULADORA), no de acá: antes cada producto tenía el suyo escrito
+   a mano y por eso terminaron distintos sin que nadie lo decidiera.
+
+   El techo de 5 millones NO es el techo del negocio —ese sigue en CUPO_MAXIMO, 20
+   millones— sino hasta dónde llega lo que el socio se pide solo desde el teléfono.
+
+   El piso cede ante el cupo, y esto no es un detalle: el socio que acaba de entrar
+   tiene el cupo POR DEBAJO del mínimo (ficha a medias y nivel bronce: 25.000 de
+   cupón x 1,5 son 37.500). Si el piso no cediera, no podría elegir ni un monto que
+   le alcance y el aviso le quedaría clavado en "es más que tu cupo" desde el primer
+   día. Con el cupo en cero no hay monto válido que ofrecer —el motor ni siquiera
+   simula un capital de 0— así que ahí se queda el piso, que al menos dice la verdad. */
+function limitesCalc() {
+  var piso = M.MONTO_MINIMO;
+  var techo = M.MONTO_MAXIMO_CALCULADORA;
+  if (MODO === 'respaldado') {
+    var max = Math.min(Math.max(0, Math.floor(S.maxRespaldado)), techo);
+    return { min: Math.min(piso, max), max: max, paso: 10000 };
+  }
+  /* El tope sube a 500.000 aunque el cupo sea menor, a propósito: que el socio vea
+     que el producto llega más lejos y cuánto le falta, en vez de esconderle el
+     recorrido. Pero nunca por encima del techo de la calculadora. */
+  var cupo = Math.max(0, Math.floor(S.cupo || 0));
+  return { min: cupo > 0 ? Math.min(piso, cupo) : piso,
+           max: Math.min(Math.max(cupo, 500000), techo), paso: 50000 };
+}
+
+function setModo(m) {
+  if (m !== 'quincenal' && m !== 'respaldado') return;
+  if (m === 'respaldado' && S.maxRespaldado <= 0) {
+    var a = $('calcAviso');
+    if (a) a.innerHTML = 'Todavía no tienes garantía ganada. Se gana pagando: cada crédito quincenal ' +
+      'que pagas te deja el ' + pct(M.FACTOR_GARANTIA) + ' del costo.';
+    return;
+  }
+  if (m === MODO) return;
+  MODO = m;
+  var l = limitesCalc();
+  MONTO = Math.max(l.min, Math.min(MONTO, l.max));
+  sincronizarCalc();
+}
+function setPlazo(n) { PLAZO = Math.max(M.PLAZO_RESPALDADO_MIN, Math.min(Number(n) || 3, M.PLAZO_RESPALDADO_MAX)); sincronizarCalc(); }
+/* Desde la pantalla de garantía: cae en la calculadora ya en el modo azul. */
+function irACalcRespaldado() {
+  if (S.maxRespaldado <= 0) return irA('calc');
+  MODO = 'respaldado';
+  MONTO = Math.min(MONTO, S.maxRespaldado);
+  irA('calc');
+}
+
+/* Redondea al escalón sin perder los extremos.
+
+   4-ago-2026. Un <input type=range> solo acepta valores de la forma min + n·step, y
+   los cupos reales no caen en esa grilla: con mínimo 50.000 y escalón 50.000, un cupo
+   de 1.272.000 no existe, así que la barra llegaba al tope y se quedaba en 1.250.000
+   mientras el aviso de abajo decía "dentro de tu cupo de $1.272.000". Peor con un
+   socio nuevo de cupo 37.500: tocaba el atajo de "$50k", el número decía $50.000 y el
+   pulgar se iba al extremo izquierdo, porque 50.000 tampoco caía en la grilla.
+
+   Se arregla dejando el <input> con escalón de 1 —así los dos extremos siempre
+   existen— y redondeando acá, que además deja pasar el mínimo y el máximo exactos. */
+function alEscalon(v, l) {
+  if (v <= l.min) return l.min;
+  if (v >= l.max) return l.max;
+  /* La grilla se ancla en CERO, no en el mínimo. Anclada en el mínimo, a un socio
+     nuevo con cupo de 37.500 le quedaban parando en 87.500 y 137.500: tocaba el
+     atajo de "$100k" y el monto se iba a 87.500. Anclada en cero, los montos
+     redondos —que son los que la gente piensa y los que dicen los atajos— siempre
+     existen, y el mínimo y el máximo exactos siguen pasando por los dos ifs. */
+  var n = Math.round(v / l.paso) * l.paso;
+  return Math.max(l.min, Math.min(n, l.max));
+}
+
+function setMonto(v, saltar) {
+  var l = limitesCalc();
+  var techo = MODO === 'respaldado' ? l.max : M.CUPO_MAXIMO;
+  MONTO = Math.max(l.min, Math.min(alEscalon(Number(v) || 0, l), techo));
+  var r = $('calcRange');
+  if (r) {
+    if (saltar && MONTO > Number(r.max)) r.max = MONTO;
+    r.value = Math.min(MONTO, Number(r.max));
+  }
+  sincronizarCalc();
+}
+
+function bloquePlazo() {
+  var h = '<span class="etq suelta">¿En cuántos meses?</span><div class="chips">';
+  for (var n = M.PLAZO_RESPALDADO_MIN; n <= M.PLAZO_RESPALDADO_MAX; n++) {
+    h += '<button class="chip pz' + (n === PLAZO ? ' on azul' : '') + '" onclick="setPlazo(' + n + ')">' + n + '</button>';
+  }
+  return h + '</div><div class="muted" style="font-size:13px;margin-top:var(--e2)">' +
+    'Una cuota por mes, siempre en una fecha de corte.</div>';
+}
+
+function sincronizarCalc() {
+  var resp = MODO === 'respaldado', l = limitesCalc();
+  MONTO = Math.max(l.min, Math.min(MONTO, resp ? l.max : M.CUPO_MAXIMO));
+
+  var bs = $('calcSeg').querySelectorAll('button');
+  for (var i = 0; i < bs.length; i++) {
+    var esEste = bs[i].getAttribute('data-modo') === MODO;
+    bs[i].classList.toggle('on', esEste);
+    bs[i].setAttribute('aria-selected', esEste ? 'true' : 'false');
+    if (bs[i].getAttribute('data-modo') === 'respaldado' && S.maxRespaldado <= 0) {
+      bs[i].setAttribute('aria-disabled', 'true');
+    }
+  }
+
+  $('calcMonto').textContent = COP(MONTO);
+  $('calcSub').textContent = resp
+    ? pct(M.TASA_RESPALDADO_MENSUAL) + ' al mes sobre lo que pidas. Lo respalda la garantía que ya te ganaste.'
+    : 'El costo es el ' + pct(M.TASA_CREDITO) + ' de lo que pidas, por quincena.';
+
+  var r = $('calcRange');
+  /* step=1 a propósito: el redondeo al escalón lo hace alEscalon(), que además deja
+     pasar el mínimo y el máximo exactos. Ver el comentario de setMonto. */
+  r.min = l.min; r.max = Math.max(l.min, l.max, resp ? 0 : MONTO); r.step = 1;
+  r.value = Math.min(MONTO, Number(r.max));
+  r.classList.toggle('azul', resp);
+
+  var chips;
+  if (resp) {
+    chips = [0.25, 0.5, 1].map(function (f) {
+      return Math.max(l.min, Math.round(S.maxRespaldado * f / 10000) * 10000);
+    });
+  } else {
+    var tope = Math.max(S.cupo, 500000);
+    chips = [50000, 100000, 300000, 500000, 1000000]
+      .filter(function (v, i) { return i < 3 || v <= tope * 2; })
+      .filter(function (v) { return v >= l.min && v <= l.max; });
+    /* Si el cupo no llega ni al primer atajo, el cupo entra de primero: tiene
+       que haber al menos un botón que el socio pueda tocar y le alcance. */
+    if (!chips.length || l.min < chips[0]) chips.unshift(l.min);
+  }
+  chips = chips.filter(function (v, i, a) { return v > 0 && a.indexOf(v) === i; });
+  $('calcChips').innerHTML = chips.map(function (v) {
+    return '<button class="chip' + (v === MONTO ? (resp ? ' on azul' : ' on') : '') +
+      '" onclick="setMonto(' + v + ',true)">' + COPc(v) + '</button>';
+  }).join('');
+
+  $('calcPlazo').innerHTML = resp ? bloquePlazo() : '';
+
+  if (resp) {
+    var sr = M.simularPrestamoRespaldado(Math.max(1, MONTO), PLAZO, entradaMotor(),
+      { nivelSocio: S.nivel, fechaDesembolso: hoyISO() });
+    $('calcAviso').innerHTML = sr.dentro_del_respaldo
+      ? 'Puedes pedir hasta ' + COP(sr.respaldo_disponible) + ': es la garantía que te ganaste pagando.'
+      : 'Es más que tu garantía ganada de ' + COP(sr.respaldo_disponible) + '.';
+    $('calcSalida').innerHTML = salidaRespaldado(sr);
+  } else {
+    var s = M.simularCredito(MONTO, S.gd.base_cupo, { nivelSocio: S.nivel, fechaDesembolso: hoyISO() });
+    $('calcAviso').innerHTML = s.dentro_del_cupo
+      ? 'Dentro de tu cupo de ' + COP(s.cupo) + '.'
+      : 'Es más que tu cupo de ' + COP(s.cupo) + '.';
+    $('calcSalida').innerHTML = salidaCalc(s);
+  }
+  $('calcComparar').innerHTML = piezaComparar();
+}
+
+function salidaCalc(s) {
+  /* 1 · Lo que pagarías — es la cifra que manda: es lo que va a salir del bolsillo */
+  var h = '<div class="card quincenal">' +
+    '<div class="etq q">Lo que pagarías</div>' +
+    '<div class="cifra">' + COP(s.total_a_pagar) + '</div>' +
+    '<div class="muted" style="font-size:13px">el ' + fmtFecha(s.fecha_corte) + ', en un solo pago</div>' +
+    fila('Te llevas', COP(s.capital)) +
+    fila('Costo (' + pct(s.tasa) + ')', COP(s.costo)) +
+    fila('Total a devolver', COP(s.total_a_pagar)) + '</div>';
+
+  /* 2 · Lo que te deja — el premio, ahora es cupo y no descuento */
+  h += '<div class="card laca">' +
+    '<div class="etq">Y al pagarlo, tu cupo sube</div>' +
+    '<div class="cifra sm oro">' + COP(s.cupo_despues) + '</div>' +
+    '<div class="muted" style="font-size:13.5px;margin-top:var(--e2)">' +
+      'desde ' + COP(s.cupo) + ', porque los ' + COP(s.costo) + ' de costo se te vuelven garantía.</div>' +
+    fila(S.gd.comprometida > 0 ? 'Tu garantía libre hoy' : 'Tu garantía hoy', COP(s.garantia_disponible)) +
+    fila('Suma este crédito', '+' + COP(s.garantia_que_deja)) +
+    fila('Quedarías con', COP(s.garantia_despues)) +
+    '</div>';
+
+  /* 3 · Si no le alcanza, cuánto le falta */
+  if (!s.dentro_del_cupo) {
+    /* Sin el nombre de la marca de sujeto: en una pantalla que habla de la
+       garantía del socio, "Tu Garantía lo revisa" se lee "tu saldo lo revisa". */
+    h += '<div class="aviso ambar"><b>Te falta ' + COP(s.falta_garantia) + ' de garantía para pedir ' +
+      COP(s.capital) + '.</b><br>Puedes pedirlo igual: lo revisamos y te respondemos, ' +
+      'o pide hasta ' + COP(s.cupo) + ' que ya tienes disponible.</div>';
+  }
+
+  /* 4 · Pedirlo */
+  h += tarjetaPedir('Pedir ' + COP(s.capital), '');
+
+  /* 5 · La escalera, plegada: es pedagogía, no decisión */
+  var pasos = M.proyectarCrecimiento(S.gd.base_cupo, MONTO, 6, S.nivel, { pideElCupo: true });
+  var minG = S.gd.base_cupo, maxG = pasos[pasos.length - 1].garantia;
+  var rango = Math.max(1, maxG - minG);
+  h += '<div class="card"><details><summary>Ver cómo crece si lo repites</summary>' +
+    '<p class="sub">Pidiendo cada vez todo tu cupo y pagando en fecha.</p>' +
+    '<div class="crece">' + pasos.map(function (p) {
+      return '<div style="height:' + (18 + (p.garantia - minG) / rango * 82).toFixed(0) + '%">' +
+             '<span>' + COPc(p.cupo) + '</span></div>';
+    }).join('') + '</div>' +
+    '<div class="crece-pie">' + pasos.map(function (p) { return '<span>' + p.credito + '°</span>'; }).join('') + '</div>' +
+    '<div class="muted" style="font-size:13px;margin-top:var(--e3)">Al sexto crédito podrías pedir hasta <b>' +
+      COP(pasos[pasos.length - 1].cupo) + '</b>.</div>' +
+    '</details></div>';
+
+  return h;
+}
+
+/* ------- el préstamo con garantía: azul de punta a punta ------- */
+function salidaRespaldado(r) {
+  /* 1 · La cuota. Es lo único que el socio va a tener que juntar cada mes, así
+     que es la cifra que manda. */
+  var h = '<div class="card respaldo">' +
+    '<div class="etq r">Tu cuota, cada mes</div>' +
+    '<div class="cifra">' + COP(r.cuota_tipica) + '</div>' +
+    '<div class="muted" style="font-size:13px">Durante ' + r.plazo_meses + ' meses. ' +
+      'La última puede variar unos pesos.</div>' +
+    fila('Te llevas', COP(r.capital)) +
+    fila('Costo (' + pct(r.tasa_mensual) + ' al mes × ' + r.plazo_meses + ')', COP(r.costo_total)) +
+    fila('Total a devolver', COP(r.total_a_pagar)) + '</div>';
+
+  /* 2 · Las fechas, que salen del calendario real: ni domingo ni festivo. */
+  h += '<div class="card"><h3 class="tit">Las ' + r.plazo_meses + ' fechas</h3>' +
+    '<p class="sub">Cada una cae en una fecha de corte, como tu quincena.</p>' +
+    r.cuotas.map(function (c, i) {
+      return '<div class="fila"><span class="k">' + (i === 0 ? '<span class="pto"></span> ' : '') +
+        'Cuota ' + c.numero + ' · ' + fmtFecha(c.fecha_corte) + '</span>' +
+        '<span class="v">' + COP(c.total) + '</span></div>';
+    }).join('') + '</div>';
+
+  /* 3 · Lo que se compromete mientras lo paga. */
+  var cupoMientras = M.calcularCupo(Math.max(0, S.gd.base_cupo - r.capital), S.nivel);
+  h += '<div class="card laca"><div class="etq">Mientras lo pagas</div>' +
+    '<p style="margin:var(--e2) 0 0;font-size:14px">Estos <b>' + COP(r.garantia_comprometida) +
+    '</b> de tu garantía quedan comprometidos: no cuentan para tu cupo quincenal. Se van soltando ' +
+    'cada mes, a medida que devuelves capital, y quedan libres del todo cuando terminas.</p>' +
+    '<div class="fila"><span class="k">Tu cupo quincenal ahora</span><span class="v oro">' + COP(S.cupo) + '</span></div>' +
+    '<div class="fila"><span class="k">Tu cupo mientras lo pagas</span><span class="v oro">' + COP(cupoMientras) + '</span></div>' +
+    '<div class="fila"><span class="k">Tu cupo cuando lo termines</span><span class="v oro">' + COP(r.cupo_despues) + '</span></div>' +
+    '</div>';
+
+  if (!r.dentro_del_respaldo) {
+    h += '<div class="aviso ambar"><b>Todavía no te alcanza la garantía ganada: te faltan ' +
+      COP(r.falta_garantia_ganada) + '.</b><br>Este préstamo va uno a uno contra lo que ya te ganaste ' +
+      'pagando. Puedes pedir hasta ' + COP(r.respaldo_disponible) + ', o pedirlo igual: ' +
+      'lo revisamos y te respondemos.</div>';
+  }
+
+  h += tarjetaPedir('Pedir ' + COP(r.capital) + ' a ' + r.plazo_meses + ' meses', 'azul');
+  return h;
+}
+
+function tarjetaPedir(texto, clase) {
+  var puede = M.puedeSolicitar({ nivel_kyc: 1, estado: 'activo', garantia_total: S.garantia, nivel_socio: S.nivel });
+  return '<div class="card"><h3 class="tit">¿Te sirve así?</h3>' +
+    '<p class="sub">Nos llega por WhatsApp con estos mismos números. ' +
+    'No es un compromiso: lo revisamos, te respondemos y ahí decides.</p>' +
+    (puede.ok
+      ? '<button class="btn ' + clase + ' arriba" onclick="pedirCredito()">' + esc(texto) + '</button>'
+      : '<div class="aviso ambar">Para pedir necesitas completar tus datos primero.</div>') +
+    '</div>';
+}
+
+/* ============ LA COMPARACIÓN: PLATA BARATA O CRECER ============
+   El corazón de Tu Garantía. Dos lados enfrentados, cada uno con su color, cada
+   uno diciendo su ventaja Y su costo. Las dos frases del final salen del motor
+   (compararProductos), nunca escritas a mano: si un día cambia un número,
+   cambian solas y no quedan mintiendo.
+
+   LAS DOS CIFRAS GRANDES SON EL MISMO PLAZO. Esto se lee en tres segundos: lo
+   que el socio ve son los dos números de arriba y la frase de abajo, y si no
+   dicen lo mismo la pieza miente aunque cada dato sea cierto. El quincenal
+   vence en el corte, así que para tener la plata los mismos meses hay que
+   renovarlo: por eso arriba va lo que cuesta RENOVADO (costo_en_el_plazo), y
+   los 20% de una vuelta quedan en el renglón de abajo, donde se explican. Lo
+   mismo con la garantía y con el cupo: toda la columna habla del mismo plazo,
+   o las barras vuelven a comparar quince días contra seis meses.
+
+   CADA LADO DICE SU COSTO, NO SOLO SU VENTAJA. El del quincenal es que hay que
+   renovarlo y sale caro; el del préstamo con garantía es que, mientras lo
+   pagás, esa garantía queda comprometida y el cupo quincenal se desploma. Ese
+   segundo costo estaba solo en la tarjeta de la calculadora, y la pieza que se
+   presenta como la comparación honesta es justo la que el socio mira para
+   elegir: si acá no está, la pieza vende un producto.
+
+   Y VA SOBRE LACA. Las dos barras miden GARANTÍA —lo que el socio construye—,
+   y la garantía es amarilla; el amarillo solo existe sobre la laca. Sobre papel
+   la pieza quedaba con dos barras AZULES, una de ellas colgando del lado rojo,
+   y el ojo leía la barra grande como si fuera del producto azul. Por eso el
+   ámbar de "no te alcanza" salió del cuadro: el ámbar solo pisa papel, así que
+   va abajo, en su propio aviso. */
+function piezaComparar() {
+  var c, r;
+  try {
+    var ent = entradaMotor(), op = { nivelSocio: S.nivel, fechaDesembolso: hoyISO() };
+    c = M.compararProductos(Math.max(1, MONTO), PLAZO, ent, op);
+    r = M.simularPrestamoRespaldado(Math.max(1, MONTO), PLAZO, ent, op);
+  } catch (e) { return pie(); }
+
+  var q = c.quincenal, rr = c.respaldado, dif = c.diferencias;
+  /* Las mismas palabras de los dos lados, salidas del mismo lugar: es lo que
+     hace que la cifra de la izquierda y la de la derecha se puedan restar. */
+  var enPlazo = rr.plazo_texto;
+  var maxG = Math.max(q.garantia_en_el_plazo, rr.garantia_que_deja, 1);
+  var ancho = function (v) { return Math.max(2, Math.round(v / maxG * 100)); };
+  /* Un solo formato para las dos cifras de arriba: si una se va a lo alto se
+     abrevian las dos. Media pantalla no aguanta siete dígitos, y dos formatos
+     distintos enfrentados tampoco se comparan de un vistazo. */
+  var apretar = Math.max(q.costo_en_el_plazo, rr.costo_total) >= 1000000;
+  var grande = function (v) { return apretar ? COPc(v) : COP(v); };
+  /* El costo escondido del lado azul: mientras vive el préstamo, ese capital
+     queda comprometido y no cuenta para el cupo quincenal. Sale del motor, con
+     la misma cuenta que la tarjeta "Mientras lo pagás" de la calculadora. */
+  var cupoMientras = M.calcularCupo(Math.max(0, S.gd.base_cupo - c.capital), S.nivel);
+
+  var izq = '<div>' +
+    '<div class="etq q">Quincenal</div>' +
+    '<div class="cifra sm">' + grande(q.costo_en_el_plazo) + '</div>' +
+    '<div class="lin">te cuesta en ' + enPlazo + '</div>' +
+    '<div class="rayita"></div>' +
+    '<div class="det">' + q.cortes_en_el_plazo + ' cortes de ' + COP(q.costo) + '<br>' +
+      'renovándolo cada quincena</div>' +
+    '<div class="det">Te deja <b>' + COP(q.garantia_en_el_plazo) + '</b> de garantía' +
+      '<div class="barra"><i style="width:' + ancho(q.garantia_en_el_plazo) + '%"></i></div></div>' +
+    '<div class="det">Mientras lo pagas tu cupo <b>no baja</b></div>' +
+    '<div class="det">Al final tu cupo es <b class="oro">' + COP(q.cupo_en_el_plazo) + '</b></div>' +
+    '</div>';
+
+  var der = '<div' + (rr.dentro_del_respaldo ? '' : ' class="flojo"') + '>' +
+    '<div class="etq r">Con garantía</div>' +
+    '<div class="cifra sm">' + grande(rr.costo_total) + '</div>' +
+    '<div class="lin">te cuesta en ' + enPlazo + '</div>' +
+    '<div class="rayita"></div>' +
+    '<div class="det">' + (c.plazo_meses === 1
+      ? '1 cuota de ' + COP(rr.cuota_tipica) + '<br>dentro de un mes'
+      : c.plazo_meses + ' cuotas de ' + COP(rr.cuota_tipica) + '<br>una por mes') + '</div>' +
+    '<div class="det">Te deja <b>' + COP(rr.garantia_que_deja) + '</b> de garantía' +
+      '<div class="barra"><i style="width:' + ancho(rr.garantia_que_deja) + '%"></i></div></div>' +
+    '<div class="det">Mientras lo pagas tu cupo baja a <b class="oro">' + COP(cupoMientras) + '</b></div>' +
+    '<div class="det">Al final tu cupo es <b class="oro">' + COP(rr.cupo_despues) + '</b></div>' +
+    '</div>';
+
+  /* Los "no te alcanza" salen del cuadro: son ámbar, y el ámbar solo vive sobre
+     papel. Van juntos, abajo, donde se pueden leer completos. */
+  var faltas = [];
+  if (!q.dentro_del_cupo) {
+    faltas.push('<b>El quincenal es más que tu cupo de hoy</b> (' + COP(S.cupo) + ').');
+  }
+  if (!rr.dentro_del_respaldo) {
+    faltas.push('<b>Para el de garantía te faltan ' + COP(r.falta_garantia_ganada) + '</b> de garantía ganada.');
+  }
+  var avisoFaltas = faltas.length
+    ? '<div class="aviso ambar">' + faltas.join('<br>') +
+      ' Puedes pedirlo igual: lo revisamos y te respondemos.</div>'
+    : '';
+
+  var barato = dif.cual_es_mas_barato === 'respaldado'
+    ? '<b class="r">El de garantía te sale más barato</b>: ' +
+      COP(dif.costo_extra_quincenal) + ' menos en ' + enPlazo + '.'
+    : (dif.cual_es_mas_barato === 'quincenal'
+      ? '<b class="q">El quincenal te sale más barato</b>: ' +
+        COP(-dif.costo_extra_quincenal) + ' menos en ' + enPlazo + '.'
+      : 'En ' + enPlazo + ' los dos te cuestan lo mismo.');
+
+  var crece;
+  if (dif.cual_hace_crecer_mas === 'quincenal') {
+    crece = dif.veces_mas_garantia > 1
+      ? '<b class="q">El quincenal te hace crecer ' + dif.veces_mas_garantia + ' veces más rápido.</b>'
+      : '<b class="q">El quincenal te deja ' + COP(dif.garantia_extra_quincenal) + ' más de garantía.</b>';
+  } else if (dif.cual_hace_crecer_mas === 'respaldado') {
+    crece = '<b class="r">El de garantía te deja ' + COP(-dif.garantia_extra_quincenal) + ' más de garantía.</b>';
+  } else {
+    crece = 'Los dos te dejan la misma garantía.';
+  }
+
+  return '<h3 class="tit" style="margin-top:var(--e4)">Dos formas de pedir ' + COP(c.capital) + '</h3>' +
+    '<p class="sub">Las dos por el mismo tiempo: ' + enPlazo + '. El quincenal vence en cada corte, ' +
+    'así que aquí va renovado hasta cubrir ese plazo.</p>' +
+    '<div class="card laca pegado">' +
+      '<div class="dual">' + izq + der + '</div>' +
+      '<div class="remate">' + barato + ' ' + crece + ' Los dos son buenos: uno cuida la plata de hoy, ' +
+      'el otro te sube el cupo de mañana. Eliges tú.</div>' +
+    '</div>' + avisoFaltas + pie();
+}
+
+/* ================= RECORDATORIO EN SU PROPIO CELULAR ================= */
+function textoICS(s) { return String(s).replace(/[\\;,]/g, '\\$&').replace(/\n/g, '\\n'); }
+function plegarICS(lineas) {
+  var out = [];
+  lineas.forEach(function (l) {
+    while (l.length > 70) { out.push(l.slice(0, 70)); l = ' ' + l.slice(70); }
+    out.push(l);
+  });
+  return out.join('\r\n');
+}
+function armarICS(c) {
+  /* Liquidado EN la fecha de corte, no hoy: el recordatorio es de ese día, así
+     que no puede llevar el recargo de una mora que todavía no ocurrió. El total
+     lo arma el motor igual que en la tarjeta, para que el calendario y la
+     pantalla no digan dos cifras. */
+  var ciclo = cicloDelCredito(c);
+  var q = liquidacion(c, String(c.corte || '').slice(0, 10) || hoyISO());
+  var total = q.total_a_pagar;
+  var f = String(c.corte).slice(0, 10).replace(/-/g, '');
+  var sello = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+  var quien = nombreJoan();
+  var desc = 'Total a pagar: ' + COP(total) + ' (' + ciclo.etiqueta_capital.toLowerCase() + ' ' +
+    COP(q.capital) + ' + costo ' + COP(q.costo) + '). ' +
+    'Pagando en fecha tu cupo sube ' + COP(q.garantia_si_puntual) + '. ' +
+    'Si ese día no puedes pagar todo, se puede dejar una prórroga o pasar a un plan de pagos; ' +
+    'las dos cosas tienen costo y te lo decimos antes. Y aunque te atrases sigues siendo socio.';
+  return plegarICS([
+    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Tu Garantia//Socios//ES',
+    'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'BEGIN:VEVENT',
+    'UID:' + (c.codigo || 'credito') + '-' + f + '@joantepresta',
+    'DTSTAMP:' + sello, 'DTSTART:' + f + 'T090000', 'DTEND:' + f + 'T093000',
+    'SUMMARY:' + textoICS('Pagar ' + COP(total) + ' a ' + quien),
+    'DESCRIPTION:' + textoICS(desc),
+    'BEGIN:VALARM', 'TRIGGER:-P2D', 'ACTION:DISPLAY',
+    'DESCRIPTION:' + textoICS('En 2 días vence tu pago de ' + COP(total) + ' con ' + quien),
+    'END:VALARM',
+    'BEGIN:VALARM', 'TRIGGER:PT0S', 'ACTION:DISPLAY',
+    'DESCRIPTION:' + textoICS('Hoy vence tu pago de ' + COP(total) + ' con ' + quien),
+    'END:VALARM', 'END:VEVENT', 'END:VCALENDAR'
+  ]);
+}
+function recordarme() {
+  var c = S.activo;
+  if (!c) return alert('No tienes ningún crédito abierto para recordar.');
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([armarICS(c)], { type: 'text/calendar;charset=utf-8' }));
+  a.download = 'pago-' + (c.codigo || 'credito') + '.ics';
+  a.click();
+  setTimeout(function () { URL.revokeObjectURL(a.href); }, 3000);
+  $('recordarPie').innerHTML = 'Listo. Ábrelo y toca “Agregar” para que quede en tu calendario. ' +
+    'Te avisa <b>dos días antes</b> y otra vez el mismo día.';
+}
+
+/* ======================= PEDIR EL CRÉDITO ======================= */
+function codigoSolicitud(s, monto) {
+  var resp = MODO === 'respaldado';
+  var paq = { n: S.nombre, c: S.codigo || '', d: S.cedula || '',
+    k: s.capital, t: resp ? s.tasa_mensual : s.tasa,
+    o: resp ? s.costo_total : s.costo, p: s.total_a_pagar,
+    f: resp ? s.ultima_fecha : s.fecha_corte, g: S.garantia, u: S.cupo,
+    x: resp ? (s.dentro_del_respaldo ? 0 : 1) : (monto > S.cupo ? 1 : 0),
+    pr: resp ? 'respaldado' : 'quincenal', pz: resp ? s.plazo_meses : null };
+  var bytes = new TextEncoder().encode(JSON.stringify(paq));
+  var bin = '';
+  for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+/* La misma simulación que ve el socio en la calculadora, para que la pantalla
+   de confirmación no pueda decir otra cosa que la de atrás. */
+function simulacionDeAhora() {
+  var op = { nivelSocio: S.nivel, fechaDesembolso: hoyISO() };
+  return MODO === 'respaldado'
+    ? M.simularPrestamoRespaldado(Math.max(1, MONTO), PLAZO, entradaMotor(), op)
+    : M.simularCredito(MONTO, S.gd.base_cupo, op);
+}
+
+function pedirCredito() {
+  var resp = MODO === 'respaldado', s = simulacionDeAhora();
+  var h = '<div class="card"><h3 class="tit">Revisa antes de pedir</h3>' +
+    '<p class="sub">Esto es todo lo que hay. No hay cobros escondidos ni letra chica.</p>' +
+    '<div class="cifra">' + COP(s.capital) + '</div>' +
+    '<div class="muted" style="font-size:13px">es lo que recibirías</div>' +
+    (resp
+      ? fila('Costo (' + pct(s.tasa_mensual) + ' al mes × ' + s.plazo_meses + ')', COP(s.costo_total)) +
+        fila('Cuota, cada mes', COP(s.cuota_tipica)) +
+        fila('Primera cuota', fmtFecha(s.primera_fecha)) +
+        fila('Última cuota', fmtFecha(s.ultima_fecha)) +
+        fila('Total a devolver', COP(s.total_a_pagar))
+      : fila('Costo por la quincena (' + pct(s.tasa) + ')', COP(s.costo)) +
+        fila('Fecha de pago', fmtFecha(s.fecha_corte)) +
+        fila('Total a devolver ese día', COP(s.total_a_pagar))) +
+    '<div class="sep"></div>' +
+    fila('Tu cupo hoy', COP(S.cupo)) +
+    fila(resp ? 'Tu cupo cuando lo termines' : 'Tu cupo después de pagarlo', COP(s.cupo_despues)) +
+    (resp
+      ? '<div class="aviso info">Mientras lo pagas, <b>' + COP(s.garantia_comprometida) + '</b> de tu ' +
+        'garantía quedan comprometidos y no cuentan para tu cupo quincenal. Se sueltan a medida que ' +
+        'devuelves capital.</div>' +
+        (s.dentro_del_respaldo ? ''
+          : '<div class="aviso ambar">Estás pidiendo más que tu garantía ganada. Puedes pedirlo igual: ' +
+            'lo revisamos y te respondemos.</div>')
+      : (!s.dentro_del_cupo
+        ? '<div class="aviso ambar">Estás pidiendo más que tu cupo. Puedes pedirlo igual: ' +
+          'lo revisamos y te respondemos.</div>'
+        : '')) +
+    /* Las dos salidas cuestan, y el plan además tiene entrada. Decir solo que
+       existen suena a que son gratis, y el día del cobro la sorpresa es del
+       socio. Acá se nombra el costo y las reglas lo explican entero. */
+    '<div class="aviso">Si llegado el día no puedes pagar todo, no se te cierra nada: puedes dejar ' +
+    'una prórroga o pasar a un plan de pagos. Las dos cosas tienen costo —el plan arranca con una ' +
+    'entrada del ' + pct(M.TASA_CREDITO) + '— y está todo explicado en <b>Cómo funciona esto</b>. ' +
+    'Y aunque te atrases, sigues siendo socio.</div>' +
+    '<button class="btn ' + (resp ? 'azul' : '') + ' arriba" onclick="mandarSolicitud(' + MONTO + ')">' +
+      'Mandar la solicitud' + '</button>' +
+    '<button class="btn sec sm" style="margin-top:var(--e3)" onclick="irA(\'calc\')">Volver</button>' +
+    '</div>';
+  $('cuerpo').innerHTML = '<div class="panel">' + h + '</div>';
+  window.scrollTo(0, 0);
+}
+
+function mandarSolicitud(monto) {
+  var resp = MODO === 'respaldado', s = simulacionDeAhora();
+  var fechaFin = resp ? s.ultima_fecha : s.fecha_corte;
+  var costo = resp ? s.costo_total : s.costo;
+  var seExcede = resp ? !s.dentro_del_respaldo : (monto > S.cupo);
+
+  if (CFG.url && CFG.anon && S.cedula && S.tel4) {
+    fetch(CFG.url.replace(/\/+$/, '') + '/rest/v1/rpc/crear_solicitud', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey: CFG.anon, Authorization: 'Bearer ' + CFG.anon },
+      body: JSON.stringify({
+        p_cedula: S.cedula, p_tel4: S.tel4,
+        p_producto: resp ? 'respaldado' : 'quincenal',
+        p_plazo: resp ? s.plazo_meses : null,
+        p_datos: { capital: s.capital, tasa: resp ? s.tasa_mensual : s.tasa, costo: costo,
+          total: s.total_a_pagar, fecha_corte: fechaFin, garantia: S.garantia, cupo: S.cupo,
+          sobre_cupo: seExcede, producto: resp ? 'respaldado' : 'quincenal',
+          plazo_meses: resp ? s.plazo_meses : null }
+      })
+    }).catch(function () {});
+  }
+
+  var texto = 'Hola, soy ' + S.nombre +
+    (S.codigo ? ' (' + S.codigo + ')' : '') +
+    (resp ? '. Quiero pedir un préstamo con garantía:\n\n' : '. Quiero pedir un crédito:\n\n') +
+    '• Monto: ' + COP(s.capital) + '\n' +
+    (resp
+      ? '• Costo (' + pct(s.tasa_mensual) + ' al mes × ' + s.plazo_meses + '): ' + COP(costo) + '\n' +
+        '• Cuota, cada mes: ' + COP(s.cuota_tipica) + '\n' +
+        '• Total a devolver: ' + COP(s.total_a_pagar) + '\n' +
+        '• Última cuota: ' + fmtFecha(fechaFin) + '\n\n' +
+        'Mi garantía ganada es ' + COP(s.respaldo_disponible) + '.' +
+        (seExcede ? ' Sé que me estoy pasando, cuéntame si se puede.' : '')
+      : '• Costo (' + pct(s.tasa) + '): ' + COP(costo) + '\n' +
+        '• Total a devolver: ' + COP(s.total_a_pagar) + '\n' +
+        '• Fecha de pago: ' + fmtFecha(fechaFin) + '\n\n' +
+        'Mi cupo es ' + COP(S.cupo) + '.' +
+        (seExcede ? ' Sé que me estoy pasando del cupo, cuéntame si se puede.' : '')) +
+    '\n\nGracias.\n\n· · ·\nSOL:' + codigoSolicitud(s, monto);
+  porWhatsApp(texto);
+
+  $('cuerpo').innerHTML = '<div class="panel"><div class="card">' +
+    '<h3 class="tit" style="text-align:center">Solicitud enviada</h3>' +
+    '<p class="sub" style="text-align:center">Se abrió WhatsApp con tu solicitud lista. ' +
+    'Si no se abrió, escríbenos directamente.</p>' +
+    '<div class="aviso">Pediste <b>' + COP(s.capital) + '</b> para devolver <b>' + COP(s.total_a_pagar) +
+    '</b>' + (resp ? ' en ' + s.plazo_meses + ' cuotas, la última el ' : ' el ') + fmtFecha(fechaFin) + '.</div>' +
+    '<button class="btn sec" style="margin-top:var(--e3)" onclick="irA(\'inicio\')">Volver al inicio</button>' +
+    '</div></div>';
+  window.scrollTo(0, 0);
+}
+
+/* ========================== MI GARANTÍA ==========================
+   La grande es el total. Ganada y prestada NUNCA comparten cifra: van una
+   arriba de la otra, con su barra, para que se lean como partes de la misma
+   cosa. Y "prestada" se explica en la misma línea, nunca va sola. */
+function parteGarantia(etiqueta, explica, valor, clase, ancho) {
+  return '<div class="fila"><span class="k">' + esc(etiqueta) +
+    '<span style="display:block;font-size:12px;margin-top:var(--e1)">' + esc(explica) + '</span></span>' +
+    '<span class="v ' + clase + '">' + esc(valor) + '</span></div>' +
+    '<div class="barra"><i class="' + clase + '" style="width:' + ancho + '%"></i></div>';
+}
+
+function vistaGarantia() {
+  var g = S.g, gd = S.gd;
+  var tot = Math.max(1, gd.total);
+  var anc = function (v) { return Math.max(2, Math.min(100, Math.round(v / tot * 100))); };
+
+  var h = '<div class="card laca"><div class="etq">Tu garantía</div>' +
+    '<div class="cifra oro">' + COP(S.garantia) + '</div>' +
+    parteGarantia('Ganada', 'pagando tus créditos', COP(gd.ganada), 'oro', anc(gd.ganada)) +
+    parteGarantia('Prestada', 'por tus datos, para arrancar', COP(gd.prestada), 'prestada', anc(gd.prestada)) +
+    (gd.comprometida > 0
+      ? parteGarantia('Comprometida', 'en tu préstamo con garantía', '−' + COP(gd.comprometida),
+                      'comprometida', anc(gd.comprometida))
+      : '') +
+    '<div class="sep"></div>' +
+    /* El cupo es lo construido, igual que en Inicio: mismo amarillo, misma laca. */
+    '<div class="fila"><span class="k">' +
+      (gd.comprometida > 0 ? 'Con eso puedes pedir hoy' : 'Con eso puedes pedir') +
+      '</span><span class="v oro">' + esc(COP(S.cupo)) + '</span></div>' +
+    '<div class="fila"><span class="k">' +
+      (gd.comprometida > 0 ? 'Te queda de préstamo con garantía' : 'Con la ganada, préstamo hasta') +
+      '</span><span class="v azul">' + COP(S.maxRespaldado) + '</span></div>' +
+    '</div>';
+
+  if (S.maxRespaldado > 0) {
+    h += '<div class="card respaldo"><div class="etq r">Préstamo con garantía</div>' +
+      '<p style="margin:var(--e2) 0 0;font-size:14.5px">' + esc(M.reglasResumen().respaldado.texto) + '</p>' +
+      '<button class="btn azul sm arriba" onclick="irACalcRespaldado()">Calcular uno</button></div>';
+  }
+
+  /* --- Perfil --- */
+  var yaTiene = M.garantiaPorDatos(S.perfil);
+  var conNuevos = {};
+  Object.keys(S.perfil).forEach(function (k) { conNuevos[k] = S.perfil[k]; });
+  Object.keys(NUEVOS).forEach(function (k) { conNuevos[k] = NUEVOS[k]; });
+  var enCamino = M.garantiaPorDatos(conNuevos).total - yaTiene.total;
+
+  h += '<div class="card"><h3 class="tit">Completa tu perfil</h3>' +
+    '<p class="sub">Te prestamos garantía por cada dato que nos des. Con todo completo son ' +
+    COP(M.CUPON_KYC_MAXIMO) + ', y eso es cupo desde el primer día.</p>' +
+    '<div class="cifra sm">' + COP(yaTiene.total) +
+      '<span class="muted" style="font-size:15px;font-weight:400"> de ' + COP(M.CUPON_KYC_MAXIMO) + '</span></div>' +
+    '<div class="barra"><i style="width:' + Math.max(3, yaTiene.porcentaje) + '%"></i></div>' +
+    '<div class="muted" style="font-size:13px;margin-top:var(--e2)">' + yaTiene.porcentaje + '% completo' +
+      (enCamino > 0 ? ' · <b>+' + COP(enCamino) + ' en camino</b>' : '') + '</div>';
+
+  if (yaTiene.completos.length) {
+    h += '<div class="muted" style="font-size:13px;margin-top:var(--e3)">✓ ' + yaTiene.completos.length +
+      ' dato' + (yaTiene.completos.length !== 1 ? 's' : '') + ' ya cargado' +
+      (yaTiene.completos.length !== 1 ? 's' : '') + '</div>';
+  }
+  if (yaTiene.faltantes.length) {
+    h += '<div style="margin-top:var(--e3)">' + yaTiene.faltantes.map(function (d) {
+      return '<div class="dato' + (NUEVOS[d.id] ? ' ok' : '') + '">' +
+        '<span class="tick">' + (NUEVOS[d.id] ? '✓' : '') + '</span>' +
+        '<span class="txt"><span class="nm" style="font-size:14px;font-weight:600">' + esc(d.etiqueta) + '</span>' +
+        '<span class="ay">' + esc(NUEVOS[d.id] ? 'Listo para mandarlo' : d.ayuda) + '</span></span>' +
+        '<span class="vl">+' + COPc(d.valor) + '</span></div>';
+    }).join('') + '</div>' +
+    '<button class="btn" style="margin-top:var(--e4)" onclick="abrirPerfil()">Completar y ganar ' +
+      COP(M.CUPON_KYC_MAXIMO - yaTiene.total) + '</button>';
+  } else {
+    h += '<div class="aviso" style="margin-top:var(--e3)">Tienes el perfil completo. Ya te ganaste los ' +
+      COP(M.CUPON_KYC_MAXIMO) + ' de garantía prestada.</div>';
+  }
+  h += '</div>';
+
+  /* --- Referidos --- */
+  var r = S.referidos;
+  h += '<div class="card"><h3 class="tit">Trae gente, gana cupo</h3>' +
+    '<p class="sub">Cada persona que traigas te suma ' + COP(M.GARANTIA_POR_REFERIDO) +
+    ', desde que esa persona pague su crédito. Si no paga, no suma.</p>' +
+    fila('Gente que has traído', String(r.total || 0)) +
+    fila('Ya pagaron', String(r.pagaron || 0)) +
+    fila('Garantía que te dieron', COP((r.pagaron || 0) * M.GARANTIA_POR_REFERIDO)) +
+    ((r.total || 0) > (r.pagaron || 0)
+      ? '<div class="aviso ambar">Te faltan ' + ((r.total || 0) - (r.pagaron || 0)) +
+        ' por pagar. Cuando lo hagan se te suman ' + COP(((r.total || 0) - (r.pagaron || 0)) * M.GARANTIA_POR_REFERIDO) + '.</div>'
+      : '') +
+    '<button class="btn sec sm" style="margin-top:var(--e3)" onclick="invitar()">Invitar a alguien</button>' +
+    '</div>';
+
+  /* --- Niveles --- */
+  /* Sobre base_cupo, no sobre el total: es la misma base con la que se calculó
+     S.cupo dos tarjetas más arriba. Con garantía comprometida, el total daría
+     un cupo más grande que el que el socio puede pedir hoy, y quedarían dos
+     cifras que se contradicen a un dedo de distancia. */
+  h += '<div class="card"><h3 class="tit">Cuánto podrías pedir si subes de nivel</h3>' +
+    '<p class="sub">Con ' + (gd.comprometida > 0 ? 'la garantía que tienes libre hoy' : 'la misma garantía que tienes hoy') +
+    '. Subir es pagar en fecha, nada más.</p>' +
+    '<div style="margin-top:var(--e2)">' + M.proyeccionNiveles(gd.base_cupo, S.nivel).map(function (n) {
+      return '<div class="nivel ' + (n.actual ? 'aqui' : '') + '">' +
+        '<span class="txt"><span class="nm">' + n.nivel + (n.actual ? ' · aquí estás' : '') + '</span>' +
+        '<span class="rq">' + requisitoTexto(n) + '</span></span>' +
+        '<span class="cp oro-tinta">' + COP(n.cupo) + '</span></div>';
+    }).join('') + '</div>' +
+    '<div class="muted" style="font-size:13px;margin-top:var(--e3)">La plataforma presta hasta <b>' +
+      COP(M.CUPO_MAXIMO) + '</b>. Se llega pagando, crédito tras crédito.</div>' +
+    '</div>';
+
+  return h + pie();
+}
+
+function requisitoTexto(n) {
+  if (n.nivel === 'bronce') return 'Desde que entras · tu cupo es ' + n.factor + '× tu garantía';
+  var r = n.requisitos, p = [];
+  if (r.pagos_a_tiempo) p.push(r.pagos_a_tiempo + ' pagos en fecha');
+  if (r.racha) p.push('racha de ' + r.racha);
+  if (r.meses_sin_mora) p.push(r.meses_sin_mora + ' meses sin atrasarte');
+  return p.join(' · ') + ' · ' + n.factor + '× tu garantía';
+}
+
+/* ========================== HISTORIAL ========================== */
+function vistaHistorial() {
+  var totalGarantia = S.creditos.reduce(function (t, c) { return t + Number(c.garantia || 0); }, 0);
+  /* Lo construido va en amarillo, acá y en Mi garantía: es la misma plata y no
+     puede cambiar de significado según la pestaña. */
+  var h = '<div class="card laca"><div class="etq">Lo que llevas construido</div>' +
+    '<div class="cifra oro">' + COP(totalGarantia) + '</div>' +
+    '<div class="muted" style="font-size:13.5px;margin-top:var(--e2)">de garantía ganada en ' +
+      S.creditos.length + ' crédito' + (S.creditos.length !== 1 ? 's' : '') + '</div>' +
+    (S.resumen.primer_credito ? fila('Eres socio desde', fmtFecha(S.resumen.primer_credito)) : '') +
+    fila('Pagos en fecha seguidos', String(S.g.racha || 0)) + '</div>';
+
+  h += '<div class="card"><h3 class="tit">Crédito por crédito</h3>' +
+    '<p class="sub">Cuánto cupo te dejó cada uno.</p>';
+  if (!S.creditos.length) h += '<p class="muted" style="margin-top:var(--e3)">Todavía no tienes créditos.</p>';
+  else S.creditos.forEach(function (c) {
+    var puntual = c.fecha_pagado && c.corte && c.fecha_pagado <= c.corte;
+    /* La mora también se ve acá. Antes esta píldora era gris para todo, y el
+       crédito que en Inicio grita "9 DÍAS DE ATRASO" en ámbar aparecía en
+       Historial como un "En curso" tranquilo, igual que los pagados: dos
+       pantallas de la misma app contando estados distintos del mismo crédito.
+       Mismas palabras y mismo ámbar que en la tarjeta de Inicio. */
+    var atraso = diasDeAtraso(c.pagado ? null : c.corte);
+    var estado = c.pagado
+      ? (puntual ? 'Pagado en fecha' : 'Pagado')
+      : (atraso > 0 ? atraso + ' día' + (atraso !== 1 ? 's' : '') + ' de atraso' : 'En curso');
+    /* Acá manda el crédito ENTERO, no el ciclo: `capital` viaja como el capital
+       de la cuota cuando hay plan de pagos, y en un listado de créditos esa
+       cifra diría que el socio pidió 200.000 cuando pidió 600.000. */
+    var suCapital = c.saldo_capital != null ? c.saldo_capital : c.capital;
+    h += '<div class="credito"><div class="top">' +
+      '<div><b>' + COP(suCapital) + '</b><div class="cod">' + esc(c.codigo || '') + '</div></div>' +
+      '<span class="pill' + (atraso > 0 ? ' ambar' : '') + '">' + esc(estado) + '</span></div>' +
+      '<div class="muted" style="font-size:13px;margin-top:var(--e2)">' +
+        fmtFecha(c.desembolso) + ' → ' + fmtFecha(c.fecha_pagado || c.corte) +
+        (c.prorrogas ? ' · ' + c.prorrogas + ' prórroga' + (c.prorrogas !== 1 ? 's' : '') : '') +
+        /* Un crédito en plan de pagos se veía igualito a uno normal, y no lo es:
+           lo que se cobra es la cuota, no el capital. Se dice. */
+        (Number(c.plan_cuotas || 0) > 0
+          ? ' · plan de pagos, ' + Number(c.plan_cuotas_pagadas || 0) + ' de ' +
+            Number(c.plan_cuotas) + ' cuotas pagadas' : '') + '</div>' +
+      '<div class="gan"><span class="muted">Garantía que te dejó</span>' +
+        (c.garantia ? '<b>+' + COP(c.garantia) + '</b>' : '<span class="muted">al pagarlo</span>') + '</div>' +
+      '</div>';
+  });
+  h += '</div>';
+
+  if (S.respaldados.length) {
+    h += '<div class="card"><h3 class="tit">Tus préstamos con garantía</h3>' +
+      '<p class="sub">Los que pediste contra la garantía que ya te habías ganado.</p>' +
+      S.respaldados.map(function (r) {
+        var cs = r.cuotas || [];
+        var pagas = cs.filter(function (c) { return c.pagado; }).length;
+        /* Igual que arriba: una cuota que ya venció y no está paga es un
+           atraso, y el atraso se dice en ámbar, no en gris. */
+        var hoy = hoyISO();
+        var vencidas = r.pagado ? 0 : cs.filter(function (c) {
+          return !c.pagado && c.fecha && String(c.fecha).slice(0, 10) < hoy; }).length;
+        var estado = r.pagado ? 'Pagado'
+          : (vencidas > 0 ? vencidas + ' cuota' + (vencidas !== 1 ? 's' : '') +
+                            ' vencida' + (vencidas !== 1 ? 's' : '')
+                          : 'En curso');
+        return '<div class="credito"><div class="top">' +
+          '<div><b>' + COP(r.capital) + '</b><div class="cod">' + esc(r.codigo || '') + '</div></div>' +
+          '<span class="pill' + (vencidas > 0 ? ' ambar' : '') + '">' + esc(estado) + '</span></div>' +
+          '<div class="muted" style="font-size:13px;margin-top:var(--e2)">' +
+            (cs.length || r.plazo_meses) + ' cuotas · ' + pagas + ' pagada' + (pagas !== 1 ? 's' : '') + '</div>' +
+          '<div class="gan"><span class="muted">Te falta de capital</span><b>' + COP(r.saldo_capital) + '</b></div>' +
+          '</div>';
+      }).join('') + '</div>';
+  }
+
+  h += '<div class="card"><h3 class="tit">Lo que has logrado</h3>' + insignias() + '</div>';
+  return h + pie();
+}
+
+function insignias() {
+  var puntuales = S.pagados.filter(function (c) { return c.fecha_pagado && c.corte && c.fecha_pagado <= c.corte; });
+  var orden = M.NIVELES;
+  var lista = [
+    { em: '🌱', t: 'Primer crédito', ok: S.creditos.length >= 1 },
+    { em: '✅', t: 'Primer pago en fecha', ok: puntuales.length >= 1 },
+    { em: '🔥', t: 'Racha de 3', ok: Number(S.g.racha || 0) >= 3 },
+    { em: '⚡', t: 'Racha de 10', ok: Number(S.g.racha || 0) >= 10 },
+    { em: '🥇', t: 'Llegaste a Oro', ok: orden.indexOf(S.nivel) >= 2 },
+    { em: '🤝', t: 'Trajiste a alguien', ok: (S.referidos.pagaron || 0) >= 1 },
+    { em: '📋', t: 'Perfil completo', ok: M.garantiaPorDatos(S.perfil).total >= M.CUPON_KYC_MAXIMO },
+    { em: '💪', t: '5 créditos pagados', ok: S.pagados.length >= 5 }
+  ];
+  var ganadas = lista.filter(function (i) { return i.ok; });
+  var proxima = lista.filter(function (i) { return !i.ok; })[0];
+  if (!ganadas.length) return '<p class="muted" style="margin-top:var(--e3)">Todavía ninguna. La primera llega con tu primer crédito.</p>';
+  return '<div class="insignias">' +
+    ganadas.map(function (i) { return '<span class="ins"><em>' + i.em + '</em>' + esc(i.t) + '</span>'; }).join('') +
+    (proxima ? '<span class="ins proxima"><em>' + proxima.em + '</em>Sigue: ' + esc(proxima.t) + '</span>' : '') +
+    '</div>';
+}
+
+/* ==================== COMPLETAR EL PERFIL ==================== */
+/* ====================== AUTORIZACIÓN DE DATOS (habeas data) ======================
+   Ley 1581 de 2012 y Decreto 1377 de 2013. La autorización tiene que ser PREVIA a
+   recoger el dato, expresa e informada, y tiene que poder PROBARSE después. Por eso:
+
+   · va antes de abrirPerfil(), que es donde se pide el primer dato — no al entrar a la
+     app, porque entrar a mirar el saldo no recoge nada;
+   · los datos sensibles (la selfie con la cédula, que es biométrico, y la ubicación)
+     llevan su PROPIA casilla, aparte y opcional: la ley prohíbe condicionar el servicio
+     a que los entregue, y aquí de verdad no se condiciona — solo suma menos garantía;
+   · se guarda la fecha y la VERSIÓN del texto. Si mañana cambia la política, sube
+     VERSION_AUTORIZACION y se vuelve a pedir sola;
+   · y el texto de la autorización viaja en el WhatsApp que el socio manda con sus datos,
+     que es lo que le deja a Joan la constancia por escrito.
+
+   Se guarda por cédula, no global: en un teléfono prestado no queda autorizando el de
+   al lado. */
+var VERSION_AUTORIZACION = '2026-08-04';
+
+function llaveAutorizacion() { return 'tg_autorizacion_' + (S && S.cedula ? S.cedula : 'anon'); }
+
+function autorizacionDada() {
+  try {
+    var a = JSON.parse(localStorage.getItem(llaveAutorizacion()) || 'null');
+    return a && a.version === VERSION_AUTORIZACION ? a : null;
+  } catch (e) { return null; }
+}
+
+function pantallaAutorizacion() {
+  $('cuerpo').innerHTML = '<div class="panel"><div class="card">' +
+    '<h3 class="tit">Antes de pedirte tus datos</h3>' +
+    '<p class="sub">La ley nos obliga a pedirte permiso antes de guardar nada tuyo, y nos parece bien: ' +
+    'son tuyos. Esto se lee en un minuto.</p>' +
+
+    '<div class="aviso" style="margin-top:var(--e4)">' +
+    '<b>Qué vamos a hacer con ellos.</b> Guardarlos para confirmar quién eres, decidir tu crédito, ' +
+    'llevar tu historial y escribirte por WhatsApp sobre tus pagos. Nada más. No los vendemos, ' +
+    'no los pasamos a nadie con fines comerciales y no te mandamos publicidad de otros.' +
+    '</div>' +
+
+    '<div class="aviso" style="margin-top:var(--e3)">' +
+    '<b>Tus derechos.</b> Puedes pedirnos en cualquier momento que te digamos qué tenemos tuyo, ' +
+    'que lo corrijamos, que lo borremos, o retirar este permiso. Es gratis y no te cuesta el ' +
+    'servicio. También puedes quejarte ante la Superintendencia de Industria y Comercio.' +
+    '</div>' +
+
+    '<label class="permiso"><input type="checkbox" id="autGeneral" onchange="revisarAutorizacion()">' +
+    '<span>Autorizo que guarden y usen mis datos para lo que dice arriba, y confirmo que leí los ' +
+    '<a href="../legal/terminos.html" target="_blank" rel="noopener">términos</a> y la ' +
+    '<a href="../legal/privacidad.html" target="_blank" rel="noopener">política de datos</a>.' +
+    '</span></label>' +
+
+    '<label class="permiso"><input type="checkbox" id="autSensible" onchange="revisarAutorizacion()">' +
+    '<span>Autorizo además la <b>selfie con mi cédula</b> y <b>mi ubicación en el mapa</b>. ' +
+    '<span class="muted">Esto es opcional de verdad: si dices que no, tu cuenta funciona igual, ' +
+    'solo arrancas con menos garantía.</span></span></label>' +
+
+    '<button class="btn" id="btnAut" disabled onclick="aceptarAutorizacion()">Autorizo y continúo</button>' +
+    '<button class="btn sec sm" style="margin-top:var(--e3)" onclick="irA(\'garantia\')">Ahora no</button>' +
+    '</div></div>';
+  window.scrollTo(0, 0);
+}
+
+function revisarAutorizacion() {
+  $('btnAut').disabled = !$('autGeneral').checked;
+}
+
+function aceptarAutorizacion() {
+  if (!$('autGeneral').checked) return;
+  try {
+    localStorage.setItem(llaveAutorizacion(), JSON.stringify({
+      version: VERSION_AUTORIZACION,
+      fecha: hoyISO(),
+      general: true,
+      sensibles: $('autSensible').checked
+    }));
+  } catch (e) { /* sin espacio: seguimos igual, la constancia va en el WhatsApp */ }
+  abrirPerfil();
+}
+
+function abrirPerfil() {
+  var aut = autorizacionDada();
+  if (!aut) return pantallaAutorizacion();
+  var faltan = M.garantiaPorDatos(S.perfil).faltantes;
+  /* Si no autorizó los sensibles, no se los pedimos ni de adorno: pedir un dato que
+     la persona acaba de negar es exactamente la presión que la ley prohíbe. */
+  if (!aut.sensibles) {
+    faltan = faltan.filter(function (d) { return d.id !== 'foto_selfie' && d.id !== 'ubicacion'; });
+  }
+  var h = '<div class="card"><h3 class="tit">Completa lo que te falta</h3>' +
+    '<p class="sub">Escribe lo que puedas. Al final lo mandas por WhatsApp y lo cargamos; ' +
+    'ahí tu cupo sube de verdad.</p>' +
+    faltan.map(function (d) {
+      if (d.tipo === 'foto' || d.tipo === 'mapa') {
+        return '<div class="dato"><span class="tick">·</span><span class="txt">' +
+          '<span class="nm" style="font-size:14px;font-weight:600">' + esc(d.etiqueta) + '</span>' +
+          '<span class="ay">Esto se lo mandas por WhatsApp como foto</span></span>' +
+          '<span class="vl">+' + COPc(d.valor) + '</span></div>';
+      }
+      if (d.tipo === 'si') {
+        return '<label>' + esc(d.etiqueta) + ' <span class="muted">+' + COP(d.valor) + '</span></label>' +
+          '<select data-kyc="' + d.id + '" onchange="tocarDato(this)">' +
+          '<option value="">Elige…</option><option value="si">Sí</option></select>';
+      }
+      return '<label>' + esc(d.etiqueta) + ' <span class="muted">+' + COP(d.valor) + '</span></label>' +
+        '<input type="text" data-kyc="' + d.id + '" placeholder="' + esc(d.ayuda) + '" ' +
+        'inputmode="' + (d.tipo === 'numero' ? 'numeric' : 'text') + '" oninput="tocarDato(this)">';
+    }).join('') +
+    '<div class="aviso" id="perfilSuma" style="margin-top:var(--e4)">Todavía no has escrito nada.</div>' +
+    '<button class="btn" onclick="mandarPerfil()">Mandar mis datos</button>' +
+    '<button class="btn sec sm" style="margin-top:var(--e3)" onclick="irA(\'garantia\')">Volver</button>' +
+    '</div>';
+  $('cuerpo').innerHTML = '<div class="panel">' + h + '</div>';
+  window.scrollTo(0, 0);
+}
+
+function tocarDato(el) {
+  var id = el.dataset.kyc, v = (el.value || '').trim();
+  if (v) NUEVOS[id] = v; else delete NUEVOS[id];
+  var suma = 0;
+  M.DATOS_KYC.forEach(function (d) { if (NUEVOS[d.id]) suma += d.valor; });
+  $('perfilSuma').innerHTML = suma
+    ? 'Con lo que llevas escrito, tu garantía sube <b>' + COP(suma) + '</b> en cuanto lo carguemos.'
+    : 'Todavía no has escrito nada.';
+}
+
+function mandarPerfil() {
+  var ids = Object.keys(NUEVOS);
+  if (!ids.length) return alert('Escribe al menos un dato para poder mandárselo.');
+  var etq = {};
+  M.DATOS_KYC.forEach(function (d) { etq[d.id] = d.etiqueta; });
+  var suma = ids.reduce(function (t, id) {
+    var d = M.DATOS_KYC.filter(function (x) { return x.id === id; })[0];
+    return t + (d ? d.valor : 0);
+  }, 0);
+  /* La constancia de la autorización viaja en el mismo mensaje. Es lo que le deja a
+     Joan la prueba por escrito, con fecha y versión, que es justo lo que la ley pide
+     poder mostrar si alguien reclama. */
+  var aut = autorizacionDada();
+  var constancia = aut
+    ? '\n\n— Autoricé el tratamiento de mis datos el ' + fmtFecha(aut.fecha) +
+      ' (política del ' + aut.version + ')' +
+      (aut.sensibles ? ', incluidos la selfie con cédula y la ubicación.' : '. No autoricé la selfie con cédula ni la ubicación.')
+    : '';
+  porWhatsApp('Hola, soy ' + S.nombre + '. Te mando mis datos para completar mi perfil:\n\n' +
+    ids.map(function (id) { return '• ' + (etq[id] || id) + ': ' + NUEVOS[id]; }).join('\n') +
+    '\n\nCon esto mi garantía sube ' + COP(suma) + '.' + constancia);
+}
+
+function invitar() {
+  window.open('https://wa.me/?text=' + encodeURIComponent(
+    'Te recomiendo ' + nombreJoan() + '. Yo ya soy socio: uno va pagando y le van subiendo el cupo, ' +
+    'y si te atrasas no te cierran la puerta. Dile que vas de mi parte, que a los dos nos sirve.'
+  ), '_blank', 'noopener');
+}
+
+/* ============================ PIE ============================ */
+/* Los dos enlaces legales van en TODAS las pantallas, no escondidos en un rincón:
+   quien firmó una autorización tiene derecho a volver a leer qué firmó cuando quiera,
+   sin tener que pedírselo a nadie. */
+function enlacesLegales() {
+  return '<br><a href="../legal/terminos.html" target="_blank" rel="noopener" ' +
+    'style="color:inherit">Términos</a> · ' +
+    '<a href="../legal/privacidad.html" target="_blank" rel="noopener" ' +
+    'style="color:inherit">Tus datos</a>';
+}
+
+function pie() {
+  if (S.deEnlace) {
+    return '<div class="pie">Estos son tus números al ' + fmtFecha(S.actualizado || hoyISO()) + '.<br>' +
+      'Cuando pagues o pidas otro crédito, pídenos el enlace de nuevo.' +
+      enlacesLegales() + '</div>';
+  }
+  return '<div class="pie">' + (S.actualizado ? 'Datos al ' + fmtFecha(S.actualizado) + '.<br>' : '') +
+    (S.origen === 'panel' ? 'Datos del Panel de este equipo.<br>' : '') +
+    'Si ves algo raro en tus números, escríbenos.' +
+    enlacesLegales() +
+    (S.esDemo ? '' : '<br><a href="#" onclick="salir();return false" style="color:inherit">Salir</a>') +
+    '</div>';
+}
+
+function salir() {
+  S = null; NUEVOS = {};
+  MODO = 'quincenal'; PLAZO = 3;
+  if (location.hash) {
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+  }
+  pintarEntrar();
+  mostrar('pEntrar');
+}
+
+/* ======================= CONFIGURACIÓN ======================= */
+function pantallaConfig() {
+  document.body.innerHTML =
+    '<div class="cab laca"><div class="wrap"><div class="marca"><span class="pin">G</span> Tu Garantía</div>' +
+    '<h1>Conectar la base</h1></div></div>' +
+    '<div class="wrap"><div class="card">' +
+    '<p class="sub" style="margin:0">Pega los dos datos de Supabase (Settings → API). ' +
+    'Quedan guardados solo en este teléfono.</p>' +
+    '<label>Project URL</label><input type="text" id="cfgUrl" placeholder="https://xxxx.supabase.co" value="' + esc(CFG.url) + '">' +
+    '<label>Llave anon public</label><input type="text" id="cfgAnon" placeholder="eyJ..." value="' + esc(CFG.anon) + '">' +
+    '<button class="btn" style="margin-top:var(--e4)" id="cfgGuardar">Guardar</button>' +
+    '<button class="btn sec sm" style="margin-top:var(--e3)" id="cfgBorrar">Volver al modo de prueba</button>' +
+    '<div id="cfgMsg" class="aviso oculto"></div></div></div>';
+  $('cfgGuardar').onclick = function () {
+    var u = $('cfgUrl').value.trim(), a = $('cfgAnon').value.trim();
+    if (!u || !a) return alert('Faltan datos.');
+    localStorage.setItem('socio_cfg', JSON.stringify({ url: u, anon: a }));
+    $('cfgMsg').textContent = 'Guardado. Abre la página sin ?cfg para probarla.';
+    $('cfgMsg').classList.remove('oculto');
+  };
+  $('cfgBorrar').onclick = function () {
+    localStorage.removeItem('socio_cfg');
+    $('cfgMsg').textContent = 'Listo, vuelve al modo de prueba.';
+    $('cfgMsg').classList.remove('oculto');
+  };
+}
+
+/* ========================== ARRANQUE ========================== */
+(function () {
+  if (location.search.indexOf('cfg') >= 0) return pantallaConfig();
+  if (!M) {
+    document.body.innerHTML = '<div class="wrap"><div class="aviso ambar" style="margin-top:calc(var(--e4) * 2)">' +
+      'No pude cargar el motor de reglas (motor.js). Tiene que estar en la misma carpeta que esta página.</div></div>';
+    return;
+  }
+  $('nav').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (b && S) irA(b.dataset.t);
+  });
+  window.addEventListener('hashchange', function () {
+    var nuevo = desdeEnlace(); if (nuevo) return abrir(nuevo, false);
+    var p = desdePanel(); if (p) abrir(p, false);
+  });
+
+  if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register("../sw.js").catch(function () {});
+    });
+  }
+
+  pintarEntrar();
+
+  var delEnlace = desdeEnlace();
+  if (delEnlace) return abrir(delEnlace, false);
+
+  /* "Ver la app como la ve él": Joan abre desde su Panel #p=cedula-4dígitos.
+     El hash no viaja al servidor, y sin esos dos datos no abre nada. */
+  var delPanel = desdePanel();
+  if (delPanel) return abrir(delPanel, false);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="es-CO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Política de datos personales · Tu Garantía</title>
+<meta name="description" content="Qué datos te pedimos en Tu Garantía, para qué los usamos, cuánto los guardamos y cómo puedes conocerlos, corregirlos o pedir que los borremos.">
+<meta name="theme-color" content="#0C0A0B">
+<link rel="apple-touch-icon" href="../app/icono-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="../app/icono-192.png">
+<style>
+/* Un documento legal es para LEERLO, no para admirarlo: misma casa que el resto —laca,
+   papel, los tres colores— pero sin un solo adorno. Medida de lectura corta, jerarquía
+   clara y un índice arriba, porque a esto se entra a buscar una cosa concreta. */
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --laca:#0C0A0B; --papel:#FFFFFF; --hueso:#F6F3F0;
+  --amarillo:#F5C542; --azul:#1B4FD8; --azul-tinte:#EDF2FE;
+  --rojo:#D81F26; --ambar:#9A5B12; --ambar-tinte:#FAF2E4;
+  --tinta:#0C0A0B; --gris:#5C5450; --gris-claro:#6E6460;
+  --linea:#E4DDD6; --linea-laca:rgba(251,247,244,.14); --blanco-laca:#FBF7F4;
+  --serif:Georgia,'Times New Roman',serif;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  --e1:4px; --e2:8px; --e3:12px; --e4:20px; --e5:32px; --e6:52px; --r:16px;
+}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--hueso);color:var(--tinta);font-family:var(--sans);
+  font-size:17px;line-height:1.7;overflow-x:hidden}
+.wrap{max-width:720px;margin:0 auto;padding:0 var(--e4)}
+h1,h2,h3{font-family:var(--serif);font-weight:400;margin:0;text-wrap:balance;letter-spacing:-.01em}
+p,ul,ol{margin:0}
+a{color:var(--azul)}
+a:focus-visible,button:focus-visible{outline:3px solid var(--amarillo);outline-offset:2px}
+
+.tope{background:var(--laca);border-bottom:1px solid var(--linea-laca)}
+.tope .wrap{display:flex;align-items:center;gap:var(--e3);min-height:60px}
+.marca{display:flex;align-items:center;gap:10px;text-decoration:none;min-height:44px}
+.sello{width:32px;height:32px;border-radius:9px;background:var(--rojo);color:#fff;
+  display:grid;place-items:center;font-family:var(--serif);font-size:20px;font-weight:700;flex:none;line-height:1}
+.marca b{font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--blanco-laca)}
+
+.cab{background:var(--laca);color:var(--blanco-laca);padding:var(--e6) 0}
+.cab h1{font-size:clamp(28px,5.6vw,42px);line-height:1.1}
+.cab p{color:rgba(251,247,244,.66);margin-top:var(--e3);font-size:16px}
+
+main{padding:var(--e6) 0 var(--e6)}
+.idx{background:var(--papel);border:1px solid var(--linea);border-radius:var(--r);
+  padding:var(--e4);margin-bottom:var(--e6)}
+.idx b{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gris-claro)}
+.idx ol{margin:var(--e3) 0 0;padding-left:1.3em;font-size:15.5px}
+/* Enlaces seguidos, leídos en un celular: pegados como iban (4px entre uno y otro) el
+   dedo falla y se abre el que no era. */
+.idx li{margin-bottom:var(--e2)}
+.idx a{display:inline-block;padding:5px 0}
+
+section{margin-bottom:var(--e6);scroll-margin-top:var(--e4)}
+section h2{font-size:clamp(21px,3.6vw,27px);margin-bottom:var(--e3)}
+section > p, section > ul, section > ol{margin-bottom:var(--e3)}
+section ul, section ol{padding-left:1.25em}
+section li{margin-bottom:var(--e2)}
+.sub{color:var(--gris)}
+
+.tabla-caja{overflow-x:auto;border:1px solid var(--linea);border-radius:var(--r);
+  background:var(--papel);margin:var(--e4) 0}
+table{border-collapse:collapse;width:100%;min-width:460px}
+th,td{padding:12px 15px;text-align:left;border-bottom:1px solid var(--linea);
+  font-size:15px;vertical-align:top}
+th{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gris-claro)}
+tbody tr:last-child td{border-bottom:0}
+td b{font-weight:700}
+
+.nota{border-radius:var(--r);padding:var(--e4);font-size:15.5px;line-height:1.6;margin:var(--e4) 0}
+.nota.ambar{background:var(--ambar-tinte);box-shadow:inset 0 0 0 1px rgba(154,91,18,.3)}
+.nota.ambar b{color:var(--ambar)}
+.nota.azul{background:var(--azul-tinte);box-shadow:inset 0 0 0 1px rgba(27,79,216,.22)}
+.nota.azul b{color:var(--azul)}
+
+.falta{background:#FFF3F2;border:2px dashed var(--rojo);border-radius:var(--r);
+  padding:var(--e4);margin:var(--e4) 0;font-size:15.5px}
+.falta b{color:var(--rojo)}
+mark{background:#FFE9A8;padding:1px 5px;border-radius:4px;font-weight:700}
+
+.pie{border-top:1px solid var(--linea);padding:var(--e5) 0;font-size:14px;color:var(--gris-claro)}
+.pie a{color:var(--gris)}
+@media (max-width:720px){ body{font-size:16px} main{padding:var(--e5) 0} .cab{padding:var(--e5) 0} }
+</style>
+</head>
+<body>
+
+<header class="tope"><div class="wrap">
+  <a class="marca" href="../index.html"><span class="sello">G</span><b>Tu Garantía</b></a>
+</div></header>
+
+<div class="cab"><div class="wrap">
+  <h1>Qué hacemos con tus datos</h1>
+  <p>Política de tratamiento de datos personales · Ley 1581 de 2012 y Decreto 1377 de 2013<br>
+     Última actualización: 4 de agosto de 2026</p>
+</div></div>
+
+<main><div class="wrap">
+
+  <div class="falta">
+    <b>⚠️ JOAN, ESTO HAY QUE COMPLETARLO ANTES DE PUBLICAR.</b> Todo lo resaltado en amarillo son
+    datos tuyos que yo no tengo y que la ley exige que estén: sin un responsable identificado con
+    nombre, documento, dirección y correo, esta política no sirve de nada. Y llévala a un abogado
+    colombiano antes de publicarla — yo no lo soy. Borra este recuadro cuando esté lista.
+  </div>
+
+  <div class="idx">
+    <b>En esta página</b>
+    <ol>
+      <li><a href="#quien">Quién responde por tus datos</a></li>
+      <li><a href="#que">Qué datos te pedimos, y cuáles puedes no darnos</a></li>
+      <li><a href="#para">Para qué los usamos</a></li>
+      <li><a href="#donde">Dónde se guardan y quién más los ve</a></li>
+      <li><a href="#cuanto">Cuánto tiempo los guardamos</a></li>
+      <li><a href="#derechos">Tus derechos sobre tus datos</a></li>
+      <li><a href="#como">Cómo los ejerces, y en cuánto te respondemos</a></li>
+      <li><a href="#menores">Menores de edad</a></li>
+      <li><a href="#cambios">Si cambiamos esta política</a></li>
+    </ol>
+  </div>
+
+  <section id="quien">
+    <h2>1. Quién responde por tus datos</h2>
+    <p>El responsable del tratamiento de tus datos personales es
+      <mark>[NOMBRE COMPLETO O RAZÓN SOCIAL]</mark>, identificado con
+      <mark>[CÉDULA O NIT]</mark>, con domicilio en <mark>[DIRECCIÓN, CIUDAD]</mark>.</p>
+    <p>Para cualquier cosa relacionada con tus datos puedes escribir a
+      <mark>[CORREO]</mark> o por WhatsApp al <mark>[CELULAR]</mark>.</p>
+    <p class="sub">Tu Garantía es el nombre comercial del servicio. No somos un banco, no somos una
+      entidad vigilada por la Superintendencia Financiera, y no captamos dinero del público.</p>
+  </section>
+
+  <section id="que">
+    <h2>2. Qué datos te pedimos, y cuáles puedes no darnos</h2>
+    <p>Te los pedimos una sola vez, cuando abres tu cuenta, y cada dato que entregas te sube la
+      garantía con la que arrancas. <b>Ninguno es obligatorio:</b> puedes no dar los que no
+      quieras, y en ese caso simplemente arrancas con menos garantía.</p>
+
+    <div class="tabla-caja">
+      <table>
+        <thead><tr><th>Dato</th><th>Para qué lo necesitamos</th></tr></thead>
+        <tbody>
+          <tr><td><b>Nombre completo y número de cédula</b></td><td>Saber quién eres y llevar tu historial a tu nombre.</td></tr>
+          <tr><td><b>Celular y si tiene WhatsApp</b></td><td>Avisarte de tus pagos y responderte. Los últimos 4 dígitos son además tu llave para entrar a la app.</td></tr>
+          <tr><td><b>Un segundo teléfono</b></td><td>Poder ubicarte si el primero falla.</td></tr>
+          <tr><td><b>Correo electrónico</b></td><td>Mandarte comprobantes. Es opcional.</td></tr>
+          <tr><td><b>Ciudad, barrio y dirección</b></td><td>Saber dónde vives, para entregas y gestión.</td></tr>
+          <tr><td><b>Tipo de vivienda</b></td><td>Entender tu situación al evaluar el crédito.</td></tr>
+          <tr><td><b>Tu Nequi o llave de pago</b></td><td>Enviarte el dinero y recibir tus pagos.</td></tr>
+          <tr><td><b>Nombre y teléfono de una referencia</b></td><td>Poder ubicarte si no logramos comunicarnos contigo.</td></tr>
+          <tr><td><b>Foto de tu cédula por delante y por detrás</b></td><td>Confirmar que eres tú y evitar que alguien pida crédito con tu nombre.</td></tr>
+          <tr><td><b>Selfie sosteniendo tu cédula</b></td><td>Lo mismo: confirmar que la cédula es tuya.</td></tr>
+          <tr><td><b>Tu ubicación en el mapa</b></td><td>Registrar una sola vez dónde estás. No te rastreamos después.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="nota ambar">
+      <b>Dos de estos son datos sensibles y merecen que te lo digamos aparte.</b> La selfie
+      sosteniendo tu cédula es un dato biométrico, y tu ubicación en el mapa dice dónde vives.
+      La ley te da derecho a <b>no darlos</b>, y a que nadie te obligue ni te condicione por eso.
+      Si decides no darlos, tu cuenta funciona igual: solo arrancas con menos garantía.
+    </div>
+
+    <div class="nota azul">
+      <b>Sobre la referencia que nos das.</b> Cuando nos pasas el nombre y el teléfono de otra
+      persona, esa persona también tiene derechos sobre sus datos. Te pedimos que le avises de
+      que la pusiste como referencia. Nosotros la contactamos <b>solo</b> si no logramos
+      comunicarnos contigo, y nunca le contamos cuánto debes ni los detalles de tu crédito.
+    </div>
+  </section>
+
+  <section id="para">
+    <h2>3. Para qué los usamos</h2>
+    <ol>
+      <li>Confirmar tu identidad y decidir si te damos un crédito y por cuánto.</li>
+      <li>Llevar tu historial: lo que has pagado, la garantía que has construido y tu nivel.</li>
+      <li>Escribirte por WhatsApp sobre tus pagos, tus vencimientos y lo que llevas construido.</li>
+      <li>Gestionar el cobro si te atrasas, respetando la Ley 2300 de 2023 en horarios y trato.</li>
+      <li>Cumplir con las obligaciones legales y contables que nos correspondan.</li>
+    </ol>
+    <p><b>Para nada más.</b> No vendemos tus datos, no los cedemos a terceros con fines
+      comerciales, no te mandamos publicidad de otros, y no los usamos para hacer perfiles ni
+      venderlos a centrales de riesgo.</p>
+  </section>
+
+  <section id="donde">
+    <h2>4. Dónde se guardan y quién más los ve</h2>
+    <p>Tus datos se guardan en dos sitios y en ningún otro:</p>
+    <ul>
+      <li><b>En el computador y el teléfono desde donde manejamos el negocio</b>, dentro del
+        navegador, protegidos con clave.</li>
+      <li><b>En un servidor de base de datos contratado con Supabase</b>, que es la empresa que nos
+        presta ese servicio. Supabase actúa como encargado del tratamiento: guarda los datos por
+        nosotros y no puede usarlos para otra cosa.</li>
+    </ul>
+    <div class="nota azul">
+      <b>Esto tiene que quedar claro porque la ley pide decirlo:</b> los servidores de Supabase
+      están <b>fuera de Colombia</b>. Eso significa que tus datos salen del país, lo que se llama
+      una transferencia internacional. Al autorizarnos el tratamiento estás autorizando también
+      esa transferencia. Si no estás de acuerdo, dínoslo y lo hablamos.
+    </div>
+    <p class="sub">Aparte de eso, tus datos solo los ve quien maneja el negocio. Ningún otro
+      cliente puede ver los tuyos: para entrar a tu cuenta hacen falta tu cédula y los últimos
+      cuatro dígitos de tu celular.</p>
+  </section>
+
+  <section id="cuanto">
+    <h2>5. Cuánto tiempo los guardamos</h2>
+    <p>Mientras seas socio, y después mientras haga falta para cumplir con las obligaciones
+      legales y contables, o para defendernos si hubiera un reclamo. Cumplido eso, los borramos.</p>
+    <p>Si nos pides que los borremos antes y no tienes deudas pendientes con nosotros, los
+      borramos. Si tienes una deuda abierta, guardamos lo mínimo necesario para gestionarla y
+      borramos el resto — y te decimos exactamente qué guardamos y por qué.</p>
+  </section>
+
+  <section id="derechos">
+    <h2>6. Tus derechos sobre tus datos</h2>
+    <p>La ley te da estos derechos, y no nos cuestan nada:</p>
+    <ul>
+      <li><b>Conocer</b> qué datos tuyos tenemos. Gratis, cuantas veces quieras.</li>
+      <li><b>Actualizarlos y corregirlos</b> si están mal o cambiaron.</li>
+      <li><b>Pedir que los borremos</b>, con lo que te explicamos arriba.</li>
+      <li><b>Revocar la autorización</b> que nos diste, en cualquier momento.</li>
+      <li><b>Pedir prueba</b> de la autorización que nos diste.</li>
+      <li><b>Quejarte ante la Superintendencia de Industria y Comercio</b> si crees que hicimos
+        algo mal. Puedes hacerlo directamente, aunque siempre agradeceremos que nos lo digas
+        primero para arreglarlo.</li>
+    </ul>
+  </section>
+
+  <section id="como">
+    <h2>7. Cómo los ejerces, y en cuánto te respondemos</h2>
+    <p>Escribes a <mark>[CORREO]</mark> o por WhatsApp al <mark>[CELULAR]</mark> y nos dices qué
+      necesitas. No hace falta ningún formato ni ningún trámite.</p>
+    <ul>
+      <li>Si solo quieres <b>consultar</b> tus datos: te respondemos en máximo
+        <b>diez días hábiles</b>.</li>
+      <li>Si es un <b>reclamo</b> —corregir, borrar, revocar—: en máximo <b>quince días
+        hábiles</b>. Si necesitáramos más tiempo, te avisamos por qué y cuándo.</li>
+    </ul>
+    <p class="sub">Son los plazos que fija la ley, y los cumplimos.</p>
+  </section>
+
+  <section id="menores">
+    <h2>8. Menores de edad</h2>
+    <p>Tu Garantía es solo para mayores de edad. No pedimos ni tratamos datos de menores, y no
+      damos crédito a menores de 18 años.</p>
+  </section>
+
+  <section id="cambios">
+    <h2>9. Si cambiamos esta política</h2>
+    <p>Si la cambiamos, publicamos la versión nueva en esta misma página con su fecha, y si el
+      cambio te afecta de verdad te avisamos por WhatsApp antes de que empiece a regir.</p>
+    <p class="sub">Esta política rige desde el 4 de agosto de 2026 y se rige por las leyes de la
+      República de Colombia.</p>
+  </section>
+
+</div></main>
+
+<footer class="pie"><div class="wrap">
+  <p><a href="../index.html">Volver a Tu Garantía</a> · <a href="terminos.html">Términos y condiciones</a></p>
+</div></footer>
+
+</body>
+</html>

@@ -1,0 +1,21 @@
+# Respaldos del Panel. NUNCA deben subirse: traen los datos reales de los clientes
+# —cédulas, teléfonos, direcciones, fotos— y este repositorio es público.
+respaldo-*.json
+*.backup.json
+
+# Los defectos abiertos, descritos con el detalle necesario para arreglarlos —que es
+# el mismo necesario para aprovecharlos. Uno de ellos lo puede ejecutar cualquier
+# socio desde su pantalla. Se queda en el computador hasta que estén cerrados.
+NOTAS-INTERNAS.md
+
+# Compilados de Android. Pesan megas, se regeneran, y no aportan nada al historial.
+*.apk
+*.aab
+*.keystore
+
+# Basura del sistema
+Thumbs.db
+desktop.ini
+.DS_Store
+*~
+*.tmp

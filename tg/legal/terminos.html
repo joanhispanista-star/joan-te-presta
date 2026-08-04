@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="es-CO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Términos y condiciones · Tu Garantía</title>
+<meta name="description" content="Las reglas de Tu Garantía: cuánto cuesta cada crédito, cuándo se paga, qué pasa si te atrasas y qué es exactamente la garantía que construyes.">
+<meta name="theme-color" content="#0C0A0B">
+<link rel="apple-touch-icon" href="../app/icono-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="../app/icono-192.png">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --laca:#0C0A0B; --papel:#FFFFFF; --hueso:#F6F3F0;
+  --amarillo:#F5C542; --azul:#1B4FD8; --azul-tinte:#EDF2FE;
+  --rojo:#D81F26; --rojo-tinte:#FCF4F2; --ambar:#9A5B12; --ambar-tinte:#FAF2E4;
+  --tinta:#0C0A0B; --gris:#5C5450; --gris-claro:#6E6460;
+  --linea:#E4DDD6; --linea-laca:rgba(251,247,244,.14); --blanco-laca:#FBF7F4;
+  --serif:Georgia,'Times New Roman',serif;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  --e1:4px; --e2:8px; --e3:12px; --e4:20px; --e5:32px; --e6:52px; --r:16px;
+}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--hueso);color:var(--tinta);font-family:var(--sans);
+  font-size:17px;line-height:1.7;overflow-x:hidden}
+.wrap{max-width:720px;margin:0 auto;padding:0 var(--e4)}
+h1,h2,h3{font-family:var(--serif);font-weight:400;margin:0;text-wrap:balance;letter-spacing:-.01em}
+p,ul,ol{margin:0}
+a{color:var(--azul)}
+a:focus-visible{outline:3px solid var(--amarillo);outline-offset:2px}
+
+.tope{background:var(--laca);border-bottom:1px solid var(--linea-laca)}
+.tope .wrap{display:flex;align-items:center;gap:var(--e3);min-height:60px}
+.marca{display:flex;align-items:center;gap:10px;text-decoration:none;min-height:44px}
+.sello{width:32px;height:32px;border-radius:9px;background:var(--rojo);color:#fff;
+  display:grid;place-items:center;font-family:var(--serif);font-size:20px;font-weight:700;flex:none;line-height:1}
+.marca b{font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--blanco-laca)}
+
+.cab{background:var(--laca);color:var(--blanco-laca);padding:var(--e6) 0}
+.cab h1{font-size:clamp(28px,5.6vw,42px);line-height:1.1}
+.cab p{color:rgba(251,247,244,.66);margin-top:var(--e3);font-size:16px}
+
+main{padding:var(--e6) 0}
+.idx{background:var(--papel);border:1px solid var(--linea);border-radius:var(--r);
+  padding:var(--e4);margin-bottom:var(--e6)}
+.idx b{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gris-claro)}
+.idx ol{margin:var(--e3) 0 0;padding-left:1.3em;font-size:15.5px}
+/* El índice son doce enlaces seguidos y esto se lee en un celular: pegados como iban
+   (4px entre uno y otro) el dedo falla y se abre el que no era. */
+.idx li{margin-bottom:var(--e2)}
+.idx a{display:inline-block;padding:5px 0}
+
+section{margin-bottom:var(--e6);scroll-margin-top:var(--e4)}
+section h2{font-size:clamp(21px,3.6vw,27px);margin-bottom:var(--e3)}
+section > p, section > ul, section > ol{margin-bottom:var(--e3)}
+section ul, section ol{padding-left:1.25em}
+section li{margin-bottom:var(--e2)}
+.sub{color:var(--gris)}
+
+.tabla-caja{overflow-x:auto;border:1px solid var(--linea);border-radius:var(--r);
+  background:var(--papel);margin:var(--e4) 0}
+table{border-collapse:collapse;width:100%;min-width:440px}
+th,td{padding:12px 15px;text-align:left;border-bottom:1px solid var(--linea);font-size:15px;vertical-align:top}
+th{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gris-claro)}
+tbody tr:last-child td{border-bottom:0}
+td.n{text-align:right;font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}
+
+.nota{border-radius:var(--r);padding:var(--e4);font-size:15.5px;line-height:1.6;margin:var(--e4) 0}
+.nota.ambar{background:var(--ambar-tinte);box-shadow:inset 0 0 0 1px rgba(154,91,18,.3)}
+.nota.ambar b{color:var(--ambar)}
+.nota.azul{background:var(--azul-tinte);box-shadow:inset 0 0 0 1px rgba(27,79,216,.22)}
+.nota.azul b{color:var(--azul)}
+.nota.rojo{background:var(--rojo-tinte);box-shadow:inset 0 0 0 1px rgba(216,31,38,.28)}
+.nota.rojo b{color:var(--rojo)}
+
+.falta{background:#FFF3F2;border:2px dashed var(--rojo);border-radius:var(--r);
+  padding:var(--e4);margin:var(--e4) 0;font-size:15.5px}
+.falta b{color:var(--rojo)}
+mark{background:#FFE9A8;padding:1px 5px;border-radius:4px;font-weight:700}
+
+.pie{border-top:1px solid var(--linea);padding:var(--e5) 0;font-size:14px;color:var(--gris-claro)}
+.pie a{color:var(--gris)}
+@media (max-width:720px){ body{font-size:16px} main{padding:var(--e5) 0} .cab{padding:var(--e5) 0} }
+</style>
+</head>
+<body>
+
+<header class="tope"><div class="wrap">
+  <a class="marca" href="../index.html"><span class="sello">G</span><b>Tu Garantía</b></a>
+</div></header>
+
+<div class="cab"><div class="wrap">
+  <h1>Las reglas, sin letra chica</h1>
+  <p>Términos y condiciones del servicio · Última actualización: 4 de agosto de 2026</p>
+</div></div>
+
+<main><div class="wrap">
+
+  <div class="falta">
+    <b>⚠️ JOAN, ESTO HAY QUE COMPLETARLO Y REVISARLO ANTES DE PUBLICAR.</b> Lo resaltado en
+    amarillo son datos tuyos que yo no tengo. Y aquí se pacta plata: llévalo a un abogado
+    colombiano antes de que lo firme un cliente. Yo no soy abogado. En especial pídele que revise
+    el punto 3 (el costo), porque en Colombia hay un tope legal de interés y superarlo tiene
+    consecuencias penales, y el punto 7 (la garantía), que es lo más nuevo y lo que más se puede
+    malinterpretar. Borra este recuadro cuando esté listo.
+  </div>
+
+  <div class="idx">
+    <b>En esta página</b>
+    <ol>
+      <li><a href="#que">Qué es Tu Garantía y qué no es</a></li>
+      <li><a href="#quien">Quién puede ser socio</a></li>
+      <li><a href="#costo">Cuánto cuesta cada crédito</a></li>
+      <li><a href="#cuando">Cuándo se paga</a></li>
+      <li><a href="#atraso">Qué pasa si te atrasas</a></li>
+      <li><a href="#prorroga">La prórroga y el plan de pagos</a></li>
+      <li><a href="#garantia">La garantía: qué es y qué no es</a></li>
+      <li><a href="#cupo">Tu cupo y tu nivel</a></li>
+      <li><a href="#aprobacion">Nosotros decidimos si te prestamos</a></li>
+      <li><a href="#contacto">Cómo te contactamos</a></li>
+      <li><a href="#salir">Si te quieres retirar</a></li>
+      <li><a href="#cambios">Si cambiamos estas reglas</a></li>
+    </ol>
+  </div>
+
+  <section id="que">
+    <h2>1. Qué es Tu Garantía y qué no es</h2>
+    <p>Tu Garantía es un servicio de crédito de <mark>[NOMBRE COMPLETO O RAZÓN SOCIAL]</mark>,
+      identificado con <mark>[CÉDULA O NIT]</mark>, con domicilio en
+      <mark>[DIRECCIÓN, CIUDAD]</mark>. Prestamos dinero propio a personas que cobran por quincena.</p>
+    <div class="nota rojo">
+      <b>No somos un banco.</b> No estamos vigilados por la Superintendencia Financiera, no
+      captamos dinero del público, no recibimos ahorros ni depósitos, y no somos una cooperativa.
+      Si alguien te ofrece "invertir" o "depositar" en Tu Garantía, no somos nosotros.
+    </div>
+    <p>Al usar la app y pedir un crédito aceptas estas reglas. Léelas: están escritas para que se
+      entiendan de una sola pasada.</p>
+  </section>
+
+  <section id="quien">
+    <h2>2. Quién puede ser socio</h2>
+    <ul>
+      <li>Ser mayor de edad y tener cédula colombiana.</li>
+      <li>Tener un <b>código de invitación</b> que te hayamos entregado. No hay registro abierto:
+        cada código sirve para una sola persona.</li>
+      <li>Darnos los datos que te pedimos. Ninguno es obligatorio, pero cada uno te sube la
+        garantía con la que arrancas.</li>
+    </ul>
+    <p class="sub">Tu cuenta es tuya y no se presta. Entrar requiere tu cédula y los últimos cuatro
+      dígitos de tu celular; cuídalos como cuidas tu clave.</p>
+  </section>
+
+  <section id="costo">
+    <h2>3. Cuánto cuesta cada crédito</h2>
+    <p>Hay dos productos y los dos tienen un costo <b>plano</b>: se calcula sobre lo que pides y
+      no cambia después, ni por tu historial, ni por el monto, ni por la fecha.</p>
+
+    <div class="tabla-caja">
+      <table>
+        <thead><tr><th>Producto</th><th>Costo</th><th>Plazo</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><b>Crédito quincenal</b><br><span class="sub">el de siempre</span></td>
+            <td class="n">20% del monto</td>
+            <td>Hasta la fecha de corte</td>
+          </tr>
+          <tr>
+            <td><b>Préstamo con garantía</b><br><span class="sub">solo con garantía ganada</span></td>
+            <td class="n">5% mensual</td>
+            <td>De 1 a 6 meses</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p><b>En pesos:</b> si pides $200.000 en el crédito quincenal, devuelves $240.000. Si pides
+      $300.000 en el préstamo con garantía a 6 meses, pagas $15.000 de costo cada mes más la parte
+      del capital: $90.000 de costo en total.</p>
+    <p>No cobramos cuotas de manejo, ni seguros, ni estudio de crédito, ni papeleo, ni ningún otro
+      cargo. Lo que ves en la calculadora antes de pedir es exactamente lo que pagas.</p>
+    <p>El préstamo con garantía solo puede llegar hasta el monto de tu <b>garantía ganada</b> —la
+      que construiste pagando— y no incluye la que te prestamos al entrar.</p>
+  </section>
+
+  <section id="cuando">
+    <h2>4. Cuándo se paga</h2>
+    <p>Las fechas de corte son el <b>día 15 y el último día de cada mes</b>, que es cuando a ti te
+      pagan. Si el corte cae domingo o festivo, se corre al siguiente día hábil.</p>
+    <p>Entre que te entregamos el dinero y tu fecha de pago siempre hay al menos cinco días. Si
+      pides muy cerca de un corte, tu pago queda para el siguiente.</p>
+    <p>En el préstamo con garantía pagas una cuota cada mes, siempre en una fecha de corte, con
+      una parte del capital y el costo de ese mes.</p>
+  </section>
+
+  <section id="atraso">
+    <h2>5. Qué pasa si te atrasas</h2>
+    <p>Se cobra un <b>1% diario sobre el capital</b> por cada día de atraso, contado desde tu fecha
+      de corte.</p>
+    <div class="nota azul">
+      <b>Y algo que aquí no pasa, y queremos que quede por escrito:</b> atrasarte no te expulsa.
+      Tu nivel nunca baja. La garantía que ya construiste no se borra jamás. Puedes volver a pedir
+      aunque vengas de un atraso. Y todo lo que pagues sigue sumando a tu garantía, aunque lo
+      pagues tarde.
+    </div>
+    <p>Lo único que cambia es cuánto suma: lo pagado <b>en fecha</b> te deja el doble de garantía
+      que lo pagado tarde. Es un premio por pagar a tiempo, no un castigo por atrasarte.</p>
+    <p>Si pasan <b>90 días sin que hagas ni un solo abono</b>, la cuenta queda suspendida y tu
+      garantía se congela — no se pierde, se queda esperándote. Vuelves a abonar y se descongela.</p>
+  </section>
+
+  <section id="prorroga">
+    <h2>6. La prórroga y el plan de pagos</h2>
+    <p>Si llega tu fecha de pago y no alcanzas a cubrir todo, tienes dos salidas y las dos son
+      normales:</p>
+    <ul>
+      <li><b>Prórroga:</b> pagas el costo de la quincena —más el atraso que se haya causado hasta
+        ese día, si venías atrasado— y el capital pasa a la siguiente fecha de corte. El número de
+        prórrogas seguidas depende de tu nivel.</li>
+      <li><b>Plan de pagos:</b> cuando se te acaban las prórrogas, el saldo se reparte en tres
+        cortes con un costo reducido del 5% sobre lo que falte.</li>
+    </ul>
+    <p class="sub">Las dos también te suman garantía. Nunca te vamos a cobrar por pedir una
+      prórroga: pagas el costo de la quincena que estás comprando, nada más.</p>
+  </section>
+
+  <section id="garantia">
+    <h2>7. La garantía: qué es y qué no es</h2>
+    <p>La garantía es tu historial convertido en número. Cada vez que pagas el costo de un crédito,
+      el <b>90%</b> de ese costo se te vuelve garantía si pagaste en fecha, y el <b>45%</b> si
+      pagaste tarde. En el préstamo con garantía suma menos: el 20% y el 10%.</p>
+    <p>Al abrir tu cuenta te prestamos hasta <b>$100.000</b> de garantía, según los datos que nos
+      des, para que puedas arrancar sin historial.</p>
+
+    <div class="nota ambar">
+      <b>Esto es lo más importante de toda esta página: la garantía NO es dinero tuyo.</b>
+      No es un ahorro, no es un depósito, no es una inversión y <b>no se puede retirar</b>. Es un
+      puntaje que dice cuánto has pagado, y sirve para dos cosas: subirte el cupo, y respaldar un
+      préstamo más barato. Nadie te va a entregar esa plata en efectivo, porque esa plata no
+      existe como plata: existe como historial.
+    </div>
+
+    <p>La garantía que te prestamos al entrar no respalda el préstamo con garantía. Solo la que
+      te ganaste pagando.</p>
+    <p>Mientras tengas un préstamo con garantía abierto, esa parte de tu garantía queda
+      comprometida y no cuenta para tu cupo quincenal. Al terminar de pagarlo se libera.</p>
+  </section>
+
+  <section id="cupo">
+    <h2>8. Tu cupo y tu nivel</h2>
+    <p>Tu cupo es tu garantía multiplicada por un factor que depende de tu nivel:</p>
+    <div class="tabla-caja">
+      <table>
+        <thead><tr><th>Nivel</th><th>Multiplica tu garantía por</th></tr></thead>
+        <tbody>
+          <tr><td>Bronce</td><td class="n">1,5</td></tr>
+          <tr><td>Plata</td><td class="n">2,0</td></tr>
+          <tr><td>Oro</td><td class="n">2,5</td></tr>
+          <tr><td>Platino</td><td class="n">3,0</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Se sube de nivel pagando a tiempo. <b>No se baja nunca.</b> Desde la app puedes pedir hasta
+      $5.000.000; por encima de eso hablamos directamente.</p>
+    <p class="sub">El monto mínimo de cualquier crédito es de $50.000.</p>
+  </section>
+
+  <section id="aprobacion">
+    <h2>9. Nosotros decidimos si te prestamos</h2>
+    <p>Tener cupo no es lo mismo que tener el crédito aprobado. Cada solicitud la revisamos, y
+      podemos aprobarla, aprobarla por menos, o no aprobarla. Si no te la aprobamos te decimos
+      por qué.</p>
+    <p class="sub">La calculadora de la app es una simulación para que sepas a qué atenerte antes
+      de pedir. No es una oferta ni una aprobación.</p>
+  </section>
+
+  <section id="contacto">
+    <h2>10. Cómo te contactamos</h2>
+    <p>Te escribimos por WhatsApp al número que nos diste: para recordarte tus pagos, avisarte de
+      vencimientos y contarte lo que llevas construido.</p>
+    <p>Si te atrasas, gestionamos el cobro respetando la <b>Ley 2300 de 2023</b>: en los horarios
+      que fija la ley, sin acosarte, sin gritarte y sin contarle tu deuda a nadie. Puedes pedirnos
+      que ajustemos el horario o el canal y lo respetamos.</p>
+    <p>A la referencia que nos diste solo la contactamos si no logramos comunicarnos contigo, y
+      nunca le contamos cuánto debes.</p>
+  </section>
+
+  <section id="salir">
+    <h2>11. Si te quieres retirar</h2>
+    <p>Puedes dejar de ser socio cuando quieras, siempre que no tengas deudas pendientes. Nos
+      escribes y cerramos tu cuenta.</p>
+    <p>Tus datos se manejan como dice la
+      <a href="privacidad.html">política de datos personales</a>: puedes pedir que los borremos y
+      lo hacemos, salvo lo que la ley nos obligue a conservar.</p>
+    <p class="sub">Al cerrar la cuenta, la garantía construida se pierde, porque es un historial y
+      no un saldo. Si vuelves más adelante, empiezas de nuevo.</p>
+  </section>
+
+  <section id="cambios">
+    <h2>12. Si cambiamos estas reglas</h2>
+    <p>Podemos cambiarlas. Cuando lo hagamos, publicamos la versión nueva en esta página con su
+      fecha y te avisamos por WhatsApp antes de que rija.</p>
+    <div class="nota azul">
+      <b>Los créditos que ya tienes no cambian.</b> Un crédito se rige por las reglas que estaban
+      vigentes el día que lo pediste. Un cambio nunca te sube el costo de algo que ya te
+      entregamos.
+    </div>
+    <p class="sub">Estos términos se rigen por las leyes de la República de Colombia. Cualquier
+      diferencia intentamos resolverla hablando; si no se puede, resuelven los jueces
+      colombianos.</p>
+  </section>
+
+</div></main>
+
+<footer class="pie"><div class="wrap">
+  <p><a href="../index.html">Volver a Tu Garantía</a> · <a href="privacidad.html">Política de datos personales</a></p>
+</div></footer>
+
+</body>
+</html>
