@@ -459,9 +459,78 @@ details[open] summary::after{content:' ↑'}
 @media (prefers-reduced-motion:reduce){.panel{animation:none}}
 .pie{text-align:center;font-size:12px;color:var(--gris);margin:22px 0 8px;line-height:1.6}
 .cargando{text-align:center;padding:70px 0;color:var(--gris)}
+
+/* ---------------- la bienvenida ------------------------------------------
+   Antes, al abrir la app instalada, se veía la pantalla negra del sistema y
+   nada más: unos segundos en los que no pasaba nada y no se sabía si había
+   abierto. Esto lo llena con el sello.
+
+   Está escrito en el HTML, no lo dibuja JavaScript, y por eso se ve desde el
+   primer fotograma: si esperara al script, la pantalla negra volvería.
+
+   Se va sola en cuanto la app está lista, y hay un plazo de seguridad por si
+   el script no llega nunca — un splash que no se quita es una app que no abre.
+   Se va con transición para que no dé el brinco de un corte seco.           */
+#hola{position:fixed;inset:0;z-index:99;background:var(--laca);
+  display:grid;place-items:center;
+  transition:opacity .42s ease, visibility .42s ease}
+#hola.fuera{opacity:0;visibility:hidden;pointer-events:none}
+#hola .marco{display:flex;flex-direction:column;align-items:center;gap:20px}
+/* El mismo sello rojo con la G blanca de la cabecera, en grande. Es la marca:
+   el rojo la identifica y el amarillo se reserva para lo que el socio construyó. */
+#hola .sello{width:86px;height:86px;border-radius:24px;background:var(--rojo);
+  color:#fff;display:grid;place-items:center;
+  font-family:Georgia,'Times New Roman',serif;font-size:52px;font-weight:700;
+  line-height:1;box-shadow:0 18px 44px -18px var(--rojo);
+  animation:sello-entra .62s cubic-bezier(.2,.9,.25,1) both}
+#hola .nombre{font-size:12px;font-weight:700;letter-spacing:.26em;
+  text-transform:uppercase;color:rgba(251,247,244,.5);
+  animation:sube .5s ease .2s both}
+/* El filete de oro que cruza por debajo: es el mismo del borde de la laca, y
+   sirve de reloj — mientras se dibuja, la app está cargando. */
+#hola .filete{width:132px;height:2px;border-radius:2px;overflow:hidden;
+  background:rgba(251,247,244,.12)}
+#hola .filete i{display:block;height:100%;width:40%;background:var(--amarillo);
+  border-radius:2px;animation:filete 1.15s ease-in-out .3s infinite}
+@keyframes sello-entra{
+  from{opacity:0;transform:scale(.72) translateY(10px)}
+  to  {opacity:1;transform:none}
+}
+@keyframes sube{ from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+@keyframes filete{
+  0%  {transform:translateX(-115%)}
+  100%{transform:translateX(265%)}
+}
+/* Con el movimiento reducido, el sello aparece y ya: sin escala, sin barrido.
+   Alguien que pidió menos animación no quiere una animación más suave, quiere
+   ninguna. */
+@media (prefers-reduced-motion:reduce){
+  #hola .sello,#hola .nombre{animation:none}
+  #hola .filete i{animation:none;width:100%;opacity:.5}
+  #hola{transition:none}
+}
 </style>
 </head>
 <body>
+
+<!-- ======================= BIENVENIDA ======================= -->
+<div id="hola" role="status" aria-label="Abriendo Tu Garantía">
+  <div class="marco">
+    <div class="sello" aria-hidden="true">G</div>
+    <div class="nombre">Tu Garantía</div>
+    <div class="filete" aria-hidden="true"><i></i></div>
+  </div>
+</div>
+<script>
+/* El plazo de seguridad se arma ACÁ, pegado al splash, y no al final del archivo:
+   si el script grande de abajo revienta, este ya quedó puesto y la bienvenida se
+   va igual. Puesto al final, un error dejaría al socio mirando el logo para
+   siempre. */
+setTimeout(function () {
+  var h = document.getElementById('hola');
+  if (h) h.classList.add('fuera');
+}, 4000);
+</script>
 
 <!-- ======================= ENTRAR ======================= -->
 <div id="pEntrar">
@@ -2573,6 +2642,17 @@ function pantallaConfig() {
   }
 
   pintarEntrar();
+
+  /* Se quita la bienvenida cuando la app ya tiene algo que mostrar. Se le deja un
+     mínimo de 700 ms desde que cargó la página: si se va antes, la animación del
+     sello se corta a medias y el efecto es un parpadeo, que se ve peor que no
+     tener nada. En un celular lento el tiempo ya se cumplió solo. */
+  (function () {
+    var h = document.getElementById('hola');
+    if (!h) return;
+    var falta = Math.max(0, 700 - (performance.now ? performance.now() : 700));
+    setTimeout(function () { h.classList.add('fuera'); }, falta);
+  })();
 
   var delEnlace = desdeEnlace();
   if (delEnlace) return abrir(delEnlace, false);
