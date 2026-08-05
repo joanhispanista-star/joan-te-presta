@@ -653,43 +653,36 @@ function porWhatsApp(texto) {
 function nombreJoan() { return contactoOficial().nombre; }
 
 /* ===================== SOCIOS DE PRUEBA ===================== */
-var DEMOS = (function () {
-  var cred = [{ codigo: 'CR-0009', capital: 600000, costo: 120000, desembolso: fechaRel(-23),
-                corte: fechaRel(-9), pagado: false, abonado: 0, prorrogas: 0, garantia: 0 }];
-  var cobrado = 0, puntuales = 0;
-  for (var i = 1; i <= 8; i++) {
-    var cap = 100000 + i * 25000, costo = Math.round(cap * 0.20);
-    var tarde = (i === 8), pro = (i === 6) ? Math.round(cap * 0.20) : 0;
-    cred.push({ codigo: 'CR-' + String(9 - i).padStart(4, '0'), capital: cap, costo: costo,
-      desembolso: fechaRel(-30 * i - 14), corte: fechaRel(-30 * i),
-      pagado: true, fecha_pagado: fechaRel(-30 * i + (tarde ? 6 : -1)),
-      abonado: cap + costo + pro, prorrogas: pro ? 1 : 0,
-      garantia: M ? M.acumularGarantia(costo + pro, !tarde) : 0 });
-    cobrado += (M ? M.acumularGarantia(costo + pro, !tarde) : 0);
-    if (!tarde) puntuales++;
-  }
-  var datosAna = { nombre: 'Ana Ruiz', cedula: '52111222', celular: '3001112233', whatsapp: true,
-    ciudad: 'Bogotá Kennedy', direccion: 'Cra 78 #38-12', foto_cedula_frente: 'si', foto_cedula_reverso: 'si' };
-  var datosLuis = { nombre: 'Luis Gómez', cedula: '79333444', celular: '3004445566', whatsapp: true };
-  /* Los cupones salen del motor, nunca a mano: si mañana cambia la tabla de
-     datos, estos socios de prueba cambian solos y no quedan mintiendo. */
-  var cuponAna = M ? M.garantiaPorDatos(datosAna).total : 0;
-  var cuponLuis = M ? M.garantiaPorDatos(datosLuis).total : 0;
-  var ganLuis = M ? M.acumularGarantia(40000, true) : 0;
+/* ============================ SOCIOS DE PRUEBA ============================
+   5-ago-2026. Antes había tres socios inventados: Ana Ruiz, Luis Gómez y Joan.
+   Ana y Luis se fueron, por pedido de Joan y porque tenían un problema: cuando
+   sus clientes de verdad ya están en el Panel, dos personajes de mentira en la
+   pantalla de entrada solo sirven para que alguien entre con la cédula
+   equivocada y crea que la app le está mostrando datos falsos.
 
-  /* ---- La cuenta de Joan, para que se vea como socio ----
-     10 créditos, todos pagados en fecha. 1.800.000 de capital, 360.000 de
-     costos, 324.000 de garantía ganada (el 90%) + 100.000 de cupón = 424.000.
-     Platino, cupo 1.272.000, préstamo con garantía hasta 324.000. */
-  var montosJoan = [300000, 300000, 200000, 200000, 200000, 200000, 100000, 100000, 100000, 100000];
+   Queda uno solo, el de Joan, para que pueda verse como socio y probar la app
+   sin tocar la cuenta de ningún cliente.
+
+   Los clientes REALES no entran por acá: entran por el Panel (modo panel, en el
+   equipo de Joan), por el enlace de WhatsApp, o por Supabase cuando esté
+   conectado. Ver el orden de búsqueda en abrirPorCedula().               */
+var DEMOS = (function () {
+  /* ---- La cuenta de Joan ----
+     3 créditos de 100.000, todos pagados en fecha. 60.000 de costos, 54.000 de
+     garantía ganada (el 90%) + 100.000 de cupón = 154.000 de garantía total.
+     Nivel plata (con 3 pagos puntuales; el oro pide 5), cupo 308.000, y
+     préstamo con garantía hasta 54.000, que es solo la ganada.
+     Las cifras no van escritas a mano: salen del motor unas líneas más abajo,
+     así que si mañana cambia una regla, esta cuenta cambia sola. */
+  var montosJoan = [100000, 100000, 100000];
   var credJoan = [], ganadaJoan = 0;
   for (var j = 0; j < montosJoan.length; j++) {
     var capJ = montosJoan[j];
-    var costoJ = Math.round(capJ * 0.20);
-    var ganJ = M ? M.acumularGarantia(costoJ, true) : 0;   // 0,90 → 54.000 / 36.000 / 18.000
+    var costoJ = M ? M.calcularCosto(capJ) : Math.round(capJ * 0.20);
+    var ganJ = M ? M.acumularGarantia(costoJ, true) : 0;   // 0,90 sobre 20.000 = 18.000
     ganadaJoan += ganJ;
     credJoan.push({
-      codigo: 'CR-' + String(10 - j).padStart(4, '0'),
+      codigo: 'CR-' + String(3 - j).padStart(4, '0'),
       capital: capJ, costo: costoJ,
       desembolso: fechaRel(-15 * (j + 1) - 12),
       corte: fechaRel(-15 * (j + 1)),
@@ -707,55 +700,27 @@ var DEMOS = (function () {
   };
   var cuponJoan = M ? M.garantiaPorDatos(datosJoan).total : 0;
 
+  /* El nivel también sale del motor. Escrito a mano, el día que cambien los
+     requisitos esta cuenta seguiría diciendo "platino" mientras el cupo se
+     calcula con otra cosa, que es justo la clase de mentira que este proyecto
+     lleva semanas persiguiendo. */
+  var nivelJoan = M ? M.evaluarNivel(montosJoan.length, montosJoan.length, montosJoan.length, null) : 'plata';
+  var totalPrestadoJoan = montosJoan.reduce(function (t, c) { return t + c; }, 0);
+
   return [
-    { cedula: '52111222', tel4: '2233', nombre: 'Ana Ruiz',
-      datos: {
-        negocio: { nombre: 'Tu Garantía', whatsapp: '' },
-        comunidad: { socios: 34, creditos_pagados: 218, garantia_construida: 9840000,
-                     prestado: 52400000, puntualidad: 87, desde: fechaRel(-540) },
-        socio: { codigo: 'CL-0007' },
-        garantia: { total: cobrado + cuponAna + 10000, acumulada: cobrado, cupon: cuponAna, referidos: 10000,
-          nivel: 'oro', pagados_a_tiempo: puntuales, racha: 7, meses_sin_mora: 7, creditos_total: 9,
-          comprometida: 0 },
-        perfil: { datos: datosAna },
-        referidos: { total: 3, pagaron: 2, lista: [{ nombre: 'Luis', pago: true }, { nombre: 'Sandra', pago: true }, { nombre: 'Pedro', pago: false }] },
-        creditos: cred,
-        resumen: { total_prestado: 2300000, primer_credito: fechaRel(-254) }
-      } },
-    { cedula: '79333444', tel4: '5566', nombre: 'Luis Gómez',
-      datos: {
-        negocio: { nombre: 'Tu Garantía', whatsapp: '' },
-        comunidad: { socios: 34, creditos_pagados: 218, garantia_construida: 9840000,
-                     prestado: 52400000, puntualidad: 87, desde: fechaRel(-540) },
-        socio: { codigo: 'CL-0008' },
-        garantia: { total: ganLuis + cuponLuis, acumulada: ganLuis, cupon: cuponLuis, referidos: 0,
-          nivel: 'bronce', pagados_a_tiempo: 1, racha: 1, meses_sin_mora: 1, creditos_total: 2,
-          comprometida: 0 },
-        perfil: { datos: datosLuis },
-        referidos: { total: 0, pagaron: 0, lista: [] },
-        creditos: [
-          { codigo: 'CR-0011', capital: 250000, costo: 50000, desembolso: fechaRel(-6),
-            corte: fechaRel(7), pagado: false, abonado: 0, prorrogas: 0, garantia: 0 },
-          { codigo: 'CR-0010', capital: 200000, costo: 40000, desembolso: fechaRel(-40),
-            corte: fechaRel(-26), pagado: true, fecha_pagado: fechaRel(-26), abonado: 240000,
-            prorrogas: 0, garantia: ganLuis }
-        ],
-        resumen: { total_prestado: 450000, primer_credito: fechaRel(-40) }
-      } },
     { cedula: '79111000', tel4: '2026', nombre: 'Joan Hispanista',
       datos: {
         negocio: { nombre: 'Tu Garantía', whatsapp: '' },
-        comunidad: { socios: 34, creditos_pagados: 218, garantia_construida: 9840000,
-                     prestado: 52400000, puntualidad: 87, desde: fechaRel(-540) },
+        comunidad: null,
         socio: { codigo: 'CL-0001' },
         garantia: { total: ganadaJoan + cuponJoan, acumulada: ganadaJoan, cupon: cuponJoan, referidos: 0,
-          nivel: 'platino', pagados_a_tiempo: 10, racha: 10, meses_sin_mora: 6,
-          creditos_total: 10, comprometida: 0 },
+          nivel: nivelJoan, pagados_a_tiempo: montosJoan.length, racha: montosJoan.length,
+          meses_sin_mora: 2, creditos_total: montosJoan.length, comprometida: 0 },
         perfil: { datos: datosJoan },
         referidos: { total: 0, pagaron: 0, lista: [] },
         creditos: credJoan,
         respaldados: [],
-        resumen: { total_prestado: 1800000, primer_credito: fechaRel(-162) }
+        resumen: { total_prestado: totalPrestadoJoan, primer_credito: fechaRel(-15 * montosJoan.length - 12) }
       } }
   ];
 })();
@@ -823,6 +788,14 @@ function leerPanel() {
     return P.normalizar(JSON.parse(crudo));
   } catch (e) { return null; }
 }
+/* ¿Este equipo es el de Joan, o sea, tiene el Panel con clientes de verdad?
+   Se usa para no anunciar la cuenta de prueba donde hay datos reales: quien esté
+   mirando no tiene que dudar de si lo que ve son sus números o los inventados. */
+function hayPanel() {
+  var db = leerPanel();
+  return !!(db && db.socios && db.socios.length);
+}
+
 /* El enlace que abre el Panel: #p=cedula-4dígitos. Va en el hash a propósito,
    porque el hash no sale del navegador; un ?p= quedaría en los registros del
    servidor. Y solo sirve donde vive el Panel: en el celular de un cliente esa
@@ -908,12 +881,13 @@ function pintarEntrar() {
   $('btnEntrar').addEventListener('click', entrar);
   $('inCedula').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('inTel').focus(); });
   $('inTel').addEventListener('keydown', function (e) { if (e.key === 'Enter') entrar(); });
-  if (!CFG.url || !CFG.anon) {
-    $('avisoDemo').innerHTML = '<b>Modo de prueba.</b> Todavía no está conectada la base, así que hay ' +
-      'socios de ejemplo:' +
-      '<div style="margin-top:var(--e2)"><b>Ana Ruiz</b> — cédula <b>52111222</b>, celular <b>2233</b></div>' +
-      '<div><b>Luis Gómez</b> — cédula <b>79333444</b>, celular <b>5566</b></div>' +
-      '<div><b>Joan</b> — cédula <b>79111000</b>, celular <b>2026</b></div>';
+  /* El aviso solo aparece SIN nube y SIN datos del Panel. En el equipo de Joan,
+     donde el Panel sí tiene a sus clientes, anunciar una cuenta de prueba haría
+     dudar a quien esté mirando de si lo que ve son sus números o los de mentira. */
+  if ((!CFG.url || !CFG.anon) && !hayPanel()) {
+    $('avisoDemo').innerHTML = '<b>Modo de prueba.</b> Todavía no está conectada la base. ' +
+      'Puedes entrar con la cuenta de ejemplo:' +
+      '<div style="margin-top:var(--e2)"><b>Joan</b> — cédula <b>79111000</b>, celular <b>2026</b></div>';
     $('avisoDemo').classList.remove('oculto');
   }
 }
