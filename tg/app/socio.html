@@ -584,7 +584,17 @@ var esc = function (s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, function (m) {
     return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]; });
 };
-var pct = function (t) { return Math.round(t * 100) + '%'; };
+/* 5-ago-2026 — UN PORCENTAJE QUE NO SE REDONDEA A SU FAVOR.
+   Esto era `Math.round(t * 100) + '%'`, y con el reparto nuevo el factor del
+   pago tarde pasó de 0,45 a 0,375: la pantalla imprimía "38%" donde la cuenta
+   da 37,5%. Medio punto de más, y justo del lado que le conviene a la promesa,
+   que es la clase de mentira que este archivo lleva semanas cerrando. Ahora se
+   muestran los decimales que hagan falta (hasta dos), con coma como en el resto
+   de la app, y sin ceros de relleno: el 20% sigue leyéndose "20%". */
+var pct = function (t) {
+  var n = Math.round(Number(t || 0) * 10000) / 100;
+  return String(n).replace('.', ',') + '%';
+};
 
 function hoyISO() { return fechaRel(0); }
 function fechaRel(dias) {
@@ -668,18 +678,23 @@ function nombreJoan() { return contactoOficial().nombre; }
    conectado. Ver el orden de búsqueda en abrirPorCedula().               */
 var DEMOS = (function () {
   /* ---- La cuenta de Joan ----
-     3 créditos de 100.000, todos pagados en fecha. 60.000 de costos, 54.000 de
-     garantía ganada (el 90%) + 100.000 de cupón = 154.000 de garantía total.
-     Nivel plata (con 3 pagos puntuales; el oro pide 5), cupo 308.000, y
-     préstamo con garantía hasta 54.000, que es solo la ganada.
-     Las cifras no van escritas a mano: salen del motor unas líneas más abajo,
-     así que si mañana cambia una regla, esta cuenta cambia sola. */
+     3 créditos de 100.000, todos pagados en fecha. 60.000 de costos, 45.000 de
+     garantía ganada (el 75% de cada costo) + 100.000 de cupón = 145.000 de
+     garantía total. Nivel plata (con 3 pagos puntuales; el oro pide 5), y el
+     cupo es esa misma garantía UNO A UNO: 145.000. Préstamo con garantía hasta
+     45.000, que es solo la ganada.
+
+     5-ago-2026: este comentario decía 54.000 / 154.000 / cupo 308.000, que era
+     el 90% del costo y la garantía multiplicada por el factor de plata (2,0).
+     Las dos reglas se derogaron el mismo día. Las cifras nunca estuvieron
+     escritas a mano —salen del motor unas líneas más abajo—, así que la cuenta
+     ya cambió sola; lo único que había quedado mintiendo era este texto. */
   var montosJoan = [100000, 100000, 100000];
   var credJoan = [], ganadaJoan = 0;
   for (var j = 0; j < montosJoan.length; j++) {
     var capJ = montosJoan[j];
     var costoJ = M ? M.calcularCosto(capJ) : Math.round(capJ * 0.20);
-    var ganJ = M ? M.acumularGarantia(costoJ, true) : 0;   // 0,90 sobre 20.000 = 18.000
+    var ganJ = M ? M.acumularGarantia(costoJ, true) : 0;   // 0,75 sobre 20.000 = 15.000
     ganadaJoan += ganJ;
     credJoan.push({
       codigo: 'CR-' + String(3 - j).padStart(4, '0'),
@@ -1045,8 +1060,19 @@ function abrir(resp, esDemo) {
     comprometida: gd.comprometida,
     garantia: Number(g.total || 0),
     nivel: nivel,
+    /* El cupo es la garantía UNO A UNO (5-ago-2026): calcularCupo ya no
+       multiplica por el nivel, solo redondea hacia abajo y topa en CUPO_MAXIMO.
+       Se le sigue pasando el nivel porque el motor lo valida —un nivel inventado
+       tiene que reventar acá y no dos pantallas más allá—, no porque mueva el
+       número. */
     cupo: M.calcularCupo(gd.base_cupo, nivel),
-    maxRespaldado: Math.min(gd.ganada_libre, M.CUPO_MAXIMO),
+    /* Y el máximo respaldado sale de la ÚNICA función que lo produce, no de un
+       Math.min escrito acá: maximoRespaldado es la que sabe que solo la ganada
+       libre respalda un préstamo, nunca el cupón que le prestamos nosotros. */
+    maxRespaldado: M.maximoRespaldado({
+      datos: (d.perfil && d.perfil.datos) || {},
+      referidos: Number((d.referidos && d.referidos.pagaron) || 0),
+      acumulada: gd.ganada, ajuste: 0, comprometida: gd.comprometida }),
     creditos: creditos,
     respaldados: respaldados,
     respaldadoActivo: abiertos[0] || null,
@@ -1189,6 +1215,14 @@ function vistaInicio() {
       '<div class="cifra oro">' + COP(S.cupo) + '</div>' +
       '<div class="muted" style="font-size:13.5px;margin-top:var(--e2)">' +
       'El costo es siempre el ' + pct(M.TASA_CREDITO) + ' de lo que pidas.</div>' +
+      /* LA REGLA DEL PRODUCTO, EN UNA LÍNEA (5-ago-2026). Antes acá había que
+         explicar niveles y factores para que el socio entendiera de dónde salía
+         su cupo; desde que el cupo es la garantía uno a uno, la regla entera
+         cabe en un renglón y va donde primero se mira. El porcentaje sale del
+         motor (crecimiento_por_credito = 0,20 × 0,75), nunca escrito acá. */
+      '<div class="muted" style="font-size:13.5px;margin-top:var(--e2)">' +
+      'Y cada crédito que pagas en fecha te sube el cupo un <b>' +
+      pct(M.reglasResumen().cupo.crecimiento_por_credito) + '</b>.</div>' +
       (S.maxRespaldado > 0
         ? '<div class="muted" style="font-size:13.5px;margin-top:var(--e2)">' +
           'Y con la garantía que ya te ganaste puedes pedir hasta ' + COP(S.maxRespaldado) +
@@ -1210,7 +1244,13 @@ function vistaInicio() {
        /* Lo construido, pero sobre papel: acá el amarillo no puede pisar, pisa
           su tinta. Blanco no, que blanco es cualquier cifra. */
        '<div class="cifra sm oro-tinta">' + COP(S.garantia) + '</div>' +
-       '<p class="sub">Es tu historial hecho número. No se retira: es lo que te deja pedir más.</p>' +
+       /* "Es lo que te deja pedir más" era la frase de cuando el cupo salía de
+          multiplicar esto por un factor. Hoy no hay nada en el medio: la
+          garantía ES el cupo, y decirlo así ahorra la pantalla entera de
+          explicación que antes hacía falta. */
+       '<p class="sub">Es tu historial hecho número, y es tu cupo: puedes pedir exactamente ' +
+       'lo que tienes. No se retira, y cada crédito que pagas en fecha la sube un ' +
+       pct(M.reglasResumen().cupo.crecimiento_por_credito) + '.</p>' +
        '<div class="barra"><i style="width:' + progresoNivel() + '%"></i></div>' +
        '<div class="muted" style="font-size:13px;margin-top:var(--e2)">' + textoProximoNivel() + '</div>' +
        '</div>';
@@ -1310,8 +1350,14 @@ function bloquePlanDePagos() {
      cupo. Nunca una cifra inventada por esta página. */
   var base = (c && ciclo && !ciclo.en_plan) ? c.capital : (S ? S.cupo : 0);
   var e = ejemploPlanDePagos(base);
-  var dias = c ? Math.max(0, M.diasDeMora(c.corte, hoyISO())) : 0;
-  var recargo = dias > 0 ? M.recargoPorMora(e.capital, dias) : 0;
+  /* Si el ejemplo terminó siendo SU deuda, el recargo que se le dice es el suyo
+     de verdad —el que ya liquidó el puente y le va a cobrar el Panel—, no un 1%
+     recalculado acá sobre el capital que quedó: con un abono de por medio esas
+     dos cifras no son la misma, y la que él cree es la que lee. */
+  var suyo = !!(c && ciclo && !ciclo.en_plan && e.capital === c.capital);
+  var q = suyo ? liquidacion(c) : null;
+  var dias = suyo ? q.dias_mora : (c ? Math.max(0, M.diasDeMora(c.corte, hoyISO())) : 0);
+  var recargo = suyo ? q.recargo_mora : (dias > 0 ? M.recargoPorMora(e.capital, dias) : 0);
 
   return '<div class="card"><div class="etq">El plan de pagos, con todo lo que cuesta</div>' +
     '<p style="margin:var(--e2) 0 0;font-size:14.5px">El plan reparte lo que debes en ' + e.cortes +
@@ -1327,18 +1373,27 @@ function bloquePlanDePagos() {
     'entrada lleva además el ' + pct(M.TASA_MORA_DIARIA) + ' diario de los días que lleves encima.' +
     (recargo ? ' Con los ' + dias + ' que llevas hoy, serían ' + COP(recargo) + ' más de entrada.' : '') +
     '</div>' +
+    /* "Igual que cualquier otro pago" ya no era exacto: si el crédito llegó al
+       plan atrasado, sus cuotas acreditan al factor de mora (§4-bis). Suma, y eso
+       es lo que importa acá, pero no se promete el factor completo que no va a
+       llegar. Los dos porcentajes salen de las constantes —hoy 75% y 37,5%—, así
+       que esta pantalla no se puede quedar en el reparto viejo. */
     '<div class="muted" style="font-size:13px;margin-top:var(--e3)">Todo lo que pagues en el plan te ' +
-    'sigue sumando garantía, igual que cualquier otro pago. Y el plan es una salida, no un castigo: ' +
-    'no bajas de nivel ni pierdes nada de lo que llevas construido.</div></div>';
+    'sigue sumando garantía: el ' + pct(M.FACTOR_GARANTIA) + ' del costo si el crédito nunca se ' +
+    'atrasó, el ' + pct(M.FACTOR_GARANTIA_MORA) + ' si venía atrasado. Y el plan es una salida, no ' +
+    'un castigo: no bajas de nivel ni pierdes nada de lo que llevas construido.</div></div>';
 }
 
 /* Las reglas salen del motor, no de un texto suelto: si algún día cambia un
    número, esta pantalla cambia sola. No puede quedar prometiendo otra cosa. */
 function verReglas() {
   var r = M.reglasResumen();
-  var bloque = function (titulo, texto) {
+  /* `extra` va en crudo y solo lo pone esta función: es para la letra que el
+     motor no trae en su resumen y que la pantalla no puede callarse. */
+  var bloque = function (titulo, texto, extra) {
     return '<div class="card"><div class="etq">' + esc(titulo) + '</div>' +
-      '<p style="margin:var(--e2) 0 0;font-size:14.5px">' + esc(texto) + '</p></div>';
+      '<p style="margin:var(--e2) 0 0;font-size:14.5px">' + esc(texto) + '</p>' +
+      (extra || '') + '</div>';
   };
   var h = '<div class="card laca"><div class="etq">El acuerdo</div>' +
     '<h1 style="font-size:22px;margin-top:var(--e2);color:var(--blanco-laca)">Cómo funciona esto</h1>' +
@@ -1346,24 +1401,57 @@ function verReglas() {
     'socios. Están aquí para que las puedas leer cuando quieras, no solo cuando pides.</div></div>';
 
   h += bloque('El costo', r.costo.texto);
-  h += bloque('Tu cupo crece pagando', r.garantia.texto);
+  /* 5-ago-2026 — EL CUPO, PRIMERO Y EN UNA LÍNEA.
+     Acá antes se llegaba al cupo por partes: la garantía en un bloque, los
+     niveles en otro, y el socio tenía que multiplicar de cabeza para saber
+     cuánto podía pedir. Desde que el cupo es la garantía uno a uno, la regla
+     entera es una frase, y va antes que todo lo demás porque es la pregunta que
+     el socio trae. El texto sale de reglasResumen().cupo, o sea de las mismas
+     constantes que hacen la cuenta. */
+  h += bloque('Tu cupo es tu garantía', r.cupo.texto);
+  /* §4-bis, y va acá porque es la única pantalla donde el socio viene a leer la
+     regla entera. "Pagando en la fecha suma completo" es verdad del crédito que
+     nunca se atrasó; el que ya se atrasó suma la mitad hasta que termine,
+     aunque el corte que le compró la prórroga se pague puntual. Sin esto, el
+     acuerdo prometía algo que la cuenta no iba a dar. */
+  h += bloque('De dónde sale la garantía', r.garantia.texto,
+    '<div class="aviso"><b>Y el atraso no se borra aplazando.</b><br>' +
+    'El ' + pct(r.garantia.factor_puntual) + ' es del crédito que <b>nunca</b> se atrasó. Si uno se ' +
+    'atrasa, desde ahí suma el ' + pct(r.garantia.factor_mora) + ' hasta que lo termines, aunque ' +
+    'pidas una prórroga y pagues puntual la fecha nueva: la prórroga te compra tiempo, que es para ' +
+    'lo que está, no te devuelve la puntualidad. Lo que ya ganaste no se toca nunca, y el crédito ' +
+    'siguiente arranca otra vez en el ' + pct(r.garantia.factor_puntual) + '.</div>');
   h += bloque('Y crece dando tus datos', r.cupon.texto);
   h += bloque('Y crece trayendo gente', r.referidos.texto);
   if (r.respaldado) h += bloque('El préstamo con garantía', r.respaldado.texto);
 
+  /* 5-ago-2026 — LOS NIVELES SIGUEN, PERO YA NO DAN CUPO.
+     Este bloque decía "cuánto puedes pedir es tu garantía multiplicada por el
+     factor de tu nivel" y pintaba un "×2" al lado de cada nivel. Las dos cosas
+     se derogaron: el factor ni existe (leerlo daba `undefined`) y el cupo es la
+     garantía uno a uno. Los niveles se quedan porque Joan lo decidió, y lo que
+     de verdad dan se dice sin adornos: PRÓRROGAS, o sea cuántas veces se puede
+     aplazar un corte. La frase que separa las dos ideas —reconocimiento sí,
+     cupo no— la trae el motor en `niveles_texto`, para que ninguna pantalla la
+     tenga que inventar y volver a insinuar lo que no es. */
   h += '<div class="card"><div class="etq">Los niveles</div>' +
-    '<p class="sub">Cuánto puedes pedir es tu garantía multiplicada por el factor de tu nivel.</p>' +
+    '<p class="sub">' + esc(r.niveles_texto) + '</p>' +
     '<div style="margin-top:var(--e2)">' + r.niveles.map(function (n) {
       return '<div class="nivel ' + (n.nivel === S.nivel ? 'aqui' : '') + '">' +
         '<span class="txt"><span class="nm">' + n.nivel + (n.nivel === S.nivel ? ' · aquí estás' : '') + '</span>' +
-        '<span class="rq">' + requisitoTexto({ nivel: n.nivel, requisitos: n.requisitos, factor: n.factor }) + '</span></span>' +
-        '<span class="cp">×' + n.factor + '</span></div>';
+        '<span class="rq">' + requisitoTexto(n) + '</span></span>' +
+        '<span class="cp">' + prorrogasTexto(n.prorrogas) + '</span></div>';
     }).join('') + '</div>' +
     '<div class="muted" style="font-size:13px;margin-top:var(--e3)">' + esc(r.tope.texto) + '</div></div>';
 
   h += '<div class="card"><div class="etq">Si te atrasas</div>' +
     '<p style="margin:var(--e2) 0 0;font-size:14.5px">' + esc(r.mora.texto) + '</p>' +
-    '<div class="aviso" style="margin-top:var(--e3)">' + esc(r.prorroga.texto) + '</div></div>';
+    /* La prórroga se decide acá, así que acá se dice lo único que no se ve en
+       su precio: mueve la fecha, no limpia el historial del crédito (§4-bis). */
+    '<div class="aviso" style="margin-top:var(--e3)">' + esc(r.prorroga.texto) +
+    ' Lo que la prórroga <b>no</b> hace es borrar el atraso: si el crédito ya se atrasó, sigue ' +
+    'sumando el ' + pct(r.garantia.factor_mora) + ' de garantía hasta que lo termines, aunque ' +
+    'pagues puntual la fecha nueva.</div></div>';
 
   /* Va pegado al de arriba a propósito: el texto del motor nombra el plan y su
      5%, y el precio completo tiene que leerse en el mismo tirón, no dos
@@ -1392,19 +1480,41 @@ function progresoNivel() {
   var meta = Math.max(1, r.pagos_a_tiempo);
   return Math.max(6, Math.min(100, Number(S.g.pagados_a_tiempo || 0) / meta * 100));
 }
+/* 5-ago-2026 — ESTA LÍNEA PROMETÍA UN CUPO QUE EL NIVEL YA NO DA.
+   Decía "pasas a plata, y tu cupo sube a $308.000", y en el nivel más alto leía
+   `M.FACTOR_CUPO[S.nivel]`, que desde el cambio de reglas no existe: la frase
+   salía "Tu cupo es undefined veces tu garantía". Las dos cosas se caen por lo
+   mismo — el cupo es la garantía uno a uno y subir de nivel no abre un peso.
+   Lo que el nivel sí da son PRÓRROGAS, y eso es lo que se dice. El cupo tiene su
+   propia frase, la del 15%, y no se mezcla con esta: mezclarlas es exactamente
+   como volvió a colarse la promesa vieja las tres veces anteriores. */
 function textoProximoNivel() {
   var s = siguienteNivel();
-  if (!s) return 'Estás en el nivel más alto. Tu cupo es ' + M.FACTOR_CUPO[S.nivel] + ' veces tu garantía.';
+  var prorrogasDe = function (nivel) {
+    return Math.min(M.PRORROGAS_POR_NIVEL[nivel], M.TOPE_DURO_PRORROGAS);
+  };
+  if (!s) {
+    return 'Estás en el nivel más alto: puedes aplazar hasta ' +
+      vecesTexto(prorrogasDe(S.nivel)) + ' por crédito. Tu cupo no depende del nivel, ' +
+      'depende de tu garantía.';
+  }
   var partes = [];
   if (s.pagos) partes.push(s.pagos + ' pago' + (s.pagos !== 1 ? 's' : '') + ' más');
   if (s.racha) partes.push('racha de ' + M.REQUISITOS_NIVEL[s.nivel].racha);
   if (s.meses) partes.push(s.meses + ' mes' + (s.meses !== 1 ? 'es' : '') + ' sin atrasarte');
-  if (!partes.length) partes.push('ya casi');
-  /* Sobre base_cupo, igual que S.cupo y que la calculadora: si tiene garantía
-     comprometida en un préstamo con garantía, el cupo del nivel siguiente no
-     puede contarla, o la misma pantalla diría dos cupos distintos. */
-  return 'Con ' + partes.join(' y ') + ' pasas a <b>' + s.nivel + '</b>, y tu cupo sube a ' +
-         COP(M.calcularCupo(S.gd.base_cupo, s.nivel)) + '.';
+  var hoy = prorrogasDe(S.nivel), luego = prorrogasDe(s.nivel);
+  /* Sin nada pendiente la frase decía "Con ya casi pasas a plata", que no es
+     castellano. Cuando ya cumple, se dice eso y no se le inventa un requisito. */
+  return (partes.length
+    ? 'Con ' + partes.join(' y ') + ' pasas a <b>' + s.nivel + '</b>'
+    : 'Ya cumples lo que pide <b>' + s.nivel + '</b>') +
+    (luego > hoy
+      ? ', y podrás aplazar hasta ' + vecesTexto(luego) + ' por crédito.'
+      /* Del nivel siguiente que no cambia las prórrogas no se puede decir nada
+         material, así que se dice eso mismo en vez de inventarle un premio: es
+         reconocimiento, y el cupo va por otro lado. */
+      : ', el reconocimiento del historial que llevas. El cupo lo sube pagar en fecha, no ' +
+        'subir de nivel.');
 }
 
 /* ============ QUÉ CICLO SE ESTÁ COBRANDO, Y A QUÉ PRECIO ============
@@ -1456,41 +1566,143 @@ function tasaDecimal(t) {
   return n > 1 ? n / 100 : n;
 }
 
-/* La liquidación de un crédito en una fecha, hecha por el MOTOR y por nadie
-   más: días de mora, recargo del 1% diario sobre el capital de este ciclo,
-   total y garantía. Antes cada pantalla sumaba capital + costo + recargo por su
-   cuenta y usaba la base que tenía a mano.
-   No puede lanzar: liquidarCredito exige capital > 0 y un capital en cero o un
-   corte sin fecha no pueden dejar al socio sin ver su cuenta. */
+/* ============ LA CUENTA DEL CRÉDITO: LA TRAE HECHA EL PUENTE ============
+   5-ago-2026 — LA APP DECÍA "$1" DE UN CRÉDITO QUE EL PANEL COBRABA EN 80.001.
+
+   Esta función liquidaba el crédito ella misma: le pasaba al motor `capital` y
+   `costo` sueltos y dejaba que el 1% diario se recalculara desde cero sobre el
+   capital que quedaba HOY. Con un abono de por medio eso borra hacia atrás los
+   días que ya corrieron sobre el capital que HABÍA: 200.000 a 20 días con
+   199.999 abonados daban 1 peso de total, mientras el Panel le cobraba 80.001.
+   Y la cifra que ve el socio es la que él cree: si no es la que le cobran, Joan
+   pierde la razón aunque la tenga.
+
+   La cuenta ya está hecha, una sola vez y en un solo sitio: PUENTE.liquidarCiclo,
+   la MISMA que canta el Panel. Viaja en el paquete y acá se muestra tal cual:
+
+     capital · costo · mora · dias_mora · total_hoy   liquidado HOY
+     causado {costo, mora, dias}                      lo ya corrido, congelado
+
+   PARA OTRA FECHA la rehace el MOTOR —el recordatorio del calendario liquida en
+   el corte, no hoy—, y arranca de lo ya causado (recargoPorMoraDesde) para no
+   volver a caer en lo mismo. Lo causado solo se arrastra hacia ADELANTE: en el
+   corte todavía no había ocurrido, así que ahí no se suma.
+
+   El mismo camino cubre el paquete VIEJO que llega por el enlace de WhatsApp y
+   se abre días después: sus cifras son las de aquel día, y el motor le corre el
+   1% de los días que pasaron desde entonces, sin recalcular lo de antes.
+
+   No puede lanzar: liquidarCredito exige capital > 0, y un crédito con el
+   capital ya abonado —que sigue debiendo costo y recargo— no puede dejar al
+   socio sin ver su cuenta. */
 function liquidacion(c, fecha) {
+  var hoy = hoyISO();
+  var cuando = fecha || hoy;
   var capital = Math.max(0, Number(c && c.capital) || 0);
   var costo = Math.max(0, Number(c && c.costo) || 0);
   var corte = (c && /^\d{4}-\d{2}-\d{2}/.test(String(c.corte || ''))) ? String(c.corte).slice(0, 10) : null;
-  var cuando = fecha || hoyISO();
+  var dias = corte ? Math.max(0, M.diasDeMora(corte, cuando)) : 0;
+
+  /* Lo que el puente ya liquidó. Un paquete sin `causado` es de antes de esta
+     ronda (o el ejemplo de la pantalla de entrada): se sigue de largo y la
+     cuenta la hace el motor, como siempre. */
+  var cs = (c && c.causado) || null;
+  var moraCausada = cs ? Math.max(0, Number(cs.mora) || 0) : 0;
+  var diasCausados = cs ? Math.max(0, Number(cs.dias) || 0) : 0;
+
+  /* 5-ago-2026 §4-bis — EL FACTOR COMPLETO ES DEL CRÉDITO QUE NUNCA SE ATRASÓ, y
+     este lado tampoco lo adivina: el puente ya se lo manda hecho en el paquete
+     (`migrarSocio(...).creditos[].estuvo_en_mora`), que es el mismo dato que
+     lee el Panel. Sin leerlo, las tres salidas de acá daban el factor completo
+     siempre, y el crédito que venía de una mora prorrogada veía en su celular el
+     DOBLE de lo que el Panel le iba a acreditar. El doble, y del lado optimista,
+     que es el que produce el reclamo.
+     Los porcentajes ya no se nombran acá: el reparto pasó de 90/45 a 75/37,5 el
+     5-ago-2026 y este comentario habría quedado mintiendo igual que el resto. */
+  var vieneDeMora = !!(c && c.estuvo_en_mora);
+  /* Lo que acredita el pago que se está liquidando, y lo que acreditaría uno
+     puntual. Con mora en la historia, ni pagando hoy en fecha vuelve el factor
+     completo: el techo honesto es la mitad. */
+  var acreditaSi = function (enFecha) {
+    return M.cuentaComoPuntualParaGarantia({
+      pagado_en_fecha: enFecha, credito_estuvo_en_mora: vieneDeMora });
+  };
+  /* Lo que sumaría pagando TARDE, en pesos. Va en pesos y no como "la mitad"
+     porque las dos cifras son dos constantes distintas del motor y ya cambiaron
+     una vez: FACTOR_GARANTIA y FACTOR_GARANTIA_MORA hoy son 0,75 y 0,375, o sea
+     mitad y doble exactos, pero eso es una coincidencia de dos números, no una
+     regla. Diciéndolo en pesos la frase no puede quedar prometiendo una relación
+     que dejó de existir. */
+  var garantiaSiTarde = function (costoBase) { return M.acumularGarantia(costoBase, false); };
+
+  /* HOY, y con el paquete al día: se muestra lo que trae, sin tocarlo. Es la
+     única forma de que la app y el Panel no puedan decir dos cifras. */
+  if (cs && cuando === hoy && dias === diasCausados && c.total_hoy != null) {
+    return { capital: capital, costo: costo,
+             recargo_mora: moraCausada,
+             dias_mora: diasCausados,
+             pago_a_tiempo: diasCausados === 0,
+             acredita_en_fecha: acreditaSi(diasCausados === 0),
+             costo_total_pagado: costo + moraCausada,
+             total_a_pagar: Math.max(0, Number(c.total_hoy) || 0),
+             garantia_generada: M.acumularGarantia(costo + moraCausada, acreditaSi(diasCausados === 0)),
+             garantia_si_puntual: M.acumularGarantia(costo, acreditaSi(true)),
+             garantia_si_tarde: garantiaSiTarde(costo),
+             credito_estuvo_en_mora: vieneDeMora };
+  }
+
+  /* Otra fecha (o un paquete viejo): lo causado se arrastra solo hacia
+     adelante. Liquidar en el corte no puede llevar el recargo de una mora que
+     ese día todavía no había ocurrido. */
+  var opciones = (cs && dias >= diasCausados)
+    ? { recargoCausado: moraCausada, diasCausados: diasCausados } : {};
   if (capital > 0 && corte) {
     try {
-      return M.liquidarCredito({ capital: capital, costo: costo, fecha_corte: corte }, cuando);
+      /* `estuvo_en_mora` viaja DENTRO del crédito: es de donde el motor lo lee
+         (§4-bis). Sin él, el motor asume el crédito recién desembolsado y
+         devuelve el factor completo. */
+      var liq = M.liquidarCredito({ capital: capital, costo: costo, fecha_corte: corte,
+                                    estuvo_en_mora: vieneDeMora }, cuando, opciones);
+      liq.credito_estuvo_en_mora = vieneDeMora;
+      liq.garantia_si_tarde = garantiaSiTarde(liq.costo);
+      return liq;
     } catch (e) {}
   }
-  var dias = corte ? Math.max(0, M.diasDeMora(corte, cuando)) : 0;
-  return { capital: capital, costo: costo, recargo_mora: 0, dias_mora: dias,
-           pago_a_tiempo: dias === 0, costo_total_pagado: costo,
-           total_a_pagar: capital + costo,
-           garantia_generada: M.acumularGarantia(costo, dias === 0),
-           garantia_si_puntual: M.acumularGarantia(costo, true) };
+  /* Sin capital vigente —todo abonado— o sin corte. El recargo lo sigue dando
+     el motor; lo único que queda acá es juntar las tres partes que la pantalla
+     muestra línea por línea, que es exactamente lo que suma el total. */
+  var recargo = opciones.recargoCausado != null
+    ? M.recargoPorMoraDesde(opciones.recargoCausado, opciones.diasCausados, capital, dias)
+    : M.recargoPorMora(capital, dias);
+  return { capital: capital, costo: costo, recargo_mora: recargo, dias_mora: dias,
+           pago_a_tiempo: dias === 0,
+           acredita_en_fecha: acreditaSi(dias === 0),
+           costo_total_pagado: costo + recargo,
+           total_a_pagar: capital + costo + recargo,
+           garantia_generada: M.acumularGarantia(costo + recargo, acreditaSi(dias === 0)),
+           garantia_si_puntual: M.acumularGarantia(costo, acreditaSi(true)),
+           garantia_si_tarde: garantiaSiTarde(costo),
+           credito_estuvo_en_mora: vieneDeMora };
 }
 
 function tarjetaActivo(c) {
-  var dias = M.diasDeMora(c.corte, hoyISO());
-  var enMora = dias > 0;
   var ciclo = cicloDelCredito(c);
-  var q = liquidacion(c);            // capital, costo, recargo y total: del motor
+  var q = liquidacion(c);            // capital, costo, recargo y total: del puente
+  /* Los días del atraso son los MISMOS que causaron el recargo: salen de la
+     liquidación, no de una segunda cuenta hecha acá. La píldora y la línea del
+     recargo no pueden decir dos números de días. `faltan` es lo contrario —los
+     que quedan hasta el corte— y por eso sí se mide aparte: no es mora. */
+  var enMora = q.dias_mora > 0;
+  /* Un crédito sin fecha de corte no puede dejar al socio sin ver su cuenta:
+     diasDeMora lanza con una fecha vacía y esto se pinta antes que nada. */
+  var faltan = /^\d{4}-\d{2}-\d{2}/.test(String(c.corte || ''))
+    ? M.diasDeMora(String(c.corte).slice(0, 10), hoyISO()) : 0;
   var h = '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center">' +
     '<div class="etq">' + (ciclo.en_plan ? 'Tu plan de pagos · cuota ' + ciclo.numero + ' de ' + ciclo.cuotas
                                          : 'Tu crédito de ahora') + '</div>' +
     '<span class="pill ' + (enMora ? 'ambar' : '') + '">' +
-    (enMora ? dias + ' día' + (dias !== 1 ? 's' : '') + ' de atraso' :
-     (dias === 0 ? 'Vence hoy' : 'Faltan ' + Math.abs(dias) + ' días')) + '</span></div>';
+    (enMora ? q.dias_mora + ' día' + (q.dias_mora !== 1 ? 's' : '') + ' de atraso' :
+     (faltan === 0 ? 'Vence hoy' : 'Faltan ' + Math.abs(faltan) + ' días')) + '</span></div>';
 
   if (enMora) {
     /* Acá NO va cifra grande. La que manda en esta pantalla es la de arriba,
@@ -1514,9 +1726,27 @@ function tarjetaActivo(c) {
       fila(ciclo.etiqueta_capital, COP(q.capital)) +
       fila('Costo (' + pct(ciclo.tasa) + ')', COP(q.costo)) +
       fila('Fecha de pago', fmtFecha(c.corte)) +
-      '<div class="aviso"><b>Si pagas en fecha, sumas el doble.</b><br>' +
-      'Pagando el ' + fmtFecha(c.corte) + ' o antes, tu cupo sube ' + COP(q.garantia_si_puntual) +
-      '. Si te atrasas igual suma, pero la mitad.</div>';
+      /* 5-ago-2026 §4-bis — acá decía "si pagas en fecha, sumas el doble", y
+         para el crédito que ya se atrasó una vez eso dejó de ser verdad: ese
+         suma la mitad aunque el corte nuevo se pague puntual. La cifra ya la
+         trae bien la liquidación; lo que faltaba era que la frase dijera lo mismo
+         que la cifra. Se dice de frente, sin letra chica: la puntualidad se
+         premia desde el primer día, y una prórroga compra tiempo, no borra el
+         atraso que ya hubo.
+         Y las dos ramas dicen los pesos de las DOS opciones, no "el doble": los
+         factores son dos constantes que ya cambiaron una vez (90/45 → 75/37,5) y
+         la relación entre ellas no es una regla del acuerdo. */
+      (q.credito_estuvo_en_mora
+        ? '<div class="aviso ambar"><b>Este crédito ya se atrasó una vez, y eso no se borra.</b><br>' +
+          'Pagando el ' + fmtFecha(c.corte) + ' o antes, tu cupo sube ' + COP(q.garantia_si_puntual) +
+          ': lo que suma un crédito que ya se atrasó, no lo que sumaría uno que nunca se atrasó. ' +
+          'La prórroga te compró tiempo, no la puntualidad. Págalo en fecha igual —te lo quitas de ' +
+          'encima— y el siguiente, si no se atrasa nunca, ya te vuelve a sumar completo.</div>'
+        : '<div class="aviso"><b>La puntualidad se premia desde el primer día.</b><br>' +
+          'Pagando el ' + fmtFecha(c.corte) + ' o antes, tu cupo sube ' + COP(q.garantia_si_puntual) +
+          '. Pagando tarde sube ' + COP(q.garantia_si_tarde) + ', que también suma. Y si te atrasas ' +
+          'una vez, este crédito sigue sumando lo de pagar tarde hasta que lo termines: aplazarlo ' +
+          'no lo vuelve a poner en cero.</div>');
   }
   if (ciclo.en_plan) {
     /* La cuota NO es la deuda: el saldo del crédito entero viene aparte en el
@@ -1530,7 +1760,10 @@ function tarjetaActivo(c) {
   if (c.prorrogas) h += fila('Prórrogas usadas', String(c.prorrogas));
   h += '<button class="btn sec sm" style="margin-top:var(--e3)" onclick="recordarme()">Que mi celular me lo recuerde</button>' +
        '<div class="muted" id="recordarPie" style="font-size:12px;margin-top:var(--e2);text-align:center">' +
-       'Te avisa dos días antes y el mismo día, aunque no tengas la app abierta.</div>';
+       /* El corte ya pasado no admite un "dos días antes": el recordatorio que
+          se arma es de hoy, y acá se dice lo mismo que va a hacer. */
+       (enMora ? 'Te lo pone en el calendario de hoy, con el total de hoy.'
+               : 'Te avisa dos días antes y el mismo día, aunque no tengas la app abierta.') + '</div>';
   return h + '</div>';
 }
 
@@ -1602,32 +1835,67 @@ function segTeclas(e) {
    millones— sino hasta dónde llega lo que el socio se pide solo desde el teléfono.
 
    El piso cede ante el cupo, y esto no es un detalle: el socio que acaba de entrar
-   tiene el cupo POR DEBAJO del mínimo (ficha a medias y nivel bronce: 25.000 de
-   cupón x 1,5 son 37.500). Si el piso no cediera, no podría elegir ni un monto que
+   tiene el cupo POR DEBAJO del mínimo, y desde el 5-ago-2026 más todavía — el cupo
+   es la garantía uno a uno, así que con la ficha a medias son 25.000 de cupón y
+   25.000 de cupo, donde antes el factor de bronce los inflaba a 37.500. Con el
+   multiplicador muerto el caso se volvió más común, no menos.
+   Si el piso no cediera, no podría elegir ni un monto que
    le alcance y el aviso le quedaría clavado en "es más que tu cupo" desde el primer
    día. Con el cupo en cero no hay monto válido que ofrecer —el motor ni siquiera
    simula un capital de 0— así que ahí se queda el piso, que al menos dice la verdad. */
+/* EL ESCALÓN, 5-ago-2026, pedido de Joan: de 50.000 a 1.000.
+   Con el escalón viejo, entre 50.000 y 100.000 no había NADA que elegir: el socio
+   que necesitaba 70.000 tenía que pedir 100.000 y pagar el costo de 30.000 de más
+   que no necesitaba. Y con el cupo uno a uno el caso se volvió la regla, no la
+   excepción: los cupos reales son cifras como 145.000 o 132.250, no múltiplos de
+   50.000, así que un escalón grueso deja la mayor parte del recorrido sin usar.
+
+   Mil pesos es el escalón fino que sigue siendo cómodo de leer. Sobre el cupo de un
+   socio típico eso son más de cien paradas en los ~335px de una pantalla de celular:
+   cada pixel de arrastre son unos cientos de pesos, así que se puede afinar de
+   verdad. No se baja a 1 peso a propósito: un monto como "137.412" no lo piensa
+   nadie, y ver esa cifra en pantalla parece un error del sistema, no una elección. */
+var ESCALON_MONTO = 1000;
+
 function limitesCalc() {
   var piso = M.MONTO_MINIMO;
   var techo = M.MONTO_MAXIMO_CALCULADORA;
   if (MODO === 'respaldado') {
     var max = Math.min(Math.max(0, Math.floor(S.maxRespaldado)), techo);
-    return { min: Math.min(piso, max), max: max, paso: 10000 };
+    return { min: Math.min(piso, max), max: max, paso: ESCALON_MONTO };
   }
   /* El tope sube a 500.000 aunque el cupo sea menor, a propósito: que el socio vea
      que el producto llega más lejos y cuánto le falta, en vez de esconderle el
      recorrido. Pero nunca por encima del techo de la calculadora. */
   var cupo = Math.max(0, Math.floor(S.cupo || 0));
   return { min: cupo > 0 ? Math.min(piso, cupo) : piso,
-           max: Math.min(Math.max(cupo, 500000), techo), paso: 50000 };
+           max: Math.min(Math.max(cupo, 500000), techo), paso: ESCALON_MONTO };
 }
 
 function setModo(m) {
   if (m !== 'quincenal' && m !== 'respaldado') return;
   if (m === 'respaldado' && S.maxRespaldado <= 0) {
     var a = $('calcAviso');
-    if (a) a.innerHTML = 'Todavía no tienes garantía ganada. Se gana pagando: cada crédito quincenal ' +
-      'que pagas te deja el ' + pct(M.FACTOR_GARANTIA) + ' del costo.';
+    /* §4-bis: el factor completo es del crédito que nunca se atrasó, así que la
+       frase que lo promete tiene que decir a cambio de qué. Los dos porcentajes
+       salen de las constantes (hoy 75% y 37,5%), nunca escritos acá. */
+    if (a) a.innerHTML = 'Todavía no tienes garantía ganada. Se gana pagando en fecha: cada crédito ' +
+      'quincenal que pagas sin haberte atrasado te deja el ' + pct(M.FACTOR_GARANTIA) +
+      ' del costo. Si se atrasó alguna vez, el ' + pct(M.FACTOR_GARANTIA_MORA) + '.';
+    return;
+  }
+  /* Tiene garantía ganada, pero no le llega al mínimo. Es un estado NORMAL y va a
+     durar varias quincenas: con el reparto nuevo la ganada sube el 75% del costo,
+     así que un socio que pide 100.000 suma 15.000 por crédito y tarda cuatro en
+     llegar a los 50.000. Sin este corte, la barra queda de un solo punto —min y max
+     pegados en la ganada— y el socio ve un control muerto sin entender por qué.
+     Se le dice cuánto le falta, que es lo único útil que se le puede decir. */
+  if (m === 'respaldado' && S.maxRespaldado < M.MONTO_MINIMO) {
+    var av = $('calcAviso');
+    if (av) av.innerHTML = 'Llevas <b>' + COP(S.maxRespaldado) + '</b> de garantía ganada, y este ' +
+      'préstamo arranca en ' + COP(M.MONTO_MINIMO) + '. Te faltan <b>' +
+      COP(M.MONTO_MINIMO - S.maxRespaldado) + '</b>, que se juntan pagando en fecha: cada crédito ' +
+      'quincenal te deja el ' + pct(M.FACTOR_GARANTIA) + ' de su costo.';
     return;
   }
   if (m === MODO) return;
@@ -1768,8 +2036,16 @@ function salidaCalc(s) {
   h += '<div class="card laca">' +
     '<div class="etq">Y al pagarlo, tu cupo sube</div>' +
     '<div class="cifra sm oro">' + COP(s.cupo_despues) + '</div>' +
+    /* 5-ago-2026 — acá decía "porque los $10.000 de costo se te vuelven
+       garantía", y eso nunca fue verdad del todo: se vuelve garantía el 75% del
+       costo, no el costo entero. Con el reparto viejo la diferencia era del 10%
+       y pasaba desapercibida; con el nuevo son 2.500 de cada 10.000, y la línea
+       de abajo ("Suma este crédito +7.500") la desmentía dos renglones después.
+       Se dice lo que la cifra dice: el 15% de lo que pide, que es la regla del
+       producto entera. */
     '<div class="muted" style="font-size:13.5px;margin-top:var(--e2)">' +
-      'desde ' + COP(s.cupo) + ', porque los ' + COP(s.costo) + ' de costo se te vuelven garantía.</div>' +
+      'desde ' + COP(s.cupo) + ': pagarlo en fecha te suma el ' +
+      pct(M.reglasResumen().cupo.crecimiento_por_credito) + ' de lo que pidas.</div>' +
     fila(S.gd.comprometida > 0 ? 'Tu garantía libre hoy' : 'Tu garantía hoy', COP(s.garantia_disponible)) +
     fila('Suma este crédito', '+' + COP(s.garantia_que_deja)) +
     fila('Quedarías con', COP(s.garantia_despues)) +
@@ -1788,11 +2064,23 @@ function salidaCalc(s) {
   h += tarjetaPedir('Pedir ' + COP(s.capital), '');
 
   /* 5 · La escalera, plegada: es pedagogía, no decisión */
-  var pasos = M.proyectarCrecimiento(S.gd.base_cupo, MONTO, 6, S.nivel, { pideElCupo: true });
+  /* 6-ago-2026 — LA ESCALERA ARRANCA DONDE ESTÁ EL SOCIO, NO DONDE ESCRIBIÓ.
+     Acá iba MONTO, lo que el socio acaba de teclear en la calculadora, que llega
+     hasta 5.000.000. Y `pideElCupo` usa ese número como PISO
+     (Math.max(capital, cupo)): con un cupo de 200.000 y 5.000.000 tecleados, los
+     seis peldaños se dibujaban sobre 5.000.000, o sea seis créditos que hoy no
+     puede pedir —y el aviso de dos tarjetas más arriba le acaba de decir que se
+     pasó de su cupo. Una escalera que arranca por encima de lo que puede pedir no
+     motiva: contradice la pantalla. El primer peldaño es su cupo de hoy, que es
+     además lo que promete el texto de al lado ("pidiendo cada vez todo tu cupo").
+     El piso de 1 es porque el motor exige capital positivo. */
+  var pasos = M.proyectarCrecimiento(S.gd.base_cupo, Math.max(1, s.cupo), 6, S.nivel,
+    { pideElCupo: true });
   var minG = S.gd.base_cupo, maxG = pasos[pasos.length - 1].garantia;
   var rango = Math.max(1, maxG - minG);
   h += '<div class="card"><details><summary>Ver cómo crece si lo repites</summary>' +
-    '<p class="sub">Pidiendo cada vez todo tu cupo y pagando en fecha.</p>' +
+    '<p class="sub">Pidiendo cada vez todo tu cupo y pagando en fecha: un ' +
+      pct(M.reglasResumen().cupo.crecimiento_por_credito) + ' más cada vez.</p>' +
     '<div class="crece">' + pasos.map(function (p) {
       return '<div style="height:' + (18 + (p.garantia - minG) / rango * 82).toFixed(0) + '%">' +
              '<span>' + COPc(p.cupo) + '</span></div>';
@@ -1887,7 +2175,19 @@ function tarjetaPedir(texto, clase) {
    la pieza quedaba con dos barras AZULES, una de ellas colgando del lado rojo,
    y el ojo leía la barra grande como si fuera del producto azul. Por eso el
    ámbar de "no te alcanza" salió del cuadro: el ámbar solo pisa papel, así que
-   va abajo, en su propio aviso. */
+   va abajo, en su propio aviso.
+
+   5-ago-2026 — REVISADA CONTRA LAS REGLAS NUEVAS, y no hubo que tocar una cifra:
+   toda la pieza sale de compararProductos y de simularPrestamoRespaldado, así que
+   el paso de 90 a 75 y la muerte del factor de nivel la recalcularon sola. Se
+   verificó renglón por renglón, que es lo que había que hacer: las seis vueltas
+   del quincenal, la garantía de cada lado, los dos cupos "mientras" y "al final",
+   y la distancia entre los dos (0,75 contra 0,20 por peso de costo, que en tres
+   meses son 45.000 contra 1.500).
+   Lo único que se agregó es la frase que ahora hace legibles las dos barras: como
+   el cupo es la garantía uno a uno, lo que cada producto le deja de garantía ES
+   lo que va a poder pedir de más. Antes esa traducción la hacía un factor que el
+   socio no veía, y las barras medían una cosa mientras el cupo decía otra. */
 function piezaComparar() {
   var c, r;
   try {
@@ -1977,8 +2277,10 @@ function piezaComparar() {
     'así que aquí va renovado hasta cubrir ese plazo.</p>' +
     '<div class="card laca pegado">' +
       '<div class="dual">' + izq + der + '</div>' +
-      '<div class="remate">' + barato + ' ' + crece + ' Los dos son buenos: uno cuida la plata de hoy, ' +
-      'el otro te sube el cupo de mañana. Eliges tú.</div>' +
+      '<div class="remate">' + barato + ' ' + crece +
+      ' Tu cupo es tu garantía, así que lo que cada uno te deja es exactamente lo que vas a poder ' +
+      'pedir de más. Los dos son buenos: uno cuida la plata de hoy, el otro te sube el cupo de ' +
+      'mañana. Eliges tú.</div>' +
     '</div>' + avisoFaltas + pie();
 }
 
@@ -1993,35 +2295,82 @@ function plegarICS(lineas) {
   return out.join('\r\n');
 }
 function armarICS(c) {
-  /* Liquidado EN la fecha de corte, no hoy: el recordatorio es de ese día, así
-     que no puede llevar el recargo de una mora que todavía no ocurrió. El total
-     lo arma el motor igual que en la tarjeta, para que el calendario y la
-     pantalla no digan dos cifras. */
+  /* El recordatorio se liquida EN EL DÍA PARA EL QUE ES, y por eso no lleva el
+     recargo de una mora que ese día todavía no habrá ocurrido.
+
+     5-ago-2026: si el corte YA PASÓ, ese día no puede ser el corte. Un evento
+     con fecha vieja no suena nunca, y su cifra tampoco es la que le van a
+     cobrar: al socio con 20 días encima el calendario le decía 40.001 mientras
+     la tarjeta y el Panel decían 80.001. Dos cifras de la misma deuda, que es
+     justo lo que le hace perder la razón a Joan aunque la tenga. Entonces el
+     recordatorio es de HOY y lleva el total de hoy, recargo incluido. Si el
+     corte todavía no llegó no cambia nada: sigue siendo el del corte. */
   var ciclo = cicloDelCredito(c);
-  var q = liquidacion(c, String(c.corte || '').slice(0, 10) || hoyISO());
+  var hoy = hoyISO();
+  var corte = String(c.corte || '').slice(0, 10) || hoy;
+  var vencido = corte < hoy;
+  var dia = vencido ? hoy : corte;
+  var q = liquidacion(c, dia);
   var total = q.total_a_pagar;
-  var f = String(c.corte).slice(0, 10).replace(/-/g, '');
+  var f = dia.replace(/-/g, '');
   var sello = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
   var quien = nombreJoan();
   var desc = 'Total a pagar: ' + COP(total) + ' (' + ciclo.etiqueta_capital.toLowerCase() + ' ' +
-    COP(q.capital) + ' + costo ' + COP(q.costo) + '). ' +
-    'Pagando en fecha tu cupo sube ' + COP(q.garantia_si_puntual) + '. ' +
+    COP(q.capital) + ' + costo ' + COP(q.costo) +
+    (q.recargo_mora ? ' + recargo de ' + q.dias_mora + ' día' + (q.dias_mora !== 1 ? 's' : '') +
+                      ' ' + COP(q.recargo_mora) : '') + '). ' +
+    /* §4-bis: la cifra la trae la liquidación, que ya sabe si este crédito
+       viene de una mora; la frase tiene que decir lo mismo que la cifra, o el
+       recordatorio promete el doble de lo que el Panel va a acreditar.
+
+       Y la rama se decide por los DÍAS, no por el recargo. 5-ago-2026: el 1%
+       diario corre sobre el capital que queda, así que un socio que abonó casi
+       todo el capital tiene días de atraso con recargo redondeado a cero. Mirando
+       el recargo, este recordatorio se iba por la rama del crédito al día y le
+       prometía el doble de lo que el Panel acredita, sobre un evento que él mismo
+       fecha HOY porque el corte ya pasó. Pasaba en 177 de 4.000 estados. La
+       tarjeta de Inicio ya lo hacía bien dos funciones arriba
+       (var enMora = q.dias_mora > 0) y las dos pantallas se contradecían.
+
+       5-ago-2026: y ahora van también los PESOS de las dos opciones. "El doble"
+       describe la relación entre FACTOR_GARANTIA y FACTOR_GARANTIA_MORA, que hoy
+       sigue siendo exacta (0,75 y 0,375) pero que ya cambió de valores una vez
+       sin que esta frase se enterara; los pesos salen de la liquidación y no
+       pueden quedar viejos. Se dicen las dos cosas, no una en lugar de la otra:
+       pruebas/motor.test.js fija la frase "el doble de lo que sube pagando tarde"
+       en esta función, así que quien la quite tiene que tocar la prueba en el
+       mismo movimiento — y ese es justo el momento de comprobar si los dos
+       factores siguen siendo mitad y doble. */
+    (q.dias_mora > 0
+      ? 'Aunque te atrases sigues siendo socio, y este pago te suma ' +
+        COP(q.garantia_generada) + ' de garantía. '
+      : q.credito_estuvo_en_mora
+        ? 'Pagando en fecha tu cupo sube ' + COP(q.garantia_si_puntual) +
+          '. Es lo que suma un crédito que ya se atrasó una vez, y eso no se borra: la prórroga ' +
+          'compró tiempo, no puntualidad. '
+        : 'Pagando en fecha tu cupo sube ' + COP(q.garantia_si_puntual) +
+          ', el doble de lo que sube pagando tarde (' + COP(q.garantia_si_tarde) + '). ') +
     'Si ese día no puedes pagar todo, se puede dejar una prórroga o pasar a un plan de pagos; ' +
     'las dos cosas tienen costo y te lo decimos antes. Y aunque te atrases sigues siendo socio.';
+  /* Un recordatorio de hoy no puede avisar "en 2 días": ese aviso ya pasó. */
+  var alarmas = vencido ? [] : [
+    'BEGIN:VALARM', 'TRIGGER:-P2D', 'ACTION:DISPLAY',
+    'DESCRIPTION:' + textoICS('En 2 días vence tu pago de ' + COP(total) + ' con ' + quien),
+    'END:VALARM'
+  ];
   return plegarICS([
     'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Tu Garantia//Socios//ES',
     'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'BEGIN:VEVENT',
     'UID:' + (c.codigo || 'credito') + '-' + f + '@joantepresta',
     'DTSTAMP:' + sello, 'DTSTART:' + f + 'T090000', 'DTEND:' + f + 'T093000',
     'SUMMARY:' + textoICS('Pagar ' + COP(total) + ' a ' + quien),
-    'DESCRIPTION:' + textoICS(desc),
-    'BEGIN:VALARM', 'TRIGGER:-P2D', 'ACTION:DISPLAY',
-    'DESCRIPTION:' + textoICS('En 2 días vence tu pago de ' + COP(total) + ' con ' + quien),
-    'END:VALARM',
+    'DESCRIPTION:' + textoICS(desc)
+  ].concat(alarmas).concat([
     'BEGIN:VALARM', 'TRIGGER:PT0S', 'ACTION:DISPLAY',
-    'DESCRIPTION:' + textoICS('Hoy vence tu pago de ' + COP(total) + ' con ' + quien),
+    'DESCRIPTION:' + textoICS((vencido ? 'Hoy tienes que pagar ' : 'Hoy vence tu pago de ') +
+                              COP(total) + ' con ' + quien),
     'END:VALARM', 'END:VEVENT', 'END:VCALENDAR'
-  ]);
+  ]));
 }
 function recordarme() {
   var c = S.activo;
@@ -2247,34 +2596,67 @@ function vistaGarantia() {
     '<button class="btn sec sm" style="margin-top:var(--e3)" onclick="invitar()">Invitar a alguien</button>' +
     '</div>';
 
-  /* --- Niveles --- */
-  /* Sobre base_cupo, no sobre el total: es la misma base con la que se calculó
-     S.cupo dos tarjetas más arriba. Con garantía comprometida, el total daría
-     un cupo más grande que el que el socio puede pedir hoy, y quedarían dos
-     cifras que se contradicen a un dedo de distancia. */
-  h += '<div class="card"><h3 class="tit">Cuánto podrías pedir si subes de nivel</h3>' +
-    '<p class="sub">Con ' + (gd.comprometida > 0 ? 'la garantía que tienes libre hoy' : 'la misma garantía que tienes hoy') +
-    '. Subir es pagar en fecha, nada más.</p>' +
-    '<div style="margin-top:var(--e2)">' + M.proyeccionNiveles(gd.base_cupo, S.nivel).map(function (n) {
+  /* --- Niveles ---
+     5-ago-2026 — ESTA TARJETA SE LLAMABA "Cuánto podrías pedir si subes de
+     nivel" Y PINTABA UN CUPO DISTINTO POR NIVEL. Ya no: el cupo es la garantía
+     uno a uno, así que proyeccionNiveles devuelve el MISMO cupo en los cuatro
+     —a propósito, para que ninguna pantalla pueda insinuar una diferencia que no
+     existe— y pintar esa columna sería mostrarle cuatro veces la misma cifra
+     como si fuera una escalera. Lo que de verdad cambia por nivel son las
+     prórrogas, y eso es lo que ocupa la columna ahora.
+     `mueve_el_cupo` se lee de verdad, no se asume: el día que el motor vuelva a
+     mover el cupo por nivel, esta tarjeta lo va a decir sola en vez de callarlo. */
+  var niveles = M.proyeccionNiveles(gd.base_cupo, S.nivel);
+  var nivelMueveElCupo = niveles.some(function (n) { return n.mueve_el_cupo; });
+  h += '<div class="card"><h3 class="tit">Tus niveles</h3>' +
+    '<p class="sub">' + esc(M.reglasResumen().niveles_texto) + '</p>' +
+    '<div style="margin-top:var(--e2)">' + niveles.map(function (n) {
       return '<div class="nivel ' + (n.actual ? 'aqui' : '') + '">' +
         '<span class="txt"><span class="nm">' + n.nivel + (n.actual ? ' · aquí estás' : '') + '</span>' +
         '<span class="rq">' + requisitoTexto(n) + '</span></span>' +
-        '<span class="cp oro-tinta">' + COP(n.cupo) + '</span></div>';
+        '<span class="cp">' + (nivelMueveElCupo ? COP(n.cupo) : prorrogasTexto(n.prorrogas)) + '</span></div>';
     }).join('') + '</div>' +
-    '<div class="muted" style="font-size:13px;margin-top:var(--e3)">La plataforma presta hasta <b>' +
-      COP(M.CUPO_MAXIMO) + '</b>. Se llega pagando, crédito tras crédito.</div>' +
+    /* Y acá se dice de dónde sí sale el cupo, en la misma tarjeta donde antes se
+       prometía que salía del nivel: el que llegue leyendo la columna no se queda
+       con la idea vieja. Sobre base_cupo, la misma base con la que se calculó
+       S.cupo arriba, para que las dos cifras no se contradigan a un dedo. */
+    '<div class="muted" style="font-size:13px;margin-top:var(--e3)">Tu cupo hoy es <b>' +
+      COP(M.calcularCupo(gd.base_cupo, S.nivel)) + '</b>' +
+      (gd.comprometida > 0 ? ', con lo que tienes libre' : '') +
+      ', y sube un ' + pct(M.reglasResumen().cupo.crecimiento_por_credito) +
+      ' con cada crédito que pagues en fecha. La plataforma presta hasta <b>' +
+      COP(M.CUPO_MAXIMO) + '</b>.</div>' +
     '</div>';
 
   return h + pie();
 }
 
+/* QUÉ PIDE UN NIVEL. 5-ago-2026: acá terminaba en "· 2× tu garantía", que era el
+   factor de cupo. El factor está derogado y ni siquiera viaja —`n.factor` daba
+   `undefined`, o sea que la línea se leía "· undefined× tu garantía"—, así que
+   esta función se queda con lo único que le corresponde: qué hay que hacer para
+   llegar. Lo que el nivel DA se dice al lado, en prorrogasTexto. */
 function requisitoTexto(n) {
-  if (n.nivel === 'bronce') return 'Desde que entras · tu cupo es ' + n.factor + '× tu garantía';
+  if (n.nivel === 'bronce') return 'Desde que entras';
   var r = n.requisitos, p = [];
   if (r.pagos_a_tiempo) p.push(r.pagos_a_tiempo + ' pagos en fecha');
   if (r.racha) p.push('racha de ' + r.racha);
   if (r.meses_sin_mora) p.push(r.meses_sin_mora + ' meses sin atrasarte');
-  return p.join(' · ') + ' · ' + n.factor + '× tu garantía';
+  return p.length ? p.join(' · ') : 'Desde que entras';
+}
+
+/* LO QUE DA EL NIVEL, y es lo único que da: cuántas veces puede aplazar un
+   corte. Sale de PRORROGAS_POR_NIVEL a través del motor, nunca de una tabla
+   escrita acá. */
+function prorrogasTexto(n) {
+  var k = Math.max(0, Math.round(Number(n) || 0));
+  return k === 1 ? '1 prórroga' : k + ' prórrogas';
+}
+/* Lo mismo dicho como verbo, para las frases: "aplazar hasta 2 prórrogas" no se
+   dice; "aplazar hasta dos veces", sí. */
+function vecesTexto(n) {
+  var k = Math.max(0, Math.round(Number(n) || 0));
+  return k === 1 ? 'una vez' : (k === 2 ? 'dos veces' : k + ' veces');
 }
 
 /* ========================== HISTORIAL ========================== */
@@ -2298,8 +2680,11 @@ function vistaHistorial() {
        crédito que en Inicio grita "9 DÍAS DE ATRASO" en ámbar aparecía en
        Historial como un "En curso" tranquilo, igual que los pagados: dos
        pantallas de la misma app contando estados distintos del mismo crédito.
-       Mismas palabras y mismo ámbar que en la tarjeta de Inicio. */
-    var atraso = diasDeAtraso(c.pagado ? null : c.corte);
+       Mismas palabras y mismo ámbar que en la tarjeta de Inicio.
+       Y los días son los MISMOS de la tarjeta de Inicio porque salen del mismo
+       lado: los que liquidó el puente, no una segunda cuenta hecha acá. */
+    var atraso = c.pagado ? 0
+      : (c.dias_mora != null ? Math.max(0, Number(c.dias_mora) || 0) : diasDeAtraso(c.corte));
     var estado = c.pagado
       ? (puntual ? 'Pagado en fecha' : 'Pagado')
       : (atraso > 0 ? atraso + ' día' + (atraso !== 1 ? 's' : '') + ' de atraso' : 'En curso');

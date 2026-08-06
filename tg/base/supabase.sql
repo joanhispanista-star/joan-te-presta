@@ -1013,6 +1013,259 @@ on conflict (clave) do nothing;
 --   update public.config_privada set valor = 'tu-clave-larga-de-verdad'
 --    where clave = 'clave_sync';
 
+-- ------------------------------------------------------------------ chat ---
+-- 5-ago-2026. Una línea de atención dentro de la app: el socio escribe y Joan
+-- le contesta desde el Panel, sin salir a WhatsApp.
+--
+-- POR QUÉ ESTO NO PUEDE VIVIR EN EL NAVEGADOR
+-- El resto de la app funciona sin nube porque los datos del socio viajan dentro
+-- del enlace o salen del Panel del propio equipo. Un chat no: son dos personas
+-- en dos teléfonos distintos, y alguien tiene que guardar el mensaje en el medio
+-- mientras el otro no está mirando. Por eso el chat solo existe con Supabase
+-- conectado; sin conectar, la app le sigue ofreciendo WhatsApp y ya.
+--
+-- CÓMO QUEDA PROTEGIDO, que es igual que todo lo demás de este archivo
+--   · El socio solo puede leer y escribir en SU conversación, y para eso tiene
+--     que pasar cédula + últimos 4 del celular, que se verifican acá contra
+--     socios_historial. No hay forma de pedir "la conversación de otro".
+--   · Se apoya en el mismo freno de 8 intentos por cédula cada 15 minutos, y —
+--     esto importa— **anotando el fallo y devolviendo null, nunca lanzando una
+--     excepción**. Una excepción revierte la transacción entera y se lleva por
+--     delante el propio conteo del intento: el freno quedaría de adorno. Ya pasó
+--     una vez en este archivo y costó encontrarlo.
+--   · Aparte del freno de identidad hay un TOPE DE MENSAJES: 20 cada 15 minutos
+--     por cédula. Sin eso, alguien con credenciales buenas podría dejarle a Joan
+--     diez mil mensajes en la bandeja y llenar la base.
+--   · El texto va limitado a 1000 caracteres. No es un tope estético: sin él, la
+--     tabla de mensajes es un sitio donde subir lo que sea.
+--   · Lo que Joan hace desde el Panel pide su clave, como el resto.
+--
+-- OJO AL PINTARLO: el texto lo escribe una persona, así que en la pantalla se
+-- muestra ESCAPADO, nunca como HTML. Si no, un socio puede escribir etiquetas y
+-- que le corran en el navegador de Joan.
+
+create table if not exists public.mensajes (
+  id        bigint generated always as identity primary key,
+  cedula    text        not null,
+  -- Quién lo escribió. Es el único campo que decide de qué lado va en la
+  -- pantalla y a quién le falta leerlo.
+  de        text        not null check (de in ('socio', 'panel')),
+  texto     text        not null check (length(btrim(texto)) between 1 and 1000),
+  creado_en timestamptz not null default now(),
+  -- Un mensaje tiene un solo destinatario, así que con una marca alcanza: la de
+  -- 'socio' la levanta Joan al leer, y la de 'panel' la levanta el socio.
+  visto     boolean     not null default false
+);
+
+-- El índice es por conversación y por id: las dos consultas que existen piden
+-- "los mensajes de esta cédula a partir de este id".
+create index if not exists mensajes_cedula_id on public.mensajes (cedula, id);
+create index if not exists mensajes_sin_ver   on public.mensajes (cedula) where not visto;
+
+alter table public.mensajes enable row level security;
+revoke all on public.mensajes from anon, authenticated;
+
+-- Cuántos mensajes lleva escritos esta cédula en la ventana. Es el freno al que
+-- quiera llenar la bandeja de Joan teniendo credenciales buenas.
+create or replace function public.chat_puede_escribir(p_cedula text)
+returns boolean language plpgsql security definer set search_path = public as $$
+declare n integer;
+begin
+  select count(*) into n
+    from public.mensajes
+   where cedula = p_cedula
+     and de = 'socio'
+     and creado_en > now() - interval '15 minutes';
+  return n < 20;
+end
+$$;
+
+-- EL SOCIO ESCRIBE. Devuelve el id del mensaje, o null si no se pudo — y null
+-- significa lo mismo para "cédula que no existe", "4 dígitos mal" y "frenado",
+-- para no delatar cuál de las tres fue.
+create or replace function public.chat_escribir(p_cedula text, p_tel4 text, p_texto text)
+returns bigint
+language plpgsql security definer set search_path = public as $$
+declare ced text; ok boolean; nuevo bigint;
+begin
+  ced := public.solo_digitos(p_cedula);
+
+  if not public.puede_intentar(ced) then
+    perform pg_sleep(0.3);
+    return null;
+  end if;
+
+  select true into ok
+    from public.socios_historial
+   where cedula = ced
+     and tel4   = right(public.solo_digitos(p_tel4), 4);
+
+  if not found then
+    perform public.anotar_fallo(ced);   -- se anota ANTES de salir, y sin excepción
+    perform pg_sleep(0.3);
+    return null;
+  end if;
+
+  perform public.limpiar_fallos(ced);
+
+  if btrim(coalesce(p_texto, '')) = '' then return null; end if;
+  if not public.chat_puede_escribir(ced) then return null; end if;
+
+  insert into public.mensajes (cedula, de, texto)
+       values (ced, 'socio', left(btrim(p_texto), 1000))
+    returning id into nuevo;
+
+  return nuevo;
+end
+$$;
+
+-- EL SOCIO LEE LO SUYO. De paso da por vistos los que le mandó Joan: el socio
+-- está mirando la pantalla, así que ya los vio.
+create or replace function public.chat_leer(p_cedula text, p_tel4 text, p_desde bigint default 0)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare ced text; ok boolean; salida jsonb;
+begin
+  ced := public.solo_digitos(p_cedula);
+
+  if not public.puede_intentar(ced) then
+    perform pg_sleep(0.3);
+    return null;
+  end if;
+
+  select true into ok
+    from public.socios_historial
+   where cedula = ced
+     and tel4   = right(public.solo_digitos(p_tel4), 4);
+
+  if not found then
+    perform public.anotar_fallo(ced);
+    perform pg_sleep(0.3);
+    return null;
+  end if;
+
+  perform public.limpiar_fallos(ced);
+
+  select coalesce(jsonb_agg(jsonb_build_object(
+           'id', m.id, 'de', m.de, 'texto', m.texto, 'creado_en', m.creado_en
+         ) order by m.id), '[]'::jsonb)
+    into salida
+    from public.mensajes m
+   where m.cedula = ced
+     and m.id > coalesce(p_desde, 0);
+
+  update public.mensajes
+     set visto = true
+   where cedula = ced and de = 'panel' and not visto;
+
+  return salida;
+end
+$$;
+
+-- JOAN VE SUS CONVERSACIONES: quién le escribió, lo último que dijo y cuántos
+-- le faltan por leer. Ordenadas por el mensaje más reciente, que es como se
+-- mira una bandeja.
+create or replace function public.chat_conversaciones(p_clave text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+begin
+  if not public.clave_ok(p_clave) then
+    raise exception 'clave incorrecta';
+  end if;
+
+  return coalesce((
+    select jsonb_agg(c order by c->>'ultimo_en' desc)
+      from (
+        select jsonb_build_object(
+                 'cedula',    m.cedula,
+                 'nombre',    coalesce(s.nombre, ''),
+                 'ultimo',    (array_agg(m.texto order by m.id desc))[1],
+                 'ultimo_de', (array_agg(m.de    order by m.id desc))[1],
+                 'ultimo_en', max(m.creado_en),
+                 'sin_leer',  count(*) filter (where m.de = 'socio' and not m.visto)
+               ) as c
+          from public.mensajes m
+          left join public.socios_historial s on s.cedula = m.cedula
+         group by m.cedula, s.nombre
+      ) t
+  ), '[]'::jsonb);
+end
+$$;
+
+-- JOAN ABRE UNA CONVERSACIÓN. Al abrirla, los del socio quedan vistos.
+create or replace function public.chat_de(p_clave text, p_cedula text, p_desde bigint default 0)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare ced text; salida jsonb;
+begin
+  if not public.clave_ok(p_clave) then
+    raise exception 'clave incorrecta';
+  end if;
+
+  ced := public.solo_digitos(p_cedula);
+
+  select coalesce(jsonb_agg(jsonb_build_object(
+           'id', m.id, 'de', m.de, 'texto', m.texto, 'creado_en', m.creado_en
+         ) order by m.id), '[]'::jsonb)
+    into salida
+    from public.mensajes m
+   where m.cedula = ced
+     and m.id > coalesce(p_desde, 0);
+
+  update public.mensajes
+     set visto = true
+   where cedula = ced and de = 'socio' and not visto;
+
+  return salida;
+end
+$$;
+
+-- JOAN CONTESTA.
+create or replace function public.chat_responder(p_clave text, p_cedula text, p_texto text)
+returns bigint
+language plpgsql security definer set search_path = public as $$
+declare ced text; nuevo bigint;
+begin
+  if not public.clave_ok(p_clave) then
+    raise exception 'clave incorrecta';
+  end if;
+
+  ced := public.solo_digitos(p_cedula);
+  if btrim(coalesce(p_texto, '')) = '' then return null; end if;
+
+  insert into public.mensajes (cedula, de, texto)
+       values (ced, 'panel', left(btrim(p_texto), 1000))
+    returning id into nuevo;
+
+  return nuevo;
+end
+$$;
+
+-- Y borrar una conversación, para cuando un socio se va y pide que se borre lo
+-- suyo: la política de datos se lo promete y hay que poder cumplirlo.
+create or replace function public.chat_olvidar(p_clave text, p_cedula text)
+returns integer
+language plpgsql security definer set search_path = public as $$
+declare n integer;
+begin
+  if not public.clave_ok(p_clave) then
+    raise exception 'clave incorrecta';
+  end if;
+
+  delete from public.mensajes where cedula = public.solo_digitos(p_cedula);
+  get diagnostics n = row_count;
+  return n;
+end
+$$;
+
+grant execute on function public.chat_escribir(text, text, text)       to anon, authenticated;
+grant execute on function public.chat_leer(text, text, bigint)         to anon, authenticated;
+grant execute on function public.chat_conversaciones(text)             to anon, authenticated;
+grant execute on function public.chat_de(text, text, bigint)           to anon, authenticated;
+grant execute on function public.chat_responder(text, text, text)      to anon, authenticated;
+grant execute on function public.chat_olvidar(text, text)              to anon, authenticated;
+
+
 -- ------------------------------------------------------ qué falta probar ---
 -- Lo de arriba de la línea de invitaciones está probado contra PostgreSQL 17
 -- (22 pruebas). LO DE INVITACIONES Y REGISTROS NO: está revisado a mano contra

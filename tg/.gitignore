@@ -19,3 +19,7 @@ desktop.ini
 .DS_Store
 *~
 *.tmp
+
+# El sistema de dirección: informes internos, bitácora de decisiones, cifras de cartera
+# y el tablero del CEO. Nada de esto va a un repositorio público.
+direccion/

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Tu Garantía · Tu historial es tu garantía</title>
-<meta name="description" content="Crédito por quincena para gente que trabaja. Cada peso que pagas se te vuelve garantía: pides más y, cuando la tengas, más barato. Solo se entra con código de invitación.">
+<meta name="description" content="Crédito por quincena para gente que trabaja. Cada crédito que pagas en fecha te sube el cupo un 15%: pides más y, cuando tengas garantía, más barato. Solo se entra con código de invitación.">
 <meta name="theme-color" content="#0C0A0B">
 <meta name="robots" content="index,follow">
 <link rel="apple-touch-icon" href="app/icono-180.png">
@@ -21,7 +21,7 @@
 <meta property="og:locale" content="es_CO">
 <meta property="og:url" content="https://tugarantia.co/">
 <meta property="og:title" content="Tu historial es tu garantía">
-<meta property="og:description" content="Crédito por quincena para gente que trabaja. Sin fiador. Cada peso que pagas se te vuelve garantía. Solo con invitación.">
+<meta property="og:description" content="Crédito por quincena para gente que trabaja. Sin fiador. Cada crédito que pagas en fecha te sube el cupo un 15%. Solo con invitación.">
 <meta property="og:image" content="https://tugarantia.co/portada.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -140,9 +140,6 @@ th:first-child,td:first-child{text-align:left}
 tbody tr:last-child td{border-bottom:0}
 tbody tr:last-child td{font-weight:700}
 .gan{color:var(--amarillo);font-weight:700}
-.niv{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
-  color:rgba(251,247,244,.62)}
-.niv.oro{color:var(--amarillo)}
 
 /* -------------------------------------------------- los dos productos */
 .dos{display:grid;grid-template-columns:1fr 1fr;gap:var(--e4);margin-top:var(--e4)}
@@ -201,15 +198,15 @@ tbody tr:last-child td{font-weight:700}
   .portada .bajo{font-size:17px}
   .acciones .btn{width:100%}
 
-  /* En el celular se caen "Cuesta" y "Nivel". No es por espacio: es que si la tabla
-     hay que deslizarla, la columna amarilla —que es TODO el argumento— nace fuera de
+  /* En el celular se cae "Cuesta". No es por espacio: es que si la tabla hay que
+     deslizarla, la columna amarilla —que es TODO el argumento— nace fuera de
      pantalla y el lector no se entera de que existe. Con cuatro columnas entra
      entera y lo primero que se ve es lo que se está construyendo. El costo igual
      está dicho, en letras, en la sección de "lo que cuesta". */
   table{min-width:0}
   th,td{padding:11px 8px;font-size:14.5px}
-  /* Los títulos son más anchos que las cifras que encabezan ("Ya puedes pedir" mide
-     más que "$177.000"), así que son ELLOS los que empujaban la tabla fuera de
+  /* Los títulos son más anchos que las cifras que encabezan ("Tu garantía = tu cupo"
+     mide más que "$132.250"), así que son ELLOS los que empujaban la tabla fuera de
      pantalla. Dejándolos partir en dos líneas, cada columna se ajusta al número. */
   th{white-space:normal;letter-spacing:.06em;line-height:1.25}
   .col-extra{display:none}
@@ -233,8 +230,9 @@ tbody tr:last-child td{font-weight:700}
     <div class="wrap">
       <h1 class="frase">Tu historial<br>es <i>tu garantía</i>.</h1>
       <p class="bajo tenue">Crédito por quincena para gente que trabaja. Sin fiador, sin
-        codeudor, sin dejar nada empeñado. Cada peso que pagas se te vuelve garantía, y esa
-        garantía es la que te deja pedir más — y, cuando ya la tengas, pedir más barato.</p>
+        codeudor, sin dejar nada empeñado. <b>Cada crédito que pagas en fecha te sube el cupo
+        un 15%</b>, y tu cupo <b>es</b> tu garantía: puedes pedir exactamente lo que tienes —
+        y, cuando ya la tengas, pedir más barato.</p>
       <div class="acciones">
         <a class="btn btn-rojo" href="#escalera">Ver cómo crece</a>
         <a class="btn btn-linea" href="#entrar">Pedir una invitación</a>
@@ -269,13 +267,14 @@ tbody tr:last-child td{font-weight:700}
           promesa. Es la aritmética.</h2>
         <p class="tenue">Empiezas con <b style="color:var(--amarillo)">$100.000</b> de garantía
           que te presta la plataforma solo por darnos tus datos. De ahí en adelante, el
-          <b>90% de cada costo que pagas</b> se te vuelve garantía tuya. Cinco créditos pagados
-          a tiempo se ven así:</p>
+          <b>75% de cada costo que pagas en fecha</b> se te vuelve garantía tuya — la mitad si
+          pagas tarde. Y tu cupo es tu garantía, uno a uno: lo que tienes es lo que puedes
+          pedir. Cinco créditos pagados a tiempo se ven así:</p>
       </div>
 
-      <p class="tenue" style="font-size:14.5px;max-width:60ch">Cinco créditos pagados en fecha.
-        Las cifras salen del mismo motor que hace las cuentas en la app — no son un ejemplo
-        bonito.</p>
+      <p class="tenue" style="font-size:14.5px;max-width:60ch">Cinco créditos pagados en fecha,
+        pidiendo cada vez todo el cupo. Las cifras salen del mismo motor que hace las cuentas en
+        la app — no son un ejemplo bonito.</p>
 
       <div class="tabla-caja">
         <table>
@@ -284,25 +283,34 @@ tbody tr:last-child td{font-weight:700}
               <th scope="col">N°</th>
               <th scope="col">Pides</th>
               <th scope="col" class="col-extra">Cuesta</th>
-              <th scope="col">Tu garantía</th>
-              <th scope="col" class="col-extra">Nivel</th>
-              <th scope="col">Ya puedes pedir</th>
+              <th scope="col">Te suma</th>
+              <th scope="col">Tu garantía = tu cupo</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td>1º</td><td>$100.000</td><td class="col-extra">$20.000</td><td class="gan">$118.000</td><td class="niv col-extra">Bronce</td><td>$177.000</td></tr>
-            <tr><td>2º</td><td>$150.000</td><td class="col-extra">$30.000</td><td class="gan">$145.000</td><td class="niv col-extra">Plata</td><td>$290.000</td></tr>
-            <tr><td>3º</td><td>$250.000</td><td class="col-extra">$50.000</td><td class="gan">$190.000</td><td class="niv col-extra">Plata</td><td>$380.000</td></tr>
-            <tr><td>4º</td><td>$400.000</td><td class="col-extra">$80.000</td><td class="gan">$262.000</td><td class="niv col-extra">Plata</td><td>$524.000</td></tr>
-            <tr><td>5º</td><td>$600.000</td><td class="col-extra">$120.000</td><td class="gan">$370.000</td><td class="niv oro col-extra">Oro</td><td>$925.000</td></tr>
+            <tr><td>1º</td><td>$100.000</td><td class="col-extra">$20.000</td><td>+$15.000</td><td class="gan">$115.000</td></tr>
+            <tr><td>2º</td><td>$115.000</td><td class="col-extra">$23.000</td><td>+$17.250</td><td class="gan">$132.250</td></tr>
+            <tr><td>3º</td><td>$132.250</td><td class="col-extra">$26.450</td><td>+$19.838</td><td class="gan">$152.088</td></tr>
+            <tr><td>4º</td><td>$152.088</td><td class="col-extra">$30.418</td><td>+$22.813</td><td class="gan">$174.901</td></tr>
+            <tr><td>5º</td><td>$174.901</td><td class="col-extra">$34.980</td><td>+$26.235</td><td class="gan">$201.136</td></tr>
           </tbody>
         </table>
       </div>
 
-      <p class="tenue angosto" style="margin-top:var(--e2)">De esos $370.000, hay
-        <b style="color:var(--amarillo)">$270.000 que te ganaste tú</b> pagando. Los otros
+      <p class="tenue angosto" style="margin-top:var(--e2)">La última columna dice las dos cosas
+        a la vez y no es un descuido: <b>tu cupo es tu garantía</b>. No la multiplicamos por
+        nada. Cada crédito que pagas en fecha te la sube un <b>15%</b> —el 20% que cuesta, por
+        el 75% que se te vuelve tuyo— y en cinco créditos se te duplica.</p>
+
+      <p class="tenue angosto">De esos $201.136, hay
+        <b style="color:var(--amarillo)">$101.136 que te ganaste tú</b> pagando. Los otros
         $100.000 son los que te prestamos al principio. La diferencia importa, y ahora verás
         por qué.</p>
+
+      <p class="tenue angosto" style="font-size:15px">Los niveles —bronce, plata, oro,
+        platino— siguen ahí y se suben pagando en fecha, pero <b>no mandan tu cupo</b>: ese es
+        tu garantía y nada más. Lo que te dan es reconocimiento y más aire cuando lo necesitas:
+        en bronce puedes aplazar un corte por crédito, y de plata en adelante, dos.</p>
     </div>
   </section>
 
@@ -315,6 +323,9 @@ tbody tr:last-child td{font-weight:700}
         <p class="tenue">El de siempre es rápido y hace crecer tu cupo. El otro es mucho más
           barato pero casi no te hace crecer. Ninguno de los dos es el bueno: depende de para
           qué necesitas la plata.</p>
+        <p class="tenue">Los números de abajo son los del socio de la escalera de arriba:
+          <b>$201.136</b> de garantía, de los cuales <b>$101.136</b> se los ganó pagando. Fíjate
+          en el "pides hasta" de cada tarjeta, porque no es el mismo.</p>
       </div>
 
       <div class="dos">
@@ -323,12 +334,12 @@ tbody tr:last-child td{font-weight:700}
           <p class="tasa">20% <span style="font-size:16px;color:var(--gris)">del monto</span></p>
           <dl>
             <div class="fila"><dt>Plazo</dt><dd>Hasta tu quincena</dd></div>
-            <div class="fila"><dt>Pides hasta</dt><dd>$925.000</dd></div>
-            <div class="fila"><dt>Si pides $600.000</dt><dd>cuesta $120.000</dd></div>
-            <div class="fila"><dt>Tu garantía sube</dt><dd>+$108.000</dd></div>
+            <div class="fila"><dt>Pides hasta</dt><dd>$201.136</dd></div>
+            <div class="fila"><dt>Si pides $100.000</dt><dd>cuesta $20.000</dd></div>
+            <div class="fila"><dt>Tu garantía sube</dt><dd>+$15.000</dd></div>
           </dl>
-          <p class="nota">Cuesta más, pero <b>es el que te hace crecer</b>. Cada crédito
-            quincenal que pagas te sube el cupo del siguiente.</p>
+          <p class="nota">Cuesta más, pero <b>es el que te hace crecer</b>: va contra toda tu
+            garantía y cada uno que pagas en fecha te sube el cupo un 15%.</p>
         </article>
 
         <article class="prod r">
@@ -336,13 +347,13 @@ tbody tr:last-child td{font-weight:700}
           <p class="tasa">5% <span style="font-size:16px;color:var(--gris)">al mes</span></p>
           <dl>
             <div class="fila"><dt>Plazo</dt><dd>De 1 a 6 meses</dd></div>
-            <div class="fila"><dt>Pides hasta</dt><dd>$270.000</dd></div>
-            <div class="fila"><dt>$270.000 a 6 meses</dt><dd>$58.500 al mes</dd></div>
-            <div class="fila"><dt>Tu garantía sube</dt><dd>+$16.200</dd></div>
+            <div class="fila"><dt>Pides hasta</dt><dd>$101.136</dd></div>
+            <div class="fila"><dt>$100.000 a 6 meses</dt><dd>$21.666 al mes</dd></div>
+            <div class="fila"><dt>Tu garantía sube</dt><dd>+$6.000</dd></div>
           </dl>
-          <p class="nota">Cuesta $81.000 en total, no $120.000 cada quincena. Pero
-            <b>casi no crece tu garantía</b>, y mientras lo estás pagando tu cupo quincenal
-            baja.</p>
+          <p class="nota">Ese mismo $100.000 cuesta $30.000 en total, no $20.000 cada quincena.
+            Pero <b>casi no crece tu garantía</b> —te deja 20 centavos por peso de costo, no
+            75— y mientras lo estás pagando tu cupo quincenal baja.</p>
         </article>
       </div>
 
@@ -404,8 +415,9 @@ tbody tr:last-child td{font-weight:700}
         <div class="paso">
           <div class="n" aria-hidden="true"></div>
           <h3>Pagas y creces</h3>
-          <p>El 90% de lo que pagas en costos se te vuelve garantía. Pagando en fecha suma el
-            doble que pagando tarde.</p>
+          <p>Pagando en fecha, el 75% de lo que pagas en costos se te vuelve garantía — el doble
+            que pagando tarde. Y un crédito que ya se atrasó suma la mitad aunque después lo
+            pongas al día: la prórroga te compra tiempo, no puntualidad.</p>
         </div>
       </div>
     </div>
